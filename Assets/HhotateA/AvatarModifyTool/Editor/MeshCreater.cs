@@ -11,29 +11,40 @@ namespace HhotateA
 {
     public class MeshCreater
     {
-        public Mesh asset;
+        Mesh asset;
         public event Action<Mesh> OnReloadMesh;
         public string name;
         
         // 頂点の固有データ
-        public List<Vector3> vertexs = new List<Vector3>();
-        public List<Vector3> normals = new List<Vector3>();
-        public List<Vector4> tangents = new List<Vector4>();
-        public List<Color> colors = new List<Color>();
-        public List<Vector2>[] uvs = Enumerable.Range(0, 8).Select(_ => new List<Vector2>()).ToArray();
-        public List<BoneWeight> boneWeights = new List<BoneWeight>();
+        List<Vector3> vertexs = new List<Vector3>();
+        List<Vector3> normals = new List<Vector3>();
+        List<Vector4> tangents = new List<Vector4>();
+        List<Color> colors = new List<Color>();
+        List<Vector2>[] uvs = Enumerable.Range(0, 8).Select(_ => new List<Vector2>()).ToArray();
+        List<BoneWeight> boneWeights = new List<BoneWeight>();
         // サブメッシュのデータ
-        public List<List<int>> triangles = new List<List<int>>();
-        public List<Material> materials = new List<Material>();
-        public List<Transform> meshTransforms = new List<Transform>(); //MeshRendererのTransform
+        List<List<int>> triangles = new List<List<int>>();
+        List<Material> materials = new List<Material>();
+        List<Transform> meshTransforms = new List<Transform>(); //MeshRendererのTransform
         // ボーン情報
-        public List<Transform> bones = new List<Transform>();
-        public List<Matrix4x4> bindPoses = new List<Matrix4x4>(); // 一応事前計算してるけど，メッシュ化時でもいいかも
+        List<Transform> bones = new List<Transform>();
+        List<Matrix4x4> bindPoses = new List<Matrix4x4>(); // 一応事前計算してるけど，メッシュ化時でもいいかも
         // その他メッシュの固有情報
-        public List<BlendShapeData> blendShapes = new List<BlendShapeData>();
-        public Transform rendBone; // 追加したRendererのTransform
-        public Transform rootBone; // 追加したskinmeshのrootBone
+        List<BlendShapeData> blendShapes = new List<BlendShapeData>();
+        Transform rendBone; // 追加したRendererのTransform
+        Transform rootBone; // 追加したskinmeshのrootBone
 
+        public Transform RootBone
+        {
+            get
+            {
+                return rootBone;
+            }
+            set
+            {
+                rootBone = value;
+            }
+        }
 
         public int VertexsCount()
         {
@@ -70,10 +81,12 @@ namespace HhotateA
                 name = mesh.sharedMesh.name;
                 rendBone = rend.transform;
                 AddMesh(mesh.sharedMesh,rend.sharedMaterials,null,rend.transform);
+                rootBone = rend.transform;
                 Create(originMesh);
             }
             
         }
+        
         public MeshCreater(Mesh mesh)
         {
             name = mesh.name;
@@ -214,6 +227,25 @@ namespace HhotateA
             for (int i = 0; i < 3; i++)
             {
                 AddVertex(ps[i],normal,ts[i]);
+            }
+        }
+        
+        public void AddTriangle(int v0, int v1, int v2)
+        {
+            if (v0 != v1 && v0 != v2)
+            {
+                if (v0 < vertexs.Count && v1 < vertexs.Count && v2 < vertexs.Count)
+                {
+                    int submesh = triangles.Count - 1;
+                    var t = GetTriangleList(new List<int>() {v0, 01, 02});
+                    if (t.Count > 0)
+                    {
+                        submesh = GetSubmeshID(t[0]);
+                    }
+                    triangles[submesh].Add(v0);
+                    triangles[submesh].Add(v1);
+                    triangles[submesh].Add(v2);
+                }
             }
         }
 
@@ -1497,6 +1529,105 @@ namespace HhotateA
         {
             if (asset == null) Create();
             return asset;
+        }
+
+        public Vector3 GetPosition(int index)
+        {
+            if (index < VertexsCount())
+            {
+                return vertexs[index];
+            }
+            return Vector3.zero;
+        }
+
+        public Vector3 GetNormal(int index)
+        {
+            if (index < VertexsCount())
+            {
+                return normals[index];
+            }
+            return Vector3.up;
+        }
+
+        public Vector3 GetTangent(int index)
+        {
+            if (index < VertexsCount())
+            {
+                return tangents[index];
+            }
+            return Vector3.right;
+        }
+        
+        public Color GetColor(int index)
+        {
+            if (index < VertexsCount())
+            {
+                return colors[index];
+            }
+            return Color.white;
+        }
+        
+        public Vector2[] GetUVs(int index)
+        {
+            if (index < VertexsCount())
+            {
+                return uvs.Select(uv=>uv[index]).ToArray();
+            }
+            return Enumerable.Range(0, 8).Select(_ => Vector2.zero).ToArray();
+        }
+
+        public KeyValuePair<int, float>[] GetWeightData(int index)
+        {
+            var w = new List<KeyValuePair<int, float>>();
+            if (index < VertexsCount())
+            {
+                w.Add(new KeyValuePair<int,float>(boneWeights[index].boneIndex0,boneWeights[index].weight0));
+                w.Add(new KeyValuePair<int,float>(boneWeights[index].boneIndex1,boneWeights[index].weight1));
+                w.Add(new KeyValuePair<int,float>(boneWeights[index].boneIndex2,boneWeights[index].weight2));
+                w.Add(new KeyValuePair<int,float>(boneWeights[index].boneIndex3,boneWeights[index].weight3));
+                return w.ToArray();
+            }
+            w.Add(new KeyValuePair<int,float>(0,0f));
+            w.Add(new KeyValuePair<int,float>(1,0f));
+            w.Add(new KeyValuePair<int,float>(2,0f));
+            w.Add(new KeyValuePair<int,float>(3,0f));
+            return w.ToArray();
+        }
+
+        public void SetRawData(int index, Vector3? pos, Vector3? nor, Vector3? tan, Color? col, Vector2[] uv,
+            KeyValuePair<int, float>[] weights)
+        {
+            if (index < VertexsCount())
+            {
+                vertexs[index] = pos ?? vertexs[index];
+                normals[index] = nor ?? normals[index];
+                tangents[index] = tan ?? tangents[index];
+                colors[index] = col ?? colors[index];
+                if (uv != null)
+                {
+                    for (int i = 0; i < uv.Length && i < uvs.Length; i++)
+                    {
+                        uvs[i][index] = uv[i];
+                    }
+                }
+                if (weights != null)
+                {
+                    if (weights.Length == 4)
+                    {
+                        boneWeights[index] = new BoneWeight()
+                        {
+                            boneIndex0 = weights[0].Key,
+                            boneIndex1 = weights[1].Key,
+                            boneIndex2 = weights[2].Key,
+                            boneIndex3 = weights[3].Key,
+                            weight0 = weights[0].Value,
+                            weight1 = weights[1].Value,
+                            weight2 = weights[2].Value,
+                            weight3 = weights[3].Value,
+                        };
+                    }
+                }
+            }
         }
         
         /// <summary>

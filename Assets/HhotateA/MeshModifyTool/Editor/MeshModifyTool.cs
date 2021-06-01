@@ -163,8 +163,19 @@ namespace HhotateA
         }
 
         private int casheCount = -1;
-
         
+        // 最終選択頂点のデータ
+        private bool displayRawData = true;
+        Vector3 rawPosition = Vector3.zero;
+        Vector3 rawNormal = Vector3.up;
+        Vector3 rawTangent = Vector3.right;
+        Color rawColor = Color.white;
+        private Vector2[] rawUVs = Enumerable.Range(0, 8).Select(_ => Vector2.zero).ToArray();
+        KeyValuePair<int,float>[] rawWeights = new KeyValuePair<int,float>[4];
+
+        private int[] rawIDs = Enumerable.Range(0, 3).ToArray();
+
+
         /// <summary>
         /// 表示部，実装は置かないこと
         /// </summary>
@@ -410,6 +421,45 @@ namespace HhotateA
                                 }
                             }
                             EditorGUI.EndDisabledGroup();
+                        }
+
+                        if (displayRawData)
+                        {
+                            using (new EditorGUILayout.HorizontalScope())
+                            {
+                                for (int i = 0; i < rawIDs.Length; i++)
+                                {
+                                    rawIDs[i] = EditorGUILayout.IntField("", rawIDs[i]);
+                                }
+                            }
+                            rawPosition = EditorGUILayout.Vector3Field("Position", rawPosition);
+                            rawNormal = EditorGUILayout.Vector3Field("Normal", rawNormal);
+                            rawTangent = EditorGUILayout.Vector3Field("Tangent", rawTangent);
+                            rawColor = EditorGUILayout.ColorField("Color", rawColor);
+                            for (int i = 0; i < rawUVs.Length; i++)
+                            {
+                                rawUVs[i] = EditorGUILayout.Vector2Field("UV" + i, rawUVs[i]);
+                            }
+                            for (int i = 0; i < rawWeights.Length; i++)
+                            {
+                                using (new EditorGUILayout.HorizontalScope())
+                                {
+                                    rawWeights[i] = new KeyValuePair<int, float>(
+                                        EditorGUILayout.IntField("BoneIndex"+i, rawWeights[i].Key),
+                                        EditorGUILayout.FloatField("Weight", rawWeights[i].Value));
+                                }
+                            }
+                            using (new EditorGUILayout.HorizontalScope())
+                            {
+                                if (GUILayout.Button("Set"))
+                                {
+                                    SetRawData();
+                                }
+                                if (GUILayout.Button("Generate"))
+                                {
+                                    GenerateTriangle();
+                                }
+                            }
                         }
                     }
                     EditorGUILayout.Space();
@@ -910,6 +960,15 @@ namespace HhotateA
                     ReloadMesh(true,mc);
                 });
             }
+
+            if (displayRawData)
+            {
+                avatarMonitor.GetVertex(GetEditMeshCollider(), (h, p) =>
+                {
+                    GetRawData(h);
+                });
+            }
+            
         }
 
         /// <summary>
@@ -924,7 +983,7 @@ namespace HhotateA
             controllPoint_from = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             controllPoint_from.name = "EditVertex_From";
             controllPoint_from.transform.localScale = new Vector3(0.009f,0.009f,0.009f);
-            controllPoint_from.transform.SetParent(mc.rendBone);
+            controllPoint_from.transform.SetParent(mc.RootBone);
             controllPoint_from.transform.localPosition = pos;
             controllPoint_from.hideFlags = HideFlags.HideAndDontSave;
             var mat_from = new Material(Shader.Find("Unlit/Color"));
@@ -936,7 +995,7 @@ namespace HhotateA
                 controllPoint_to = GameObject.CreatePrimitive(PrimitiveType.Sphere);
                 controllPoint_to.name = "EditVertex_To";
                 controllPoint_to.transform.localScale = new Vector3(0.01f,0.01f,0.01f);
-                controllPoint_to.transform.SetParent(mc.rendBone);
+                controllPoint_to.transform.SetParent(mc.RootBone);
                 controllPoint_to.transform.localPosition = pos;
                 controllPoint_to.hideFlags = HideFlags.HideAndDontSave;
                 var mat_to = new Material(Shader.Find("Unlit/Color"));
@@ -1363,7 +1422,7 @@ namespace HhotateA
             
             // ここからボーンの参照
             smsm.bones = editMeshCreater.ChangeBones(targetHuman,originHuman,true);
-            smsm.rootBone = editMeshCreater.rootBone;
+            smsm.rootBone = editMeshCreater.RootBone;
             
             var m = editMeshCreater.Save(Path.Combine(dir, file + ".mesh"));
             defaultMeshs[editIndex] = m;
@@ -1428,11 +1487,11 @@ namespace HhotateA
                     }
                 }, rb =>
                 {
-                    editMeshCreater.rootBone = rb;
+                    editMeshCreater.RootBone = rb;
                 });
 
             smsm.bones = editMeshCreater.ApplyBoneTable(boneTable).ToArray();
-            smsm.rootBone = editMeshCreater.rootBone;
+            smsm.rootBone = editMeshCreater.RootBone;
 
             var m = editMeshCreater.Save(Path.Combine(dir, file + ".mesh"));
             defaultMeshs[editIndex] = m;
@@ -1535,6 +1594,41 @@ namespace HhotateA
 
             smsm.sharedMesh = editMeshCreater.Save(Path.Combine(dir,file+".mesh"));
             ReloadMesh(false);
+        }
+
+        void GetRawData(int vid)
+        {
+            if (editMeshCreater != null)
+            {
+                rawPosition = editMeshCreater.GetPosition(vid);
+                rawNormal = editMeshCreater.GetNormal(vid);
+                rawTangent = editMeshCreater.GetTangent(vid);
+                rawColor = editMeshCreater.GetColor(vid);
+                rawUVs = editMeshCreater.GetUVs(vid);
+                rawWeights = editMeshCreater.GetWeightData(vid);
+
+                rawIDs[0] = rawIDs[1];
+                rawIDs[1] = rawIDs[2];
+                rawIDs[2] = vid;
+            }
+        }
+
+        void SetRawData()
+        {
+            if (editMeshCreater != null)
+            {
+                editMeshCreater.SetRawData(rawIDs[2],rawPosition,rawNormal,rawTangent,rawColor,rawUVs,rawWeights);
+                ReloadMesh(false);
+            }
+        }
+
+        void GenerateTriangle()
+        {
+            if (editMeshCreater != null)
+            {
+                editMeshCreater.AddTriangle(rawIDs[0],rawIDs[1],rawIDs[2]);
+                ReloadMesh(false);
+            }
         }
     }
 
