@@ -14,10 +14,21 @@
               <e p="AnimatorControllerGenerator.cs" t="Include" />
               <e p="AvatarModifyData.cs" t="Include" />
               <e p="AvatarModifyTool.cs" t="Include" />
+              <e p="AvatarMonitor.cs" t="Include" />
               <e p="ExpressionMenuCreater.cs" t="Include" />
               <e p="MenuCreater.cs" t="Include" />
               <e p="MeshCreater.cs" t="Include" />
               <e p="TextureCombinater.cs" t="Include" />
+            </e>
+          </e>
+          <e p="AvatarPainter" t="Include">
+            <e p="Editor" t="Include">
+              <e p="AvatarPaintar.cs" t="Include" />
+              <e p="LayersSaveData.cs" t="Include" />
+              <e p="TextureCompute.compute" t="Include" />
+              <e p="TexturePainter.cs" t="Include" />
+              <e p="TexturePainter.shader" t="Include" />
+              <e p="TexturePreview.shader" t="Include" />
             </e>
           </e>
           <e p="AvatarPen" t="Include">
@@ -33,8 +44,17 @@
           </e>
           <e p="MeshModifyTool" t="Include">
             <e p="Editor" t="Include">
-              <e p="AvatarMonitor.cs" t="Include" />
               <e p="MeshModifyTool.cs" t="Include" />
+            </e>
+          </e>
+        </e>
+        <e p="Hotatea" t="Include">
+          <e p="Toon" t="Include">
+            <e p="Editor" t="Include">
+              <e p="CopyMaterialParameter.cs" t="Include" />
+              <e p="RemoveUnusedMaterialProperties.cs" t="Include" />
+              <e p="RemoveUnusedShaderKeywordsFromUTS2Material.cs" t="Include" />
+              <e p="UTS2GUI.cs" t="Include" />
             </e>
           </e>
         </e>

@@ -32,8 +32,18 @@ namespace HhotateA
         // その他メッシュの固有情報
         List<BlendShapeData> blendShapes = new List<BlendShapeData>();
         Transform rendBone; // 追加したRendererのTransform
+        public Transform RendBone
+        {
+            get
+            {
+                return rendBone;
+            }
+            set
+            {
+                rendBone = value;
+            }
+        }
         Transform rootBone; // 追加したskinmeshのrootBone
-
         public Transform RootBone
         {
             get
@@ -595,7 +605,7 @@ namespace HhotateA
                 {
                     for (int i = 0; i < vertexs.Count; i++)
                     {
-                        neighborhoodList[i].AddRange(GetOverlapList(i));
+                        neighborhoodList[i].AddRange(GetOverlap(i));
                     }
                 }
                 isComputeLandVertexesOverlapping = overlapping;
@@ -608,23 +618,40 @@ namespace HhotateA
             return neighborhoodList;
         }
         
-        /// <summary>
-        /// 頂点に隣接している頂点の事前計算リスト
-        /// </summary>
-        private List<int> GetOverlapList(int i)
+        private List<int>[] overlapList = new List<int>[0];
+
+        private List<int>[] GetOverlapList()
         {
-            var overlapList = new List<int>();
-            for (int j = 0; j < vertexs.Count; j++)
+
+            if (overlapList.Length != vertexs.Count)
             {
-                if (i != j)
+                overlapList = new List<int>[vertexs.Count];
+                for (int i = 0; i < vertexs.Count; i++)
                 {
-                    if (Vector3.Distance(vertexs[i], vertexs[j]) < 0.001f)
+                    var list = new List<int>();
+                    for (int j = 0; j < vertexs.Count; j++)
                     {
-                        overlapList.Add(j);
+                        if (i != j)
+                        {
+                            if (Vector3.Distance(vertexs[i], vertexs[j]) < 0.001f)
+                            {
+                                list.Add(j);
+                            }
+                        }
                     }
+                    overlapList[i] = list;
                 }
             }
+
             return overlapList;
+        }
+        
+        /// <summary>
+        /// 重複頂点の事前計算リスト
+        /// </summary>
+        private List<int> GetOverlap(int i)
+        {
+            return GetOverlapList()[i];
         }
 
         public bool IsComputeLandVertexes()
@@ -1377,6 +1404,104 @@ namespace HhotateA
             return rands;
         }
 
+        private List<Vector3> triangleNormals;
+        public List<Vector3> CaltulateTriangleNormal()
+        {
+            var ns = new List<Vector3>();
+            foreach (var tris in triangles)
+            {
+                for (int i = 0; i < tris.Count; i += 3)
+                {
+                    ns.Add(
+                        Vector3.Cross(
+                            Vector3.Normalize(vertexs[tris[i+1]]-vertexs[tris[i+0]]),
+                            Vector3.Normalize(vertexs[tris[i+2]]-vertexs[tris[i+0]])
+                            ));
+                }
+            }
+
+            return ns;
+        }
+        private Vector3[] vertexnormals;
+        public Vector3[] CaltulateVertexNormal()
+        {
+            var ns = new Vector3[vertexs.Count];
+            for (int i = 0; i < vertexs.Count; i++)
+            {
+                if(ns[i] != Vector3.zero) continue;
+                var n = Vector3.zero;
+                var vs = GetOverlap(i);
+                var ts = GetTriangleList(vs, null,1);
+                foreach (var t in ts)
+                {
+                    var tv = GetVertexIndex(t);
+                    var a1 = Vector3.zero;
+                    var a2 = Vector3.zero;
+                    if (vs.Contains(tv[0]))
+                    {
+                        a1 = Vector3.Normalize(vertexs[tv[1]] - vertexs[tv[0]]);
+                        a2 = Vector3.Normalize(vertexs[tv[2]] - vertexs[tv[0]]);
+                    }
+                    else
+                    if (vs.Contains(tv[1]))
+                    {
+                        a1 = Vector3.Normalize(vertexs[tv[2]] - vertexs[tv[1]]);
+                        a2 = Vector3.Normalize(vertexs[tv[0]] - vertexs[tv[1]]);
+                    }
+                    else
+                    if (vs.Contains(tv[2]))
+                    {
+                        a1 = Vector3.Normalize(vertexs[tv[0]] - vertexs[tv[2]]);
+                        a2 = Vector3.Normalize(vertexs[tv[1]] - vertexs[tv[2]]);
+                    }
+                    n += Vector3.Cross(a1,a2) * Vector3.Dot(a1,a2);
+                }
+
+                foreach (var v in vs)
+                {
+                    ns[v] = n.normalized;
+                }
+            }
+
+            return ns;
+        }
+
+
+        // モデルの形に合わせてnormalを修正する(うまく動かない)
+        public void ApplyNormalsDiff()
+        {
+            if (vertexnormals != null)
+            {
+                var newNormals = CaltulateVertexNormal();
+                var oldNormals = vertexnormals;
+                for (int i = 0; i < vertexs.Count; i++)
+                {
+                    if (newNormals[i] != oldNormals[i])
+                    {
+                        normals[i] = Quaternion.FromToRotation(oldNormals[i], newNormals[i]) * normals[i];
+                    }
+                }
+                vertexnormals = newNormals;
+            }
+            else
+            {
+                vertexnormals = CaltulateVertexNormal();
+            }
+        }
+        
+        public void ApplyNormals()
+        {
+            if (vertexnormals != null)
+            {
+                var newNormals = CaltulateVertexNormal();
+                for (int i = 0; i < vertexs.Count; i++)
+                {
+                    normals[i] = newNormals[i];
+                }
+                vertexnormals = newNormals;
+            }
+        }
+
         // Undo,Redo用のキャッシュ
         // 頂点位置の履歴(index0は常に初期位置の記録(BlendShapeに基準となる))
         private List<List<Vector3>> vertexsCaches = new List<List<Vector3>>();
@@ -1424,6 +1549,8 @@ namespace HhotateA
             }
             vertexsCaches.Add(v);
             currentCacheIndex = vertexsCaches.Count-1;
+            //ApplyNormalsDiff();
+            //ApplyNormals();
         }
 
         /// <summary>
@@ -1629,6 +1756,143 @@ namespace HhotateA
                 }
             }
         }
+
+        public Vector2 GetUVDelta(int submesh, int triangle, Vector3 wp)
+        {
+            var vs = new List<int>()
+            {
+                triangles[submesh][triangle * 3 + 0],
+                triangles[submesh][triangle * 3 + 1],
+                triangles[submesh][triangle * 3 + 2],
+            };
+            var ws = MeshUtil.ComputeBasis(wp, vs.Select(v => vertexs[v]).ToList());
+            var wuv = MeshUtil.Average(vs.Select(v => uvs[0][v]).ToList(),ws);
+            return wuv;
+            
+            /*var vs = GetVertexIndex(triangle).Distinct().ToList();
+            var normal = Vector3.Cross(
+                Vector3.Normalize(vertexs[vs[1]] - vertexs[vs[0]]),
+                Vector3.Normalize(vertexs[vs[2]] - vertexs[vs[0]]));
+            var xaxi = Vector3.Normalize(Vector3.Cross(normal, Vector3.up));
+            var yaxi = Vector3.Normalize(Vector3.Cross(normal, xaxi));
+            var wuv = MeshUtil.Average(vs.Select(v => uvs[0][v]).ToList(),
+                MeshUtil.ComputeBasis(wp + xaxi
+                    ,vs.Select(v => vertexs[v]).ToList()));
+            if (getAxxis != null)
+            {
+                var wu = MeshUtil.Average(vs.Select(v => uvs[0][v]).ToList(),
+                    MeshUtil.ComputeBasis(wp + xaxi
+                        ,vs.Select(v => vertexs[v]).ToList()));
+                var wv = MeshUtil.Average(vs.Select(v => uvs[0][v]).ToList(),
+                    MeshUtil.ComputeBasis(wp + yaxi
+                        ,vs.Select(v => vertexs[v]).ToList()));
+                var submesh = GetSubmeshID(triangle);
+                getAxxis?.Invoke(wuv,
+                    new Vector2[2]
+                    {
+                        wu-wuv,
+                        wv-wuv, 
+                    });
+            }
+            return wuv;*/
+        }
+        
+        public float GetUVdelta(int submesh, int triangle, Vector3 wp)
+        {
+            var vs = new List<int>()
+            {
+                triangles[submesh][triangle * 3 + 0],
+                triangles[submesh][triangle * 3 + 1],
+                triangles[submesh][triangle * 3 + 2],
+            };
+
+            var ps = vs.Select(v => vertexs[v]).ToList();
+            ps.Add(ps[ps.Count-1]);
+            var us = vs.Select(v => uvs[0][v]).ToList();
+            us.Add(us[us.Count-1]);
+
+            float pd = 0f;
+            float ud = 0f;
+            for (int i = 0; i < vs.Count; i++)
+            {
+                pd += Vector3.Distance(ps[i], ps[i + 1]);
+                ud += Vector3.Distance(us[i], us[i + 1]);
+            }
+
+            return ud / pd;
+        }
+
+        public Vector2 GetUVAxi(int submesh, int triangle, Vector3? up = null)
+        {
+            var vs = new List<int>()
+            {
+                triangles[submesh][triangle * 3 + 0],
+                triangles[submesh][triangle * 3 + 1],
+                triangles[submesh][triangle * 3 + 2],
+            };
+            
+            var ps = vs.Select(v => vertexs[v]).ToList();
+            ps.Add(ps[ps.Count-1]);
+
+            float pd = 0f;
+            for (int i = 0; i < vs.Count; i++)
+            {
+                pd += Vector3.Distance(ps[i], ps[i + 1]);
+            }
+
+            var normal = Vector3.Cross(
+                Vector3.Normalize(vertexs[vs[1]] - vertexs[vs[0]]),
+                Vector3.Normalize(vertexs[vs[2]] - vertexs[vs[0]]));
+            var axi1 = Vector3.Normalize(Vector3.Cross(normal, RendBone.InverseTransformDirection(up ?? Vector3.up)));
+            var axi2 = Vector3.Normalize(Vector3.Cross(normal, RendBone.InverseTransformDirection(up ?? Vector3.up)));
+            var wp = ComputeWeightPoint(vs);
+            var w0 = MeshUtil.ComputeBasis(wp, vs.Select(v => vertexs[v]).ToList());
+            var w1 = MeshUtil.ComputeBasis(wp+axi1*pd*0.01f, vs.Select(v => vertexs[v]).ToList());
+            var w2 = MeshUtil.ComputeBasis(wp+axi2*pd*0.01f, vs.Select(v => vertexs[v]).ToList());
+            Vector2 uv0 = MeshUtil.Average(vs.Select(v => uvs[0][v]).ToList(),w0);
+            Vector2 uv1 = MeshUtil.Average(vs.Select(v => uvs[0][v]).ToList(),w1);
+            Vector2 uv2 = MeshUtil.Average(vs.Select(v => uvs[0][v]).ToList(),w2);
+            var uvaxi1 = uv1 - uv0;
+            var uvaxi2 = uv2 - uv0;
+            return new Vector2(
+                uvaxi1.normalized.x * Math.Sign(Vector2.Dot(uvaxi1, Vector2.right)),
+                uvaxi1.normalized.y * Math.Sign(Vector2.Dot(uvaxi2, Vector2.up)));;
+        }
+        
+        public Vector2 GetUVAspect(int submesh, int triangle, Vector3? up = null)
+        {
+            var vs = new List<int>()
+            {
+                triangles[submesh][triangle * 3 + 0],
+                triangles[submesh][triangle * 3 + 1],
+                triangles[submesh][triangle * 3 + 2],
+            };
+            
+            var ps = vs.Select(v => vertexs[v]).ToList();
+            ps.Add(ps[ps.Count-1]);
+
+            float pd = 0f;
+            for (int i = 0; i < vs.Count; i++)
+            {
+                pd += Vector3.Distance(ps[i], ps[i + 1]);
+            }
+
+            var normal = Vector3.Cross(
+                Vector3.Normalize(vertexs[vs[1]] - vertexs[vs[0]]),
+                Vector3.Normalize(vertexs[vs[2]] - vertexs[vs[0]]));
+            var axi1 = Vector3.Normalize(Vector3.Cross(normal, RendBone.InverseTransformDirection(up ?? Vector3.up)));
+            var axi2 = Vector3.Normalize(Vector3.Cross(normal, RendBone.InverseTransformDirection(up ?? Vector3.up)));
+            var wp = ComputeWeightPoint(vs);
+            var w0 = MeshUtil.ComputeBasis(wp, vs.Select(v => vertexs[v]).ToList());
+            var w1 = MeshUtil.ComputeBasis(wp+axi1*pd*0.01f, vs.Select(v => vertexs[v]).ToList());
+            var w2 = MeshUtil.ComputeBasis(wp+axi2*pd*0.01f, vs.Select(v => vertexs[v]).ToList());
+            Vector2 uv0 = MeshUtil.Average(vs.Select(v => uvs[0][v]).ToList(),w0);
+            Vector2 uv1 = MeshUtil.Average(vs.Select(v => uvs[0][v]).ToList(),w1);
+            Vector2 uv2 = MeshUtil.Average(vs.Select(v => uvs[0][v]).ToList(),w2);
+            var uvaxi1 = uv1 - uv0;
+            var uvaxi2 = uv2 - uv0;
+            return new Vector2(Vector2.Dot(uvaxi1, Vector2.right), Vector2.Dot(uvaxi2, Vector2.up));
+        }
         
         /// <summary>
         /// NeshRendererとして出力する
@@ -1735,6 +1999,48 @@ namespace HhotateA
             origin.bounds = bounds;
             
             return origin;
+        }
+        
+        public Mesh CreateSubMesh(int submeshID = -1)
+        {
+            if (submeshID < 0 || triangles.Count < submeshID) return null;
+            if (meshTransforms[submeshID]!=null)
+            {
+                TrianglesTransform(triangles[submeshID], rootBone ?? rendBone, meshTransforms[submeshID],false);
+            }
+            
+            Mesh combinedMesh = new Mesh();
+            combinedMesh.SetVertices(vertexs);
+            combinedMesh.SetNormals(normals);
+            combinedMesh.SetTangents(tangents);
+            combinedMesh.SetColors(colors);
+            
+            for (int i = 0; i < 8; i++)
+            {
+                combinedMesh.SetUVs(i, uvs[i]);
+            }
+            
+            combinedMesh.subMeshCount = 1;
+            combinedMesh.SetTriangles(triangles[submeshID].ToArray(),0);
+
+            if (false)
+            {
+                combinedMesh.bindposes = bindPoses.ToArray();
+                combinedMesh.boneWeights = boneWeights.ToArray();
+
+                combinedMesh.ClearBlendShapes();
+                foreach (var blendShape in blendShapes)
+                {
+                    blendShape.Apply(ref combinedMesh);
+                }
+            }
+
+            if (meshTransforms[submeshID]!=null)
+            {
+                TrianglesTransform(triangles[submeshID], rootBone ?? rendBone, meshTransforms[submeshID],true);
+            }
+
+            return combinedMesh;
         }
         
         /// <summary>
@@ -1867,8 +2173,6 @@ namespace HhotateA
                 newTrans.Add(null);
             }
 
-            Debug.Log(newMats.Count);
-
             materials = newMats;
             triangles = newTriangles;
             meshTransforms = newTrans;
@@ -1988,9 +2292,9 @@ namespace HhotateA
             {
                 for (int i = 0; i < 3; i++)
                 {
-                    vs.AddRange(GetOverlapList(vs[0]));
-                    vs.AddRange(GetOverlapList(vs[1]));
-                    vs.AddRange(GetOverlapList(vs[2]));
+                    vs.AddRange(GetOverlap(vs[0]));
+                    vs.AddRange(GetOverlap(vs[1]));
+                    vs.AddRange(GetOverlap(vs[2]));
                     vs = vs.Distinct().ToList();
                 }
 
@@ -2284,7 +2588,6 @@ namespace HhotateA
                     var one = Vector3.Dot(axi, vertex[i]);
                     var val = Vector3.Dot(axi, pos);
                     output.Add(Mathf.Clamp01((val - zero) / (one - zero)));
-                    Debug.Log(i+"i"+output[i]+"=(" + val + "-" + zero + "/" + one );
                 }
             }
             

@@ -6,13 +6,11 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.Animations;
 
-
 namespace HhotateA
 {
     public class MeshModifyTool : EditorWindow
     {
         [MenuItem("Window/HhotateA/にゃんにゃんメッシュエディター(MeshModifyTool)")]
-
         public static void ShowWindow()
         {
             var wnd = GetWindow<MeshModifyTool>();
@@ -56,15 +54,15 @@ namespace HhotateA
         private Vector2 rendsScroll = Vector2.zero;
         
         // スカルプトモード，ペン設定
-        private PenTool.ExtraTool penMode = PenTool.ExtraTool.Default;
+        private MeshPenTool.ExtraTool penMode = MeshPenTool.ExtraTool.Default;
         private float brushPower = 0.001f;
         private float brushWidth = 0.03f;
         private float brushStrength = 1f;
         private bool xMirror, yMirror, zMirror;
-        bool selectMode => (penMode == PenTool.ExtraTool.SelectLand || 
-                            penMode == PenTool.ExtraTool.UnSelectLand ||
-                            penMode == PenTool.ExtraTool.SelectVertex ||
-                            penMode == PenTool.ExtraTool.UnSelectVertex);
+        bool selectMode => (penMode == MeshPenTool.ExtraTool.SelectLand || 
+                            penMode == MeshPenTool.ExtraTool.UnSelectLand ||
+                            penMode == MeshPenTool.ExtraTool.SelectVertex ||
+                            penMode == MeshPenTool.ExtraTool.UnSelectVertex);
         
         // 頂点編集モード用，操作点
         private GameObject controllPoint_from;
@@ -102,19 +100,19 @@ namespace HhotateA
         private bool disableNotRecommend = true;
         
         // 編集ツールプリセット
-        private PenTool[] _penTools;
-        private PenTool[] penTools
+        private MeshPenTool[] _penTools;
+        private MeshPenTool[] penTools
         {
             get
             {
                 if (_penTools == null)
                 {
-                    _penTools = new PenTool[4]
+                    _penTools = new MeshPenTool[4]
                     {
-                        new PenTool("9a511d19d82d2f847b4945e967929e53","Smooth",PenTool.ExtraTool.Default,2f,0.003f,0.03f), 
-                        new PenTool("e8e8182176f763e48850311a752c0e02","Liner",PenTool.ExtraTool.Default,1f,-0.01f,0.03f), 
-                        new PenTool("37b755ed53afcfc408a733b5f4580816","Constant",PenTool.ExtraTool.Default,10f,null,0f), 
-                        new PenTool("00da790a00e523643a5e648c07452823","Detail",PenTool.ExtraTool.DetailMode,null,null,0f), 
+                        new MeshPenTool("9a511d19d82d2f847b4945e967929e53","Smooth",MeshPenTool.ExtraTool.Default,2f,0.003f,0.03f), 
+                        new MeshPenTool("e8e8182176f763e48850311a752c0e02","Liner",MeshPenTool.ExtraTool.Default,1f,-0.01f,0.03f), 
+                        new MeshPenTool("37b755ed53afcfc408a733b5f4580816","Constant",MeshPenTool.ExtraTool.Default,10f,null,0f), 
+                        new MeshPenTool("00da790a00e523643a5e648c07452823","Detail",MeshPenTool.ExtraTool.DetailMode,null,null,0f), 
                     };
                 }
 
@@ -123,19 +121,19 @@ namespace HhotateA
         }
 
         // 拡張編集ツールプリセット
-        private PenTool[] _extraTools;
-        PenTool[] extraTools
+        private MeshPenTool[] _extraTools;
+        MeshPenTool[] extraTools
         {
             get
             {
                 if (_extraTools == null)
                 {
-                    _extraTools = new PenTool[4]
+                    _extraTools = new MeshPenTool[4]
                     {
-                        new PenTool("b3cf85d36df40664caa41453c91c4a10","SelectLand",PenTool.ExtraTool.SelectLand,null,null,0f),
-                        new PenTool("0a05c27f8b748874f8c8a001841555cd","UnSelectLand",PenTool.ExtraTool.UnSelectLand,null,null,0f),
-                        new PenTool("f1ed57a871c76eb458353aec0d255979","SelectVertex",PenTool.ExtraTool.SelectVertex,null,null,0f),
-                        new PenTool("69b440a5753b0864d9ab6f9591898c87","UnSelectVertex",PenTool.ExtraTool.UnSelectVertex,null,null,0f),
+                        new MeshPenTool("b3cf85d36df40664caa41453c91c4a10","SelectLand",MeshPenTool.ExtraTool.SelectLand,null,null,0f),
+                        new MeshPenTool("0a05c27f8b748874f8c8a001841555cd","UnSelectLand",MeshPenTool.ExtraTool.UnSelectLand,null,null,0f),
+                        new MeshPenTool("f1ed57a871c76eb458353aec0d255979","SelectVertex",MeshPenTool.ExtraTool.SelectVertex,null,null,0f),
+                        new MeshPenTool("69b440a5753b0864d9ab6f9591898c87","UnSelectVertex",MeshPenTool.ExtraTool.UnSelectVertex,null,null,0f),
                     };
                 }
                 return _extraTools;
@@ -143,19 +141,19 @@ namespace HhotateA
         }
         
         // 拡張編集ツールプリセット
-        private PenTool[] _betaTools;
-        PenTool[] betaTools
+        private MeshPenTool[] _betaTools;
+        MeshPenTool[] betaTools
         {
             get
             {
                 if (_betaTools == null)
                 {
-                    _betaTools = new PenTool[4]
+                    _betaTools = new MeshPenTool[4]
                     {
-                        new PenTool("","WeightCopy",PenTool.ExtraTool.WeightCopy,null,null,0f),
-                        new PenTool("","Eraser",PenTool.ExtraTool.TriangleEraser,null,null,0f),
-                        new PenTool("","Decimate",PenTool.ExtraTool.Decimate,null,null,0f),
-                        new PenTool("","Subdivision",PenTool.ExtraTool.Subdivision,null,null,0f),
+                        new MeshPenTool("","WeightCopy",MeshPenTool.ExtraTool.WeightCopy,null,null,0f),
+                        new MeshPenTool("","Eraser",MeshPenTool.ExtraTool.TriangleEraser,null,null,0f),
+                        new MeshPenTool("","Decimate",MeshPenTool.ExtraTool.Decimate,null,null,0f),
+                        new MeshPenTool("","Subdivision",MeshPenTool.ExtraTool.Subdivision,null,null,0f),
                     };
                 }
                 return _betaTools;
@@ -246,7 +244,7 @@ namespace HhotateA
                                     {
                                         if (penTool.Button(ref penMode, ref brushPower, ref brushWidth, ref brushStrength))
                                         {
-                                            if (penMode != PenTool.ExtraTool.DetailMode) DestroyControllPoint();
+                                            if (penMode != MeshPenTool.ExtraTool.DetailMode) DestroyControllPoint();
                                             if (!selectMode) ReloadMesh(false);
                                         }
                                     }
@@ -381,9 +379,9 @@ namespace HhotateA
                                 {
                                     if (betaTool.Button(ref penMode, ref brushPower, ref brushWidth, ref brushStrength))
                                     {
-                                        if (penMode != PenTool.ExtraTool.DetailMode) DestroyControllPoint();
-                                        if (penMode == PenTool.ExtraTool.Decimate) DecimateSelect();
-                                        if (penMode == PenTool.ExtraTool.Subdivision) SubdivisionSelect();
+                                        if (penMode != MeshPenTool.ExtraTool.DetailMode) DestroyControllPoint();
+                                        if (penMode == MeshPenTool.ExtraTool.Decimate) DecimateSelect();
+                                        if (penMode == MeshPenTool.ExtraTool.Subdivision) SubdivisionSelect();
                                     }
                                 }
                             }
@@ -467,7 +465,7 @@ namespace HhotateA
 
                     using (new EditorGUILayout.HorizontalScope())
                     {
-                        EditorGUI.BeginDisabledGroup(penMode == PenTool.ExtraTool.TriangleEraser);
+                        EditorGUI.BeginDisabledGroup(penMode == MeshPenTool.ExtraTool.TriangleEraser);
                             EditorGUI.BeginDisabledGroup(!editMeshCreater?.CanUndo()??false);
                             if (GUILayout.Button("Undo"))
                             {
@@ -494,15 +492,15 @@ namespace HhotateA
                         {
                             if (penTool.Button(ref penMode, ref brushPower, ref brushWidth, ref brushStrength))
                             {
-                                if (penMode != PenTool.ExtraTool.DetailMode) DestroyControllPoint();
+                                if (penMode != MeshPenTool.ExtraTool.DetailMode) DestroyControllPoint();
                                 if (!selectMode) ReloadMesh(false);
                             }
                         }
                     }
 
-                    if(penMode == PenTool.ExtraTool.Default)
+                    if(penMode == MeshPenTool.ExtraTool.Default)
                     {
-                        brushPower = EditorGUILayout.Slider("brushPower",brushPower, -0.03f, 0.03f);
+                        brushPower = EditorGUILayout.Slider("BrushPower",brushPower, -0.03f, 0.03f);
                         brushWidth = EditorGUILayout.Slider("BrushWidth",brushWidth, 0f, 0.1f);
                         brushStrength = EditorGUILayout.Slider("BrushStrength",brushStrength, 0, 10);
                         using (new EditorGUILayout.HorizontalScope())
@@ -514,7 +512,7 @@ namespace HhotateA
                         }
                     }
                     else
-                    if (penMode == PenTool.ExtraTool.DetailMode || penMode == PenTool.ExtraTool.Subdivision)
+                    if (penMode == MeshPenTool.ExtraTool.DetailMode || penMode == MeshPenTool.ExtraTool.Subdivision)
                     {
                         using (new EditorGUILayout.HorizontalScope())
                         {
@@ -848,7 +846,7 @@ namespace HhotateA
         /// <param name="mc"></param>
         void AvatarMonitorTouch(MeshCreater mc)
         {
-            if (penMode == PenTool.ExtraTool.Default)
+            if (penMode == MeshPenTool.ExtraTool.Default)
             {
                 avatarMonitor.GetControllPoint(GetEditMeshCollider(), isSelectVertex,h =>
                 {
@@ -856,7 +854,7 @@ namespace HhotateA
                 });
             }
             else
-            if (penMode == PenTool.ExtraTool.DetailMode)
+            if (penMode == MeshPenTool.ExtraTool.DetailMode)
             {
                 avatarMonitor.GetControllPoint(GetEditMeshCollider(), isSelectVertex, h =>
                 {
@@ -864,7 +862,7 @@ namespace HhotateA
                 });
             }
             else
-            if(penMode == PenTool.ExtraTool.TriangleEraser)
+            if(penMode == MeshPenTool.ExtraTool.TriangleEraser)
             {
                 avatarMonitor.GetTriangle(GetEditMeshCollider(),  h =>
                 {
@@ -873,7 +871,7 @@ namespace HhotateA
                 });
             }
             else
-            if(penMode == PenTool.ExtraTool.SelectLand)
+            if(penMode == MeshPenTool.ExtraTool.SelectLand)
             {
                 avatarMonitor.GetTriangle(GetEditMeshCollider(),  h =>
                 {
@@ -888,7 +886,7 @@ namespace HhotateA
                 });
             }
             else
-            if(penMode == PenTool.ExtraTool.UnSelectLand)
+            if(penMode == MeshPenTool.ExtraTool.UnSelectLand)
             {
                 avatarMonitor.GetTriangle(GetEditMeshCollider(),  h =>
                 {
@@ -903,7 +901,7 @@ namespace HhotateA
                 });
             }
             else
-            if(penMode == PenTool.ExtraTool.SelectVertex)
+            if(penMode == MeshPenTool.ExtraTool.SelectVertex)
             {
                 avatarMonitor.GetTriangle(GetEditMeshCollider(),  h =>
                 {
@@ -917,7 +915,7 @@ namespace HhotateA
                 });
             }
             else
-            if(penMode == PenTool.ExtraTool.UnSelectVertex)
+            if(penMode == MeshPenTool.ExtraTool.UnSelectVertex)
             {
                 avatarMonitor.GetTriangle(GetEditMeshCollider(),  h =>
                 {
@@ -931,7 +929,7 @@ namespace HhotateA
                 });
             }
             else
-            if (penMode == PenTool.ExtraTool.WeightCopy)
+            if (penMode == MeshPenTool.ExtraTool.WeightCopy)
             {
                 avatarMonitor.GetVertex(GetEditMeshCollider(), (h,p) =>
                 {
@@ -942,7 +940,7 @@ namespace HhotateA
                 });
             }
             else
-            if(penMode == PenTool.ExtraTool.Decimate)
+            if(penMode == MeshPenTool.ExtraTool.Decimate)
             {
                 avatarMonitor.GetTriangle(GetEditMeshCollider(),  h =>
                 {
@@ -951,7 +949,7 @@ namespace HhotateA
                 });
             }
             else
-            if(penMode == PenTool.ExtraTool.Subdivision)
+            if(penMode == MeshPenTool.ExtraTool.Subdivision)
             {
                 avatarMonitor.GetTriangle(GetEditMeshCollider(), (h,p) =>
                 {
@@ -983,7 +981,7 @@ namespace HhotateA
             controllPoint_from = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             controllPoint_from.name = "EditVertex_From";
             controllPoint_from.transform.localScale = new Vector3(0.009f,0.009f,0.009f);
-            controllPoint_from.transform.SetParent(mc.RootBone);
+            controllPoint_from.transform.SetParent(mc.RendBone);
             controllPoint_from.transform.localPosition = pos;
             controllPoint_from.hideFlags = HideFlags.HideAndDontSave;
             var mat_from = new Material(Shader.Find("Unlit/Color"));
@@ -995,7 +993,7 @@ namespace HhotateA
                 controllPoint_to = GameObject.CreatePrimitive(PrimitiveType.Sphere);
                 controllPoint_to.name = "EditVertex_To";
                 controllPoint_to.transform.localScale = new Vector3(0.01f,0.01f,0.01f);
-                controllPoint_to.transform.SetParent(mc.RootBone);
+                controllPoint_to.transform.SetParent(mc.RendBone);
                 controllPoint_to.transform.localPosition = pos;
                 controllPoint_to.hideFlags = HideFlags.HideAndDontSave;
                 var mat_to = new Material(Shader.Find("Unlit/Color"));
@@ -1630,105 +1628,103 @@ namespace HhotateA
                 ReloadMesh(false);
             }
         }
-    }
-
-    /// <summary>
-    /// 編集ツールの設定値保存用
-    /// </summary>
-    class PenTool
-    {
-        private Texture icon;
-        private string name;
-
-        private ExtraTool? extraTool;
-        private float? brushPower;
-        private float? brushWidth;
-        private float? brushStrength;
-
-        public PenTool(string guid, string n,
-            ExtraTool? e = null,
-            float? s = null,
-            float? p = null,
-            float? w = null)
+            
+        /// <summary>
+        /// 編集ツールの設定値保存用
+        /// </summary>
+        class MeshPenTool
         {
-            if (!string.IsNullOrWhiteSpace(guid))
+            private Texture icon;
+            private string name;
+
+            private ExtraTool? extraTool;
+            private float? brushPower;
+            private float? brushWidth;
+            private float? brushStrength;
+
+            public MeshPenTool(string guid, string n,
+                ExtraTool? e = null,
+                float? s = null,
+                float? p = null,
+                float? w = null)
             {
-                var i = AssetDatabase.LoadAssetAtPath<Texture>(AssetDatabase.GUIDToAssetPath(guid));
+                if (!string.IsNullOrWhiteSpace(guid))
+                {
+                    var i = AssetDatabase.LoadAssetAtPath<Texture>(AssetDatabase.GUIDToAssetPath(guid));
+                    icon = i;
+                }
+                name = n;
+                extraTool = e;
+                brushPower = p;
+                brushWidth = w;
+                brushStrength = s;
+            }
+            public MeshPenTool(Texture i, string n,
+                ExtraTool? e = null,
+                float? s = null,
+                float? p = null,
+                float? w = null)
+            {
                 icon = i;
+                name = n;
+                extraTool = e;
+                brushPower = p;
+                brushWidth = w;
+                brushStrength = s;
             }
-            name = n;
-            extraTool = e;
-            brushPower = p;
-            brushWidth = w;
-            brushStrength = s;
-        }
-        public PenTool(Texture i, string n,
-            ExtraTool? e = null,
-            float? s = null,
-            float? p = null,
-            float? w = null)
-        {
-            icon = i;
-            name = n;
-            extraTool = e;
-            brushPower = p;
-            brushWidth = w;
-            brushStrength = s;
-        }
 
-        public bool Button(ref ExtraTool e,ref float p,ref float w,ref float s)
-        {
-            EditorGUI.BeginDisabledGroup(
-                e == (extraTool??e) &&
-                p == (brushPower??p) &&
-                w == (brushWidth??w) &&
-                s == (brushStrength??s));
-            if (icon)
+            public bool Button(ref ExtraTool e,ref float p,ref float w,ref float s)
             {
-                if (GUILayout.Button(icon))
+                EditorGUI.BeginDisabledGroup(
+                    e == (extraTool??e) &&
+                    p == (brushPower??p) &&
+                    w == (brushWidth??w) &&
+                    s == (brushStrength??s));
+                if (icon)
                 {
-                    e = extraTool ?? e;
-                    p = brushPower ?? p;
-                    w = brushWidth ?? w;
-                    s = brushStrength ?? s;
-                    return true;
+                    if (GUILayout.Button(icon))
+                    {
+                        e = extraTool ?? e;
+                        p = brushPower ?? p;
+                        w = brushWidth ?? w;
+                        s = brushStrength ?? s;
+                        return true;
+                    }
                 }
+                else
+                {
+                    if (GUILayout.Button(name))
+                    {
+                        e = extraTool ?? e;
+                        p = brushPower ?? p;
+                        w = brushWidth ?? w;
+                        s = brushStrength ?? s;
+                        return true;
+                    }
+                }
+                EditorGUI.EndDisabledGroup();
+
+                return false;
             }
-            else
+            
+            public enum ExtraTool
             {
-                if (GUILayout.Button(name))
-                {
-                    e = extraTool ?? e;
-                    p = brushPower ?? p;
-                    w = brushWidth ?? w;
-                    s = brushStrength ?? s;
-                    return true;
-                }
+                Default,
+                DetailMode,
+                TriangleEraser,
+                SelectLand,
+                UnSelectLand,
+                SelectVertex,
+                UnSelectVertex,
+                WeightCopy,
+                Decimate,
+                Subdivision
             }
-            EditorGUI.EndDisabledGroup();
 
-            return false;
+            private bool FloatEqual(float a, float? b)
+            {
+                return Mathf.Abs(a - b ?? a) < 0.01f;
+            }
         }
-        
-        public enum ExtraTool
-        {
-            Default,
-            DetailMode,
-            TriangleEraser,
-            SelectLand,
-            UnSelectLand,
-            SelectVertex,
-            UnSelectVertex,
-            WeightCopy,
-            Decimate,
-            Subdivision
-        }
-
-        private bool FloatEqual(float a, float? b)
-        {
-            return Mathf.Abs(a - b ?? a) < 0.01f;
-        }
-
-
     }
 }
