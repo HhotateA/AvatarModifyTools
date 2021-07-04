@@ -16,6 +16,11 @@ namespace HhotateA
             var wnd = GetWindow<MeshModifyTool>();
             wnd.titleContent = new GUIContent("にゃんにゃんメッシュエディター");
         }
+
+        // ボタン設定
+        private int drawButton = 0;
+        private int rotateButton = 1;
+        private int moveButton = 2;
         
         // 改造するメッシュのルートオブジェクト
         private GameObject avatar;
@@ -203,13 +208,14 @@ namespace HhotateA
                             {
                                 rends[i].gameObject.SetActive(EditorGUILayout.Toggle("",
                                     rends[i].gameObject.activeSelf,GUILayout.Width(20)));
-                                EditorGUI.BeginDisabledGroup(editIndex==i);
-                                if (GUILayout.Button(rends[i].name, GUILayout.Width(250)))
+                                using (new EditorGUI.DisabledScope(editIndex == i))
                                 {
-                                    rends[i].gameObject.SetActive(true);
-                                    SelectMeshCreater(i);
+                                    if (GUILayout.Button(rends[i].name, GUILayout.Width(250)))
+                                    {
+                                        rends[i].gameObject.SetActive(true);
+                                        SelectMeshCreater(i);
+                                    }
                                 }
-                                EditorGUI.EndDisabledGroup();
                             }
                         }
                     }
@@ -253,30 +259,33 @@ namespace HhotateA
 
                             if (selectMode)
                             {
-                                EditorGUI.BeginDisabledGroup(editMeshCreater?.IsComputeLandVertexes()??false);
-                                using (new EditorGUILayout.HorizontalScope())
+                                using (new EditorGUI.DisabledScope(editMeshCreater?.IsComputeLandVertexes() ?? false))
                                 {
-                                    if (GUILayout.Button("SelectAll"))
+                                    using (new EditorGUILayout.HorizontalScope())
                                     {
-                                        ResetSelect();
-                                        RevertSelect(editMeshCreater.VertexsCount()-1);
-                                        ResetSelectTransform(editMeshCreater);
-                                        ReloadMesh(false,editMeshCreater,controll_vertexes);
-                                    }
-                                    if (GUILayout.Button("SelectNone"))
-                                    {
-                                        ResetSelect();
-                                        ResetSelectTransform(editMeshCreater);
-                                        ReloadMesh(false,editMeshCreater,controll_vertexes);
-                                    }
-                                    if (GUILayout.Button("RevertSelect"))
-                                    {
-                                        RevertSelect(editMeshCreater.VertexsCount()-1);
-                                        ResetSelectTransform(editMeshCreater);
-                                        ReloadMesh(false,editMeshCreater,controll_vertexes);
+                                        if (GUILayout.Button("SelectAll"))
+                                        {
+                                            ResetSelect();
+                                            RevertSelect(editMeshCreater.VertexsCount() - 1);
+                                            ResetSelectTransform(editMeshCreater);
+                                            ReloadMesh(false, editMeshCreater, controll_vertexes);
+                                        }
+
+                                        if (GUILayout.Button("SelectNone"))
+                                        {
+                                            ResetSelect();
+                                            ResetSelectTransform(editMeshCreater);
+                                            ReloadMesh(false, editMeshCreater, controll_vertexes);
+                                        }
+
+                                        if (GUILayout.Button("RevertSelect"))
+                                        {
+                                            RevertSelect(editMeshCreater.VertexsCount() - 1);
+                                            ResetSelectTransform(editMeshCreater);
+                                            ReloadMesh(false, editMeshCreater, controll_vertexes);
+                                        }
                                     }
                                 }
-                                EditorGUI.EndDisabledGroup();
                             }
                         }
                     }
@@ -291,69 +300,75 @@ namespace HhotateA
 
                             using (new EditorGUILayout.HorizontalScope())
                             {
-                                EditorGUI.BeginDisabledGroup(editMeshCreater==null && !isSaveAll);
-                                GUILayout.Label("MergeBones", GUILayout.Width(100));
-                                if (GUILayout.Button("HumanBone", GUILayout.Width(90)))
+                                using (new EditorGUI.DisabledScope(editMeshCreater == null && !isSaveAll))
                                 {
-                                    SaveAll(() =>
+                                    GUILayout.Label("MergeBones", GUILayout.Width(100));
+                                    if (GUILayout.Button("HumanBone", GUILayout.Width(90)))
                                     {
-                                        if (rends[editIndex].GetType() == typeof(SkinnedMeshRenderer))
+                                        SaveAll(() =>
                                         {
-                                            var rend = rends[editIndex] as SkinnedMeshRenderer;
-                                            DisableNonHumanBone(rend);
-                                            DeleateDisableBone();
-                                            ReloadMesh(false);
-                                        }
-                                    });
-                                }
-                                if (GUILayout.Button("ActiveBones", GUILayout.Width(90)))
-                                {
-                                    SaveAll(() =>
+                                            if (rends[editIndex].GetType() == typeof(SkinnedMeshRenderer))
+                                            {
+                                                var rend = rends[editIndex] as SkinnedMeshRenderer;
+                                                DisableNonHumanBone(rend);
+                                                DeleateDisableBone();
+                                                ReloadMesh(false);
+                                            }
+                                        });
+                                    }
+
+                                    if (GUILayout.Button("ActiveBones", GUILayout.Width(90)))
                                     {
-                                        if (rends[editIndex].GetType() == typeof(SkinnedMeshRenderer))
+                                        SaveAll(() =>
                                         {
-                                            var rend = rends[editIndex] as SkinnedMeshRenderer;
-                                            DeleateDisableBone();
-                                            ReloadMesh(false);
-                                        }
-                                    });
+                                            if (rends[editIndex].GetType() == typeof(SkinnedMeshRenderer))
+                                            {
+                                                var rend = rends[editIndex] as SkinnedMeshRenderer;
+                                                DeleateDisableBone();
+                                                ReloadMesh(false);
+                                            }
+                                        });
+                                    }
                                 }
-                                EditorGUI.EndDisabledGroup();
                             }
 
                             using (new EditorGUILayout.HorizontalScope())
                             {
-                                EditorGUI.BeginDisabledGroup(originHuman==null);
-                                targetHuman =
-                                    EditorGUILayout.ObjectField("", targetHuman, typeof(Animator), true,GUILayout.Width(100)) as
-                                        Animator;
-                                EditorGUI.BeginDisabledGroup(targetHuman==null);
-                                mergeBoneMode = (MergeBoneMode) EditorGUILayout.EnumPopup("", mergeBoneMode,GUILayout.Width(55));
-                                EditorGUI.BeginDisabledGroup(editMeshCreater==null && !isSaveAll);
-                                if (GUILayout.Button("ChangeBone",GUILayout.Width(125)))
+                                using (new EditorGUI.DisabledScope(originHuman == null))
                                 {
-                                    if (mergeBoneMode == MergeBoneMode.merge)
+                                    targetHuman =
+                                        EditorGUILayout.ObjectField("", targetHuman, typeof(Animator), true,
+                                                GUILayout.Width(100)) as
+                                            Animator;
+                                    using (new EditorGUI.DisabledScope(targetHuman == null))
                                     {
-                                        SaveAll(MergeBone);
-                                    }
-                                    else
-                                    if(mergeBoneMode == MergeBoneMode.combinate)
-                                    {
-                                        SaveAll(CombineBone);
-                                    }
-                                    else
-                                    if(mergeBoneMode == MergeBoneMode.constraint)
-                                    {
-                                        ConstraintBone();
-                                    }
-                                    else
-                                    {
-                                        MoveBone();
+                                        mergeBoneMode =
+                                            (MergeBoneMode) EditorGUILayout.EnumPopup("", mergeBoneMode,
+                                                GUILayout.Width(55));
+                                        using (new EditorGUI.DisabledScope(editMeshCreater == null && !isSaveAll))
+                                        {
+                                            if (GUILayout.Button("ChangeBone", GUILayout.Width(125)))
+                                            {
+                                                if (mergeBoneMode == MergeBoneMode.merge)
+                                                {
+                                                    SaveAll(MergeBone);
+                                                }
+                                                else if (mergeBoneMode == MergeBoneMode.combinate)
+                                                {
+                                                    SaveAll(CombineBone);
+                                                }
+                                                else if (mergeBoneMode == MergeBoneMode.constraint)
+                                                {
+                                                    ConstraintBone();
+                                                }
+                                                else
+                                                {
+                                                    MoveBone();
+                                                }
+                                            }
+                                        }
                                     }
                                 }
-                                EditorGUI.EndDisabledGroup();
-                                EditorGUI.EndDisabledGroup();
-                                EditorGUI.EndDisabledGroup();
                             }
                             using (new EditorGUILayout.HorizontalScope())
                             {
@@ -362,12 +377,13 @@ namespace HhotateA
                                 {
                                     CombineMesh();
                                 }
-                                EditorGUI.BeginDisabledGroup(editMeshCreater==null && !isSaveAll);
-                                if (GUILayout.Button("Material",GUILayout.Width(90)))
+                                using (new EditorGUI.DisabledScope(editMeshCreater==null && !isSaveAll))
                                 {
-                                    SaveAll(CombineMaterial);
+                                    if (GUILayout.Button("Material",GUILayout.Width(90)))
+                                    {
+                                        SaveAll(CombineMaterial);
+                                    }
                                 }
-                                EditorGUI.EndDisabledGroup();
                             }
                             
                             EditorGUILayout.Space();
@@ -386,7 +402,7 @@ namespace HhotateA
                                 }
                             }
                             
-                            EditorGUI.BeginDisabledGroup(disableNotRecommend);
+                            using (new EditorGUI.DisabledScope(disableNotRecommend))
                             {
                                 // あんまよくない
                                 isRandomizeVertex = EditorGUILayout.Toggle("RandomizeVertex", isRandomizeVertex);
@@ -418,7 +434,6 @@ namespace HhotateA
                                     }
                                 }
                             }
-                            EditorGUI.EndDisabledGroup();
                         }
 
                         if (displayRawData)
@@ -465,25 +480,28 @@ namespace HhotateA
 
                     using (new EditorGUILayout.HorizontalScope())
                     {
-                        EditorGUI.BeginDisabledGroup(penMode == MeshPenTool.ExtraTool.TriangleEraser);
-                            EditorGUI.BeginDisabledGroup(!editMeshCreater?.CanUndo()??false);
-                            if (GUILayout.Button("Undo"))
+                        using (new EditorGUI.DisabledScope(penMode == MeshPenTool.ExtraTool.TriangleEraser))
+                        {
+                            using (new EditorGUI.DisabledScope(!editMeshCreater?.CanUndo() ?? false))
                             {
-                                DestroyControllPoint();
-                                editMeshCreater?.UndoCaches();
-                                ReloadMesh(false,editMeshCreater,controll_vertexes);
+                                if (GUILayout.Button("Undo"))
+                                {
+                                    DestroyControllPoint();
+                                    editMeshCreater?.UndoCaches();
+                                    ReloadMesh(false,editMeshCreater,controll_vertexes);
+                                }
                             }
-                            EditorGUI.EndDisabledGroup();
-                            
-                            EditorGUI.BeginDisabledGroup(!editMeshCreater?.CanRedo()??false);
-                            if (GUILayout.Button("Redo"))
+
+                            using (new EditorGUI.DisabledScope(!editMeshCreater?.CanRedo() ?? false))
                             {
-                                DestroyControllPoint();
-                                editMeshCreater?.RedoCaches();
-                                ReloadMesh(false,editMeshCreater,controll_vertexes);
+                                if (GUILayout.Button("Redo"))
+                                {
+                                    DestroyControllPoint();
+                                    editMeshCreater?.RedoCaches();
+                                    ReloadMesh(false,editMeshCreater,controll_vertexes);
+                                }
                             }
-                            EditorGUI.EndDisabledGroup();
-                        EditorGUI.EndDisabledGroup();
+                        }
                     }
 
                     using (new EditorGUILayout.HorizontalScope())
@@ -575,37 +593,37 @@ namespace HhotateA
                     else
                     if (selectMode)
                     {
-                        EditorGUI.BeginDisabledGroup(editMeshCreater?.IsComputeLandVertexes()??false);
-                        
-                        if (isRealtimeTransform && controllMesh_select)
+                        using (new EditorGUI.DisabledScope(editMeshCreater?.IsComputeLandVertexes() ?? false))
                         {
-                            controllMesh_select.transform.localPosition = EditorGUILayout.Vector3Field("Position", controllMesh_select.transform.localPosition);
-                            controllMesh_select.transform.localRotation = Quaternion.Euler(EditorGUILayout.Vector3Field("Rotation", controllMesh_select.transform.localEulerAngles));
-                            controllMesh_select.transform.localScale = EditorGUILayout.Vector3Field("Scale", controllMesh_select.transform.localScale);
-                        }
-                        else
-                        {
-                            transformPosition = EditorGUILayout.Vector3Field("Position", transformPosition);
-                            transformRotation = EditorGUILayout.Vector3Field("Rotation", transformRotation);
-                            transformScale = EditorGUILayout.Vector3Field("Scale", transformScale);
-                        }
+                            if (isRealtimeTransform && controllMesh_select)
+                            {
+                                controllMesh_select.transform.localPosition = EditorGUILayout.Vector3Field("Position", controllMesh_select.transform.localPosition);
+                                controllMesh_select.transform.localRotation = Quaternion.Euler(EditorGUILayout.Vector3Field("Rotation", controllMesh_select.transform.localEulerAngles));
+                                controllMesh_select.transform.localScale = EditorGUILayout.Vector3Field("Scale", controllMesh_select.transform.localScale);
+                            }
+                            else
+                            {
+                                transformPosition = EditorGUILayout.Vector3Field("Position", transformPosition);
+                                transformRotation = EditorGUILayout.Vector3Field("Rotation", transformRotation);
+                                transformScale = EditorGUILayout.Vector3Field("Scale", transformScale);
+                            }
 
-                        using (new EditorGUILayout.HorizontalScope())
-                        {
-                            if (GUILayout.Button("Transform"))
+                            using (new EditorGUILayout.HorizontalScope())
                             {
-                                TransfomControllMesh();
-                            }
-                            if (GUILayout.Button("Copy"))
-                            {
-                                CopyControllMesh();
-                            }
-                            if (GUILayout.Button("Deleate"))
-                            {
-                                DeleateControllMesh();
+                                if (GUILayout.Button("Transform"))
+                                {
+                                    TransfomControllMesh();
+                                }
+                                if (GUILayout.Button("Copy"))
+                                {
+                                    CopyControllMesh();
+                                }
+                                if (GUILayout.Button("Deleate"))
+                                {
+                                    DeleateControllMesh();
+                                }
                             }
                         }
-                        EditorGUI.EndDisabledGroup();
                     }
                     
                     EditorGUILayout.Space();
@@ -613,27 +631,29 @@ namespace HhotateA
                     using (new EditorGUILayout.HorizontalScope())
                     {
                         blendShapeName = EditorGUILayout.TextField("", blendShapeName,GUILayout.Width(155));
-                        
-                        EditorGUI.BeginDisabledGroup(!editMeshCreater?.CanUndo()??true);
-                        if (GUILayout.Button("SaveAsBlendShape",GUILayout.Width(125)))
+
+                        using (new EditorGUI.DisabledScope(!editMeshCreater?.CanUndo() ?? true))
                         {
-                            editMeshCreater.SaveAsBlendshape(blendShapeName);
-                            ReloadMesh(false);
-                            editMeshCreater.ResetCaches();
+                            if (GUILayout.Button("SaveAsBlendShape",GUILayout.Width(125)))
+                            {
+                                editMeshCreater.SaveAsBlendshape(blendShapeName);
+                                ReloadMesh(false);
+                                editMeshCreater.ResetCaches();
+                            }
                         }
-                        EditorGUI.EndDisabledGroup();
                     }
                     
                     using (new EditorGUILayout.HorizontalScope())
                     {
                         EditorGUILayout.LabelField("SaveAll",GUILayout.Width(50));
                         isSaveAll = EditorGUILayout.Toggle("", isSaveAll,GUILayout.Width(50));
-                        EditorGUI.BeginDisabledGroup(editMeshCreater==null && !isSaveAll);
-                        if (GUILayout.Button("Save"))
+                        using (new EditorGUI.DisabledScope(editMeshCreater == null && !isSaveAll))
                         {
-                            SaveAll(()=>Save());
+                            if (GUILayout.Button("Save"))
+                            {
+                                SaveAll(()=>Save());
+                            }
                         }
-                        EditorGUI.EndDisabledGroup();
                     }
                     
                     EditorGUILayout.Space();
@@ -644,7 +664,7 @@ namespace HhotateA
                 {
                     if (avatarMonitor != null)
                     {
-                        avatarMonitor.Display( (int) position.width-300, (int) position.height-10);
+                        avatarMonitor.Display( (int) position.width-300, (int) position.height-10,rotateButton,moveButton);
                         if (editIndex != -1)
                         {
                             AvatarMonitorTouch(editMeshCreater);
@@ -848,123 +868,154 @@ namespace HhotateA
         {
             if (penMode == MeshPenTool.ExtraTool.Default)
             {
-                avatarMonitor.GetControllPoint(GetEditMeshCollider(), isSelectVertex,h =>
+                if (Event.current.type == EventType.MouseDown && Event.current.button == drawButton)
                 {
-                    TransfromMeshMirror(mc,h);
-                });
+                    avatarMonitor.GetControllPoint(GetEditMeshCollider(), isSelectVertex,
+                        h => { TransfromMeshMirror(mc, h); });
+                }
             }
             else
             if (penMode == MeshPenTool.ExtraTool.DetailMode)
             {
-                avatarMonitor.GetControllPoint(GetEditMeshCollider(), isSelectVertex, h =>
+                if (Event.current.type == EventType.MouseDown && Event.current.button == drawButton)
                 {
-                    GenerateControllPoint(mc,h);
-                });
+                    avatarMonitor.GetControllPoint(GetEditMeshCollider(), isSelectVertex,
+                        h => { GenerateControllPoint(mc, h); });
+                }
             }
             else
             if(penMode == MeshPenTool.ExtraTool.TriangleEraser)
             {
-                avatarMonitor.GetTriangle(GetEditMeshCollider(),  h =>
+                if (Event.current.type == EventType.MouseDown && Event.current.button == drawButton)
                 {
-                    mc.RemoveTriangle(h);
-                    ReloadMesh(true,mc);
-                });
+                    avatarMonitor.GetTriangle(GetEditMeshCollider(), h =>
+                    {
+                        mc.RemoveTriangle(h);
+                        ReloadMesh(true, mc);
+                    });
+                }
             }
             else
             if(penMode == MeshPenTool.ExtraTool.SelectLand)
             {
-                avatarMonitor.GetTriangle(GetEditMeshCollider(),  h =>
+                if (Event.current.type == EventType.MouseDown && Event.current.button == drawButton)
                 {
-                    mc.ComputeLandVertexes(mc.GetVertexIndex(h)[0], v =>
+                    avatarMonitor.GetTriangle(GetEditMeshCollider(), h =>
                     {
-                        if(!controll_vertexes.Contains(v)) controll_vertexes.Add(v);
-                    }, _ =>
-                    {
-                        ResetSelectTransform(mc);
-                        ReloadMesh(false,mc, controll_vertexes);
-                    },isSelectOverlappingVertexes&&activeExperimentalAlpha);
-                });
+                        mc.ComputeLandVertexes(mc.GetVertexIndex(h)[0], v =>
+                        {
+                            if (!controll_vertexes.Contains(v)) controll_vertexes.Add(v);
+                        }, _ =>
+                        {
+                            ResetSelectTransform(mc);
+                            ReloadMesh(false, mc, controll_vertexes);
+                        }, isSelectOverlappingVertexes && activeExperimentalAlpha);
+                    });
+                }
             }
             else
             if(penMode == MeshPenTool.ExtraTool.UnSelectLand)
             {
-                avatarMonitor.GetTriangle(GetEditMeshCollider(),  h =>
+                if (Event.current.type == EventType.MouseDown && Event.current.button == drawButton)
                 {
-                    mc.ComputeLandVertexes(mc.GetVertexIndex(h)[0], v =>
+                    avatarMonitor.GetTriangle(GetEditMeshCollider(), h =>
                     {
-                        if(controll_vertexes.Contains(v)) controll_vertexes.Remove(v);
-                    }, _ =>
-                    {
-                        ResetSelectTransform(mc);
-                        ReloadMesh(false,mc, controll_vertexes);
-                    },isSelectOverlappingVertexes&&activeExperimentalAlpha);
-                });
+                        mc.ComputeLandVertexes(mc.GetVertexIndex(h)[0], v =>
+                        {
+                            if (controll_vertexes.Contains(v)) controll_vertexes.Remove(v);
+                        }, _ =>
+                        {
+                            ResetSelectTransform(mc);
+                            ReloadMesh(false, mc, controll_vertexes);
+                        }, isSelectOverlappingVertexes && activeExperimentalAlpha);
+                    });
+                }
             }
             else
             if(penMode == MeshPenTool.ExtraTool.SelectVertex)
             {
-                avatarMonitor.GetTriangle(GetEditMeshCollider(),  h =>
+                if (Event.current.type == EventType.MouseDown && Event.current.button == drawButton)
                 {
-                    for (int i = 0; i < 3; i++)
+                    avatarMonitor.GetTriangle(GetEditMeshCollider(), h =>
                     {
-                        var v = mc.GetVertexIndex(h)[i];
-                        if(!controll_vertexes.Contains(v)) controll_vertexes.Add(v);
-                    }
-                    ResetSelectTransform(mc);
-                    ReloadMesh(false,mc, controll_vertexes);
-                });
+                        for (int i = 0; i < 3; i++)
+                        {
+                            var v = mc.GetVertexIndex(h)[i];
+                            if (!controll_vertexes.Contains(v)) controll_vertexes.Add(v);
+                        }
+
+                        ResetSelectTransform(mc);
+                        ReloadMesh(false, mc, controll_vertexes);
+                    });
+                }
             }
             else
             if(penMode == MeshPenTool.ExtraTool.UnSelectVertex)
             {
-                avatarMonitor.GetTriangle(GetEditMeshCollider(),  h =>
+                if (Event.current.type == EventType.MouseDown && Event.current.button == drawButton)
                 {
-                    for (int i = 0; i < 3; i++)
+                    avatarMonitor.GetTriangle(GetEditMeshCollider(), h =>
                     {
-                        var v = mc.GetVertexIndex(h)[i];
-                        if(controll_vertexes.Contains(v)) controll_vertexes.Remove(v);
-                    }
-                    ResetSelectTransform(mc);
-                    ReloadMesh(false,mc, controll_vertexes);
-                });
+                        for (int i = 0; i < 3; i++)
+                        {
+                            var v = mc.GetVertexIndex(h)[i];
+                            if (controll_vertexes.Contains(v)) controll_vertexes.Remove(v);
+                        }
+
+                        ResetSelectTransform(mc);
+                        ReloadMesh(false, mc, controll_vertexes);
+                    });
+                }
             }
             else
             if (penMode == MeshPenTool.ExtraTool.WeightCopy)
             {
-                avatarMonitor.GetVertex(GetEditMeshCollider(), (h,p) =>
+                if (Event.current.type == EventType.MouseDown && Event.current.button == drawButton)
                 {
-                    GenerateControllPoint(mc,p);
-                    mc.WeightCopy(controll_vertexes,h);
-                    //penMode = PenTool.ExtraTool.Default;
-                    ReloadMesh(false,mc, controll_vertexes);
-                });
+                    avatarMonitor.GetVertex(GetEditMeshCollider(), (h, p) =>
+                    {
+                        GenerateControllPoint(mc, p);
+                        mc.WeightCopy(controll_vertexes, h);
+                        //penMode = PenTool.ExtraTool.Default;
+                        ReloadMesh(false, mc, controll_vertexes);
+                    });
+                }
             }
             else
             if(penMode == MeshPenTool.ExtraTool.Decimate)
             {
-                avatarMonitor.GetTriangle(GetEditMeshCollider(),  h =>
+                if (Event.current.type == EventType.MouseDown && Event.current.button == drawButton)
                 {
-                    mc.Decimate(h);
-                    ReloadMesh(true,mc);
-                });
+                    avatarMonitor.GetTriangle(GetEditMeshCollider(), h =>
+                    {
+                        mc.Decimate(h);
+                        ReloadMesh(true, mc);
+                    });
+                }
             }
             else
             if(penMode == MeshPenTool.ExtraTool.Subdivision)
             {
-                avatarMonitor.GetTriangle(GetEditMeshCollider(), (h,p) =>
+                if (Event.current.type == EventType.MouseDown && Event.current.button == drawButton)
                 {
-                    GenerateControllPoint(mc,p);
-                    mc.Subdivision(h,p,isSelectVertex);
-                    ReloadMesh(true,mc);
-                });
+                    avatarMonitor.GetTriangle(GetEditMeshCollider(), (h, p) =>
+                    {
+                        GenerateControllPoint(mc, p);
+                        mc.Subdivision(h, p, isSelectVertex);
+                        ReloadMesh(true, mc);
+                    });
+                }
             }
 
             if (displayRawData)
             {
-                avatarMonitor.GetVertex(GetEditMeshCollider(), (h, p) =>
+                if (Event.current.type == EventType.MouseDown && Event.current.button == drawButton)
                 {
-                    GetRawData(h);
-                });
+                    avatarMonitor.GetVertex(GetEditMeshCollider(), (h, p) =>
+                    {
+                        GetRawData(h);
+                    });
+                }
             }
             
         }
@@ -1675,34 +1726,35 @@ namespace HhotateA
 
             public bool Button(ref ExtraTool e,ref float p,ref float w,ref float s)
             {
-                EditorGUI.BeginDisabledGroup(
-                    e == (extraTool??e) &&
-                    p == (brushPower??p) &&
-                    w == (brushWidth??w) &&
-                    s == (brushStrength??s));
-                if (icon)
+                using (new EditorGUI.DisabledScope(
+                    e == (extraTool ?? e) &&
+                    p == (brushPower ?? p) &&
+                    w == (brushWidth ?? w) &&
+                    s == (brushStrength ?? s)))
                 {
-                    if (GUILayout.Button(icon))
+                    if (icon)
                     {
-                        e = extraTool ?? e;
-                        p = brushPower ?? p;
-                        w = brushWidth ?? w;
-                        s = brushStrength ?? s;
-                        return true;
+                        if (GUILayout.Button(icon))
+                        {
+                            e = extraTool ?? e;
+                            p = brushPower ?? p;
+                            w = brushWidth ?? w;
+                            s = brushStrength ?? s;
+                            return true;
+                        }
                     }
-                }
-                else
-                {
-                    if (GUILayout.Button(name))
+                    else
                     {
-                        e = extraTool ?? e;
-                        p = brushPower ?? p;
-                        w = brushWidth ?? w;
-                        s = brushStrength ?? s;
-                        return true;
-                    }
+                        if (GUILayout.Button(name))
+                        {
+                            e = extraTool ?? e;
+                            p = brushPower ?? p;
+                            w = brushWidth ?? w;
+                            s = brushStrength ?? s;
+                            return true;
+                        }
+                    } 
                 }
-                EditorGUI.EndDisabledGroup();
 
                 return false;
             }

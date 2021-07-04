@@ -82,6 +82,22 @@
         _Settings13 ("Settings", vector) = (0,0,0,0)
         _Settings14 ("Settings", vector) = (0,0,0,0)
         _Settings15 ("Settings", vector) = (0,0,0,0)
+        _Mask0 ("",int) = -1
+        _Mask1 ("",int) = -1
+        _Mask2 ("",int) = -1
+        _Mask3 ("",int) = -1
+        _Mask4 ("",int) = -1
+        _Mask5 ("",int) = -1
+        _Mask6 ("",int) = -1
+        _Mask7 ("",int) = -1
+        _Mask8 ("",int) = -1
+        _Mask9 ("",int) = -1
+        _Mask10 ("",int) = -1
+        _Mask11 ("",int) = -1
+        _Mask12 ("",int) = -1
+        _Mask13 ("",int) = -1
+        _Mask14 ("",int) = -1
+        _Mask15 ("",int) = -1
     }
 
     SubShader
@@ -121,9 +137,20 @@
                 uniform float4 _Layer##num##_ST;\
                 uniform int _Mode##num;\
                 uniform float4 _Settings##num;\
+                uniform int _Mask##num;\
 
-            #define LayerCol(origin,num) \
-                OverrideColor(##origin##,_Layer##num,TRANSFORM_TEX(IN.localTexcoord.xy,_Layer##num),_Color##num,_Comparison##num,_Settings##num,_Mode##num);\
+            #define LayerCol(origin,num,mask) \
+                if(_Mask##num == -1)\
+                {\
+                    ##origin = lerp(\
+                                ##origin,\
+                                OverrideColor(##origin,_Layer##num,TRANSFORM_TEX(IN.localTexcoord.xy,_Layer##num),_Color##num,_Comparison##num,_Settings##num,_Mode##num),\
+                                mask);\
+                }\
+                else\
+                {\
+                    ##mask = OverrideColor(##mask,_Layer##num,TRANSFORM_TEX(IN.localTexcoord.xy,_Layer##num),_Color##num,_Comparison##num,_Settings##num,_Mode##num);\
+                }\
 
             /*float4 _Color0,_Color1,_Color2,_Color3,_Color4,_Color5,_Color6,_Color7,_Color8,_Color9,_Color10,_Color11,_Color12,_Color13,_Color14,_Color15;
             sampler2D _Layer0,_Layer1,_Layer2,_Layer3,_Layer4,_Layer5,_Layer6,_Layer7,_Layer8,_Layer9,_Layer10,_Layer11,_Layer12,_Layer13,_Layer14,_Layer15;
@@ -192,7 +219,7 @@
 		        if(uv.x<0.0 || 1.0<uv.x || uv.y<0.0 || 1.0<uv.y ) return col;
                 float4 l = tex2D(tex,uv);
                 float4 lc = l*color;
-                if(mode == 1)
+                if(mode == 1) // normal
                 {
                     col.rgb = lerp(
                         lerp(col.rgb,lc.rgb,lc.a),
@@ -200,30 +227,26 @@
                         lc.a);
                     col.a = saturate(col.a+(1.0-col.a)*lc.a);
                 }
-                else if (mode == 2)
+                else if (mode == 2) // additive
                 {
-                    col.rgb = lerp(col.rgb,col.rgb+lc.rgb,lc.a);
-                    col.a = saturate(col.a+(1.0-col.a)*lc.a);
+                    col = lerp(col,col+lc,lc.a);
                 }
-                else if (mode == 3)
+                else if (mode == 3) // multiply
                 {
-                    col.rgb = lerp(col.rgb,col.rgb*lc.rgb,lc.a);
-                    col.a = saturate(col.a+(1.0-col.a)*lc.a);
+                    col = lerp(col,col*lc,lc.a);
                 }
-                else if (mode == 4)
+                else if (mode == 4) // subtraction
                 {
-                    col.rgb = lerp(col.rgb,col.rgb-lc.rgb,lc.a);
-                    col.a = saturate(col.a+(1.0-col.a)*lc.a);
+                    col = lerp(col,col-lc,lc.a);
                 }
                 else if (mode == 5) //division
                 {
                     if(l.a>0.0)
                     {
-                        col.rgb = lerp(col.rgb,col.rgb/lc.rgb,lc.a);
-                        col.a = saturate(col.a+(1.0-col.a)*lc.a);
+                        col = lerp(col,col/lc,lc.a);
                     }
                 }
-                else if(mode == 6)
+                else if(mode == 6) // bloom
                 {
                     float4 sumcolor = (float4)0.0;
                     for(int index=0;index<41;index++) {
@@ -238,7 +261,7 @@
                         sumcolor.rgb,
                         lc.a);
                 }
-                else if(mode == 7) //HSV
+                else if(mode == 7) // HSV
                 {
                     float3 hsv = rgb2hsv(col.rgb);
                     hsv = float3(
@@ -263,6 +286,10 @@
                 {
                     col.a = lerp(col.a,getGray(lc.rgb),lc.a);
                 }
+		        else if(mode == 10) // override
+		        {
+		            col = l;		            
+		        }
                 
                 return col; 
             }
@@ -270,26 +297,26 @@
             float4 frag(v2f_customrendertexture  IN) : COLOR
             {
                 float4 col = float4(0,0,0,0);
+                float4 mask = float4(1,1,1,1);
                 /*col = OverrideColor(col,_Layer0,TRANSFORM_TEX(IN.localTexcoord.xy,_Layer0),_Color0,_Settings0,_Mode0);
                 col = tex2D(_Layer0,IN.localTexcoord.xy);*/
                 //col = tex2D(_Layer0,IN.localTexcoord.xy);
-                col = LayerCol(col,0);
-                col = LayerCol(col,1);
-                col = LayerCol(col,2);
-                col = LayerCol(col,3);
-                col = LayerCol(col,4);
-                col = LayerCol(col,5);
-                col = LayerCol(col,6);
-                col = LayerCol(col,7);
-                col = LayerCol(col,8);
-                col = LayerCol(col,9);
-                col = LayerCol(col,10);
-                col = LayerCol(col,11);
-                col = LayerCol(col,12);
-                col = LayerCol(col,13);
-                col = LayerCol(col,14);
-                col = LayerCol(col,15);
-                col = LayerCol(col,15);
+                LayerCol(col,0,mask);
+                LayerCol(col,1,mask);
+                LayerCol(col,2,mask);
+                LayerCol(col,3,mask);
+                LayerCol(col,4,mask);
+                LayerCol(col,5,mask);
+                LayerCol(col,6,mask);
+                LayerCol(col,7,mask);
+                LayerCol(col,8,mask);
+                LayerCol(col,9,mask);
+                LayerCol(col,10,mask);
+                LayerCol(col,11,mask);
+                LayerCol(col,12,mask);
+                LayerCol(col,13,mask);
+                LayerCol(col,14,mask);
+                LayerCol(col,15,mask);
                 return col;
             }
             ENDCG

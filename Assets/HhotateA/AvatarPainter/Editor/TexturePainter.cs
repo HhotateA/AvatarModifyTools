@@ -50,7 +50,7 @@ namespace HhotateA
             Graphics.Blit(GetEditTexture(),cash);
             for (int i = cashIndex + 1; i < caches.Count; i++)
             {
-                caches.RemoveAt(i);
+                caches.RemoveAt(caches.Count-1);
             }
             if (caches.Count > maxCaches)
             {
@@ -117,7 +117,7 @@ namespace HhotateA
             SyncLayers();
         }
 
-        public void AddLayer(Texture tex = null, Color? col = null)
+        public void AddLayer(Texture tex = null)
         {
             if(layerSaveData.LayerCount() > 16) return;
             if (tex == null)
@@ -126,19 +126,30 @@ namespace HhotateA
                 rt.enableRandomWrite = true;
                 rt.Create();
                 tex = rt;
+                tex.name = "NewLayer" + LayerCount().ToString();
             }
-
-            if (tex.GetType() != typeof(RenderTexture))
+            else
             {
                 tex = GetReadableTexture(tex);
             }
-            
-            if (col != null)
-            {
-                ClearColor(tex,col ?? Color.white);
-            }
-            
+
             layerSaveData.AddLayer(tex as RenderTexture);
+            SyncLayers();
+        }
+        
+        public void AddMask(Color col,Gradient gradient)
+        {
+            if(layerSaveData.LayerCount() > 16) return;
+            var rt = new RenderTexture(targetTexture.width,targetTexture.height,0,RenderTextureFormat.ARGBFloat, RenderTextureReadWrite.Default);
+            rt.enableRandomWrite = true;
+            rt.Create();
+            var tex = rt;
+            
+            ClearColor(tex,col,gradient);
+            
+            tex.name = "Mask" + LayerCount().ToString();
+            layerSaveData.AddLayer(tex);
+            layerSaveData.SetLayer(layerSaveData.LayerCount()-1,null,true,BlendMode.Override,true);
             SyncLayers();
         }
 
@@ -156,6 +167,7 @@ namespace HhotateA
                     targetMaterial.SetColor("_Color"+i, ld.color);
                     targetMaterial.SetColor("_Comparison"+i, ld.comparison);
                     targetMaterial.SetVector("_Settings"+i, ld.setting);
+                    targetMaterial.SetInt("_Mask"+i, ld.mask);
                 }
                 else
                 {
@@ -163,11 +175,6 @@ namespace HhotateA
                 }
             }
 
-            /*targetTexture.initializationMaterial = mat;
-            targetTexture.material = mat;
-            targetTexture.Initialize();*/
-            //targetTexture.Update(1);
-            //targetTexture.Initialize();
             return targetTexture;
         }
 
@@ -175,23 +182,19 @@ namespace HhotateA
         {
             SyncLayers();
             targetTexture.Initialize();
-            /*targetTexture.SetUpdateZones(
-                new CustomRenderTextureUpdateZone[1]
-                {
-                    new CustomRenderTextureUpdateZone()
-                    {
-                        updateZoneCenter = new Vector3(0.5f,0.5f,0.5f),
-                        updateZoneSize = new Vector3(1f,1f,1f),
-                    }
-                });
-            targetTexture.Update();*/
         }
 
         public void ChangeEditLayer(int index)
         {
-            editIndex = index;
+            if (0 <= index && index < LayerCount())
+            {
+                editIndex = index;
+            }
             ResetCashes();
-            AddCash();
+            if (0 <= editIndex && editIndex < LayerCount())
+            {
+                AddCash();
+            }
         }
 
         public void Display(int width, int height, bool moveLimit = true, int rotationDrag = 2, int positionDrag = 1)
@@ -200,8 +203,6 @@ namespace HhotateA
             LayersUpdate();
             rect = GUILayoutUtility.GetRect(width, height, GUI.skin.box);
             EditorGUI.DrawPreviewTexture(rect, ScalePreview(width,height,moveLimit)); 
-            //mat = EditorGUILayout.ObjectField("t", mat,typeof(Material), false) as Material;
-            //targetTexture = EditorGUILayout.ObjectField("t", targetTexture,typeof(CustomRenderTexture), false) as CustomRenderTexture;
             var e = Event.current;
 
             if (rect.x < e.mousePosition.x &&
@@ -281,21 +282,6 @@ namespace HhotateA
                 previewPosition.y - previewScale * 0.5f * y,
                 previewPosition.x + previewScale * 0.5f * x,
                 previewPosition.y + previewScale * 0.5f * y);
-            
-            /*if (height < width)
-            {
-                var a = (float) height / (float) width;
-                var x = (scale.x - 0.5f) * a + 0.5f;
-                var y = (scale.y - 0.5f) * a + 0.5f;
-                scale = new Vector4(x,y,scale.z,scale.w);
-            }
-            if (width < height)
-            {
-                var a = (float) width / (float) height;
-                var z = (scale.z - 0.5f) * a + 0.5f;
-                var w = (scale.w - 0.5f) * a + 0.5f;
-                scale = new Vector4(scale.x,scale.y,z,w);
-            }*/
 
             if (moveLimit)
             {
@@ -319,25 +305,68 @@ namespace HhotateA
             {
                 using (new EditorGUILayout.HorizontalScope())
                 {
-                    if (layerSaveData.LayerButton(i,i==editIndex, deleateButton,(j) =>
+                    using (var block = new EditorGUILayout.HorizontalScope())
                     {
-                        // レイヤー移動の場合
-                        if (j == -1)
+                        using (new EditorGUILayout.VerticalScope())
                         {
-                            if (i < editIndex)
+                            using (new EditorGUILayout.HorizontalScope())
                             {
-                                ChangeEditLayer(editIndex-1);
+                                if (GUILayout.Button("↑", GUILayout.Width(20)))
+                                {
+                                    layerSaveData.ReplaceLayer(i,i+1);
+                                    if (editIndex == i)
+                                    {
+                                        ChangeEditLayer(i + 1);
+                                    }
+                                    else
+                                    if (editIndex == i+1) 
+                                    {
+                                        ChangeEditLayer(i);
+                                    }
+                                }
+                                using (new EditorGUI.DisabledScope(!deleateButton))
+                                {
+                                    if (GUILayout.Button("×",  GUILayout.Width(40)))
+                                    {
+                                        layerSaveData.DeleateLayer(i);
+                                        if (i < editIndex) ChangeEditLayer(editIndex - 1);
+                                        // Layer削除後Index外が発生するので早期breakaaaa
+                                        break;
+                                    }
+                                }
+                            }
+                            using (new EditorGUILayout.HorizontalScope())
+                            {
+                                var active = EditorGUILayout.Toggle("", layerSaveData.GetLayerActive(i), GUILayout.Width(10));
+                                var name = EditorGUILayout.TextField(layerSaveData.GetLayerName(i), GUILayout.Width(50));
+                                layerSaveData.SetLayer(i,name,active,null,null);
+                            }
+                            using (new EditorGUILayout.HorizontalScope())
+                            {
+                                if (GUILayout.Button("↓", GUILayout.Width(20)))
+                                {
+                                    layerSaveData.ReplaceLayer(i,i-1);
+                                    if (editIndex == i)
+                                    {
+                                        ChangeEditLayer(i - 1);
+                                    }
+                                    else
+                                    if (editIndex == i-1)
+                                    {
+                                        ChangeEditLayer(i);
+                                    }
+                                }
+                                if (GUILayout.Button("+", GUILayout.Width(40)))
+                                {
+                                    AddLayer(layerSaveData.GetLayer(i).texture);
+                                }
                             }
                         }
-                        else
-                        if (i == editIndex)
+
+                        if (layerSaveData.LayerButton(i,i==editIndex))
                         {
-                            ChangeEditLayer(j);
-                        }
-                    }))
-                    {
-                        ChangeEditLayer(i);
-                        SyncLayers();
+                            ChangeEditLayer(i);
+                        };
                     }
                 }
             }
@@ -345,7 +374,7 @@ namespace HhotateA
         
         public void SetLayerActive(int index,bool val)
         {
-            layerSaveData.SetLayerActive(index,val);
+            layerSaveData.SetLayer(index,null,val,null,null);
         }
         
         public Vector2 Touch(Action<Vector2,Vector2> onDrag = null)
@@ -381,7 +410,7 @@ namespace HhotateA
             return new Vector2(-1f,-1f);
         }
 
-        public void DrawLine(Vector2 from,Vector2 to,Color brushColor,float brushWidth,float brushStrength,float brushPower = 0f)
+        public void DrawLine(Vector2 from,Vector2 to,Color brushColor,Gradient gradient,float brushWidth,float brushStrength,float brushPower = 0f)
         {
             if (editIndex == -1) return;
             if (0f < from.x && from.x < 1f &&
@@ -400,10 +429,15 @@ namespace HhotateA
                 compute.SetFloat("_BrushStrength",brushStrength);
                 compute.SetFloat("_BrushPower",brushPower);
                 compute.SetTexture(kernel,"_ResultTex",GetEditTexture());
+                var gradientBuffer = new ComputeBuffer(GetEditTexture().width, Marshal.SizeOf(typeof(Vector4)));
+                gradientBuffer.SetData(GetGradientBuffer(gradient,GetEditTexture().width));
+                compute.SetBuffer(kernel, "_Gradient", gradientBuffer);
                 compute.Dispatch(kernel, GetEditTexture().width,GetEditTexture().height,1);
+                gradientBuffer.Release();
             }
         }
-        public void DrawLinePoint(Vector2 from,Vector2 to,Color brushColor,float brushWidth,float brushStrength,float brushPower = 0f)
+        
+        public void DrawLineGradient(Vector2 from,Vector2 to,Color brushColor,Gradient gradient,float brushWidth,float brushStrength,float brushPower = 0f)
         {
             if (editIndex == -1) return;
             if (0f < from.x && from.x < 1f &&
@@ -412,7 +446,7 @@ namespace HhotateA
                 0f < to.y && to.y < 1f)
             {
                 var compute = GetComputeShader();
-                int kernel = compute.FindKernel("DrawLinePoint");
+                int kernel = compute.FindKernel("DrawLineGradient");
                 compute.SetInt("_Width",GetEditTexture().width);
                 compute.SetInt("_Height",GetEditTexture().height);
                 compute.SetVector("_Color",brushColor);
@@ -422,59 +456,11 @@ namespace HhotateA
                 compute.SetFloat("_BrushStrength",brushStrength);
                 compute.SetFloat("_BrushPower",brushPower);
                 compute.SetTexture(kernel,"_ResultTex",GetEditTexture());
+                var gradientBuffer = new ComputeBuffer(GetEditTexture().width, Marshal.SizeOf(typeof(Vector4)));
+                gradientBuffer.SetData(GetGradientBuffer(gradient,GetEditTexture().width));
+                compute.SetBuffer(kernel, "_Gradient", gradientBuffer);
                 compute.Dispatch(kernel, GetEditTexture().width,GetEditTexture().height,1);
-            }
-        }
-        
-        public void DrawLinePointCPU(Vector2 from,Vector2 to,Color brushColor,float brushWidth,float brushStrength,float brushPower = 0f)
-        {
-            if (editIndex == -1) return;
-            if (0f < from.x && from.x < 1f &&
-                0f < from.y && from.y < 1f &&
-                0f < to.x && to.x < 1f &&
-                0f < to.y && to.y < 1f)
-            {
-                var compute = GetComputeShader();
-                int kernel = compute.FindKernel("DrawPoint");
-                compute.SetInt("_Width",GetEditTexture().width);
-                compute.SetInt("_Height",GetEditTexture().height);
-                compute.SetVector("_Color",brushColor);
-                compute.SetFloat("_BrushWidth",brushWidth);
-                compute.SetFloat("_BrushStrength",brushStrength);
-                compute.SetFloat("_BrushPower",brushPower);
-                compute.SetTexture(kernel,"_ResultTex",GetEditTexture());
-                
-                Vector2Int fromxy = new Vector2Int((int)(from.x * (float) GetEditTexture().width),(int)(from.y* (float) GetEditTexture().height));
-                Vector2Int toxy = new Vector2Int((int)(to.x* (float) GetEditTexture().width),(int)(to.y* (float) GetEditTexture().height));
-                float d = Vector2Int.Distance(fromxy,toxy);
-                Vector2Int dd = toxy - fromxy;
-                
-                for (float i = 0; i < d; i++)
-                {
-                    Vector2 xy = from + new Vector2((float)dd.x/d,(float)dd.y/d) * i;
-                    compute.SetVector("_Point",xy);
-                    compute.Dispatch(kernel, GetEditTexture().width,GetEditTexture().height,1);
-                }
-            }
-        }
-        
-        public void DrawPoint(Vector2 uv,Color brushColor,float brushWidth,float brushStrength,float brushPower = 0f)
-        {
-            if (editIndex == -1) return;
-            if (0f < uv.x && uv.x < 1f &&
-                0f < uv.y && uv.y < 1f)
-            {
-                var compute = GetComputeShader();
-                int kernel = compute.FindKernel("DrawPoint");
-                compute.SetInt("_Width",GetEditTexture().width);
-                compute.SetInt("_Height",GetEditTexture().height);
-                compute.SetVector("_Color",brushColor);
-                compute.SetVector("_Point",uv);
-                compute.SetFloat("_BrushWidth",brushWidth);
-                compute.SetFloat("_BrushStrength",brushStrength);
-                compute.SetFloat("_BrushPower",brushPower);
-                compute.SetTexture(kernel,"_ResultTex",GetEditTexture());
-                compute.Dispatch(kernel, GetEditTexture().width,GetEditTexture().height,1);
+                gradientBuffer.Release();
             }
         }
         
@@ -497,12 +483,64 @@ namespace HhotateA
             uvs.Release();
             tris.Release();
         }
+        public void FillTriangles(Mesh mesh,List<int> index,Color color,Gradient gradient,Vector2 from, Vector2 to)
+        {
+            var compute = GetComputeShader();
+            int kernel = compute.FindKernel("TriangleFillGradient");
+            
+            var xmax = mesh.vertices.Max(v => v.x);
+            var xmin = mesh.vertices.Min(v => v.x);
+            var ymax = mesh.vertices.Max(v => v.y);
+            var ymin = mesh.vertices.Min(v => v.y);
+            var zmax = mesh.vertices.Max(v => v.z);
+            var zmin = mesh.vertices.Min(v => v.z);
+            var normalizedVertices = mesh.vertices.Select(v =>
+                new Vector3(
+                    v.x * (xmax - xmin) - xmin,
+                    v.y * (ymax - ymin) - ymin,
+                    v.z * (zmax - zmin) - zmin)).ToArray();
+
+            var uvs = new ComputeBuffer(mesh.uv.Length,Marshal.SizeOf(typeof(Vector2)));
+            var tris = new ComputeBuffer(mesh.triangles.Length,sizeof(int));
+            //var vertices = new ComputeBuffer(normalizedVertices.Length, Marshal.SizeOf(typeof(Vector3)));
+
+            uvs.SetData(mesh.uv);
+            tris.SetData(mesh.triangles);
+            //vertices.SetData(normalizedVertices);
+            
+            compute.SetBuffer(kernel,"_UVs",uvs);
+            compute.SetBuffer(kernel,"_Triangles",tris);
+            //compute.SetBuffer(kernel,"_Vertices",vertices);
+            
+            compute.SetTexture(kernel, "_ResultTex", GetEditTexture());
+            compute.SetVector("_Color", color);
+            compute.SetInt("_Width", GetEditTexture().width);
+            compute.SetInt("_Height", GetEditTexture().height);
+            compute.SetVector("_FromPoint",from);
+            compute.SetVector("_ToPoint",to);
+            var gradientBuffer = new ComputeBuffer(GetEditTexture().width, Marshal.SizeOf(typeof(Vector4)));
+            gradientBuffer.SetData(GetGradientBuffer(gradient,GetEditTexture().width));
+            compute.SetBuffer(kernel, "_Gradient", gradientBuffer);
+            for (int i = 0; i < index.Count; i++)
+            {
+                if (0 < index[i] && index[i] < mesh.triangles.Length / 3)
+                {
+                    compute.SetInt("_TriangleID", index[i]);
+                    compute.Dispatch(kernel, GetEditTexture().width, GetEditTexture().height, 1);
+                }
+            }
+            uvs.Release();
+            tris.Release();
+            //vertices.Release();
+            gradientBuffer.Release();
+        }
         
         public void ReadUVMap(Mesh mesh)
         {
             RenderTexture uvMap = new RenderTexture(targetTexture.width,targetTexture.height,0,RenderTextureFormat.ARGBFloat, RenderTextureReadWrite.Default);
             uvMap.enableRandomWrite = true;
             uvMap.Create();
+            uvMap.name = "UVMap";
             var compute = GetComputeShader();
             int kernel = compute.FindKernel("DrawUV");
             var uvs = new ComputeBuffer(mesh.uv.Length,Marshal.SizeOf(typeof(Vector2)));
@@ -523,16 +561,20 @@ namespace HhotateA
             AddLayer(uvMap);
         }
 
-        public void ClearColor(Texture rt,Color color)
+        public void ClearColor(Texture rt,Color color,Gradient gradient)
         {
             var compute = GetComputeShader();
             int kernel = compute.FindKernel("Clear");
             compute.SetVector("_Color",color);
             compute.SetTexture(kernel,"_ResultTex",rt);
+            var gradientBuffer = new ComputeBuffer(rt.height, Marshal.SizeOf(typeof(Vector4)));
+            gradientBuffer.SetData(GetGradientBuffer(gradient,rt.height));
+            compute.SetBuffer(kernel, "_Gradient", gradientBuffer);
             compute.Dispatch(kernel, rt.width,rt.height,1);
+            gradientBuffer.Release();
         }
         
-        public void FillColor(Vector2 uv, Color brushColor,float threshold = 0.007f,int areaExpansion = 1,bool maskAllTexture = true)
+        public void FillColor(Vector2 uv, Color brushColor,Gradient gradient,float threshold = 0.007f,int areaExpansion = 1,bool maskAllTexture = true)
         {
             if (0f < uv.x && uv.x < 1f &&
                 0f < uv.y && uv.y < 1f)
@@ -574,8 +616,74 @@ namespace HhotateA
                 }
                 
                 // 色塗り
-                kernel = compute.FindKernel("FillColor");
+                kernel = compute.FindKernel("FillColorPoint");
+                compute.SetVector("_Point",uv);
+                compute.SetInt("_Width", GetEditTexture().width);
+                compute.SetInt("_Height", GetEditTexture().height);
                 compute.SetTexture(kernel, "_ResultTex", GetEditTexture());
+                var gradientBuffer = new ComputeBuffer(GetEditTexture().width, Marshal.SizeOf(typeof(Vector4)));
+                gradientBuffer.SetData(GetGradientBuffer(gradient,GetEditTexture().width));
+                compute.SetBuffer(kernel, "_Gradient", gradientBuffer);
+                compute.SetBuffer(kernel, "_SeedPixels", seedPixels);
+                compute.SetInt("_AreaExpansion", areaExpansion);
+                compute.Dispatch(kernel, GetEditTexture().width, GetEditTexture().height, 1);
+
+                seedPixels.Release();
+                gradientBuffer.Release();
+            }
+        }
+        
+        public void FillColor(Vector2 from, Vector2 to, Color brushColor,Gradient gradient,float threshold = 0.007f,int areaExpansion = 1,bool maskAllTexture = true)
+        {
+            if (0f < to.x && to.x < 1f &&
+                0f < to.y && to.y < 1f)
+            {
+                RenderTexture maskTexture = maskAllTexture ? GenerateTexture() : GetEditTexture();
+
+                var compute = GetComputeShader();
+                Vector2Int pix = new Vector2Int(
+                    (int) (to.x * (float) maskTexture.width),
+                    (int) (to.y * (float) maskTexture.height));
+
+                // 種まき
+                var seedPixelsArray = Enumerable.Range(0, maskTexture.width * maskTexture.height)
+                    .Select(_ => 0).ToArray();
+                seedPixelsArray[maskTexture.width * pix.y + pix.x] = 2;
+                var seedPixels = new ComputeBuffer(seedPixelsArray.Length, sizeof(int));
+                seedPixels.SetData(seedPixelsArray);
+                
+                compute.SetFloat("_ColorMargin", threshold);
+                compute.SetInt("_Width", maskTexture.width);
+                compute.SetInt("_Height", maskTexture.height);
+                compute.SetVector("_Color", brushColor);
+                
+                // 領域判定
+                int kernel = compute.FindKernel("GradationFillLine");
+                compute.SetTexture(kernel, "_ResultTex", maskTexture);
+                compute.SetBuffer(kernel, "_SeedPixels", seedPixels);
+                for (int i = 0; i < 10; i++)
+                {
+                    for (int j = 0; j < 50; j++)
+                    {
+                        compute.Dispatch(kernel, maskTexture.width, maskTexture.height, 1);
+                    }
+                    
+                    seedPixels.GetData(seedPixelsArray);
+                    int jobCount = seedPixelsArray.Where(s => s == 2).Count();
+                    Debug.Log("FillJobCount:"+jobCount);
+                    if (seedPixelsArray.Where(s => s == 2).Count() == 0) break;
+                }
+                
+                // 色塗り
+                kernel = compute.FindKernel("FillColorLine");
+                compute.SetVector("_FromPoint",from);
+                compute.SetVector("_ToPoint",to);
+                compute.SetInt("_Width", GetEditTexture().width);
+                compute.SetInt("_Height", GetEditTexture().height);
+                compute.SetTexture(kernel, "_ResultTex", GetEditTexture());
+                var gradientBuffer = new ComputeBuffer(GetEditTexture().width, Marshal.SizeOf(typeof(Vector4)));
+                gradientBuffer.SetData(GetGradientBuffer(gradient,GetEditTexture().width));
+                compute.SetBuffer(kernel, "_Gradient", gradientBuffer);
                 compute.SetBuffer(kernel, "_SeedPixels", seedPixels);
                 compute.SetInt("_AreaExpansion", areaExpansion);
                 compute.Dispatch(kernel, GetEditTexture().width, GetEditTexture().height, 1);
@@ -714,6 +822,7 @@ namespace HhotateA
             rt.enableRandomWrite = true;
             rt.Create();
             Graphics.Blit(srcTexture, rt);
+            rt.name = srcTexture.name;
             return rt;
         }
 
@@ -727,6 +836,17 @@ namespace HhotateA
             var colors = texture.GetPixel(x,y);
             RenderTexture.active = currentRT;
             return colors;
+        }
+        
+        private Vector4[] GetGradientBuffer(Gradient gradient,int step = 256)
+        {
+            var buffer = new Vector4[step];
+            for (int i = 0;i<step;i++)
+            {
+                buffer[i] = gradient.Evaluate((float)i / (float)step);
+            }
+
+            return buffer;
         }
 
         ComputeShader GetComputeShader()

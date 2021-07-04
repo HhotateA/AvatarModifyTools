@@ -469,6 +469,18 @@ namespace HhotateA
                 blendShape.RemoveVertexIndex(i);
             }
         }
+
+        public int GetTriangleOffset(int submesh)
+        {
+            int offset = 0;
+            for (int i = 0; i < submesh; i++)
+            {
+                offset += triangles[i].Count / 3;
+            }
+            Debug.Log(offset);
+
+            return offset;
+        }
         
         /// <summary>
         /// 頂点をすべて含むTriangleをリストで返す

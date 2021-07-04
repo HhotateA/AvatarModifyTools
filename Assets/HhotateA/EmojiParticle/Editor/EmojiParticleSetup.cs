@@ -157,66 +157,67 @@ namespace HhotateA
             }
             EditorGUILayout.EndScrollView();
 
-            EditorGUI.BeginDisabledGroup(avatar==null);
-            if (GUILayout.Button("Setup"))
+            using (new EditorGUI.DisabledScope(avatar==null))
             {
-                try
+                if (GUILayout.Button("Setup"))
                 {
-                    string databasePath = AssetDatabase.GUIDToAssetPath(assetDatabaseGUID);
-                    if (!string.IsNullOrWhiteSpace(databasePath))
+                    try
                     {
-                        AvatarModifyData assets = AssetDatabase.LoadAssetAtPath<AvatarModifyData>(databasePath);
-                        
-                        if (String.IsNullOrWhiteSpace(AssetDatabase.GetAssetPath(data)))
+                        string databasePath = AssetDatabase.GUIDToAssetPath(assetDatabaseGUID);
+                        if (!string.IsNullOrWhiteSpace(databasePath))
                         {
-                            // 未保存なら保存先を指定させる．
-                            var path = EditorUtility.SaveFilePanel("Save", "Assets", "IconSetupData", "asset");
-                            path = FileUtil.GetProjectRelativePath(path);
-        
-                            if (!string.IsNullOrEmpty(path)) {
-                                // Assetが消されていた場合対策に新たなInstanceから保存する．
-                                var d = ScriptableObject.CreateInstance<EmojiSaveData>();
-                                {
-                                    d.Emojis = data.Emojis;
-                                }
-                                data = d;
-                                AssetDatabase.CreateAsset(data,path);
-                                AssetDatabase.SaveAssets();
-                            }
-                            else
+                            AvatarModifyData assets = AssetDatabase.LoadAssetAtPath<AvatarModifyData>(databasePath);
+                            
+                            if (String.IsNullOrWhiteSpace(AssetDatabase.GetAssetPath(data)))
                             {
-                                // 保存先を指定しないなら処理中断
-                                throw new System.Exception("EmojiParticleSetup : Please save setupdata");
+                                // 未保存なら保存先を指定させる．
+                                var path = EditorUtility.SaveFilePanel("Save", "Assets", "IconSetupData", "asset");
+                                path = FileUtil.GetProjectRelativePath(path);
+            
+                                if (!string.IsNullOrEmpty(path)) {
+                                    // Assetが消されていた場合対策に新たなInstanceから保存する．
+                                    var d = ScriptableObject.CreateInstance<EmojiSaveData>();
+                                    {
+                                        d.Emojis = data.Emojis;
+                                    }
+                                    data = d;
+                                    AssetDatabase.CreateAsset(data,path);
+                                    AssetDatabase.SaveAssets();
+                                }
+                                else
+                                {
+                                    // 保存先を指定しないなら処理中断
+                                    throw new System.Exception("EmojiParticleSetup : Please save setupdata");
+                                }
                             }
+
+                            var newAssets = Setup(assets);
+
+                            var mod = new AvatarModifyTool(avatar);
+                            mod.ModifyAvatar(newAssets);
+                            
+                            // ゴミ処理忘れずに
+                            DestroyImmediate(newAssets.prefab);
+                            
+                            msgStyle.normal = new GUIStyleState()
+                            {
+                                textColor = Color.green
+                            };
+                            msg = "Success!";
                         }
-
-                        var newAssets = Setup(assets);
-
-                        var mod = new AvatarModifyTool(avatar);
-                        mod.ModifyAvatar(newAssets);
-                        
-                        // ゴミ処理忘れずに
-                        DestroyImmediate(newAssets.prefab);
-                        
+                    }
+                    catch (Exception e)
+                    {
                         msgStyle.normal = new GUIStyleState()
                         {
-                            textColor = Color.green
+                            textColor = Color.red
                         };
-                        msg = "Success!";
+                        msg = e.Message;
+                        Debug.LogError(e);
                     }
+                    AssetDatabase.SaveAssets();
                 }
-                catch (Exception e)
-                {
-                    msgStyle.normal = new GUIStyleState()
-                    {
-                        textColor = Color.red
-                    };
-                    msg = e.Message;
-                    Debug.LogError(e);
-                }
-                AssetDatabase.SaveAssets();
             }
-            EditorGUI.EndDisabledGroup();
             
             EditorGUILayout.BeginHorizontal();
             {

@@ -2,8 +2,12 @@
 #pragma kernel Clear
 #pragma kernel DrawPoint
 #pragma kernel DrawLine
+#pragma kernel DrawLineGradient
 #pragma kernel TriangleFill
+#pragma kernel TriangleFillGradient
 #pragma kernel FillColor
+#pragma kernel FillColorPoint
+#pragma kernel FillColorLine
 #pragma kernel AreaExpansion
 #pragma kernel FillLine
 #pragma kernel GradationFillLine
@@ -11,12 +15,15 @@
 #pragma kernel Gaussian
 
 StructuredBuffer<float2> _UVs;
+StructuredBuffer<float4> _Vertices;
 StructuredBuffer<int> _Triangles;
 
 RWTexture2D<float4> _ResultTex;
 int _Width;
 int _Height;
 float4 _Color;
+
+StructuredBuffer<float4> _Gradient;
 
 float _BrushStrength;
 float _BrushWidth;
@@ -118,23 +125,33 @@ float Concentration(float dist)
     }
 }
 
-void PaintDist(int2 xy,float concentration)
+void PaintDist(int2 xy,float concentration,float4 col)
 {
     if(concentration>0.0)
     {
-        if(_ResultTex[xy].a < _Color.a*0.01)
+        if(_ResultTex[xy].a < col.a*0.01)
         {
-            _ResultTex[xy] = float4( _Color.rgb, _Color.a*concentration);
+            _ResultTex[xy] = float4( col.rgb, col.a*concentration);
         }
         else
         {
-            _ResultTex[xy].rgb = _ResultTex[xy].rgb*(1.-concentration*_Color.a) + _Color.rgb*(concentration*_Color.a);
+            _ResultTex[xy].rgb = _ResultTex[xy].rgb*(1.-concentration*col.a) + col.rgb*(concentration*col.a);
             _ResultTex[xy].a = lerp(
-                _ResultTex[xy].a + (1.-_ResultTex[xy].a) * _Color.a * concentration,
-                _ResultTex[xy].a * (1.-concentration) + _Color.a * (concentration),
+                _ResultTex[xy].a + (1.-_ResultTex[xy].a) * col.a * concentration,
+                _ResultTex[xy].a * (1.-concentration) + col.a * (concentration),
                 _BrushPower);
         }
     }
+}
+
+float4 GetGradient(float2 uv,float2 from,float2 to)
+{
+    float2 vec = to - from;
+    float val = dot(vec,uv);
+    float val0 = dot(vec,from);
+    float val1 = dot(vec,to);
+    float dist = saturate((val-val0)/(val1-val0));
+    return _Gradient[(_Width-1)*dist];
 }
 
 float sign (float2 p1, float2 p2, float2 p3)
@@ -178,7 +195,7 @@ void DrawUVPix (uint3 id : SV_DispatchThreadID)
 [numthreads(1,1,1)]
 void Clear (uint3 id : SV_DispatchThreadID)
 {
-    _ResultTex[id.xy] = _Color;
+    _ResultTex[id.xy] = _Color * _Gradient[id.y];
 }
 
 float2 _Point;
@@ -187,7 +204,7 @@ void DrawPoint (uint3 id : SV_DispatchThreadID)
 {
     float2 uv = float2(id.x/(float)_Width , id.y/(float)_Height);
     float dist = ComputeDistance(uv,_Point);
-    PaintDist(id.xy,Concentration(dist));
+    PaintDist(id.xy,Concentration(dist),_Color);
 }
 
 float2 _FromPoint;
@@ -196,9 +213,19 @@ float2 _ToPoint;
 void DrawLine (uint3 id : SV_DispatchThreadID)
 {
     float2 uv = float2(id.x/(float)_Width , id.y/(float)_Height);
+    float dist = ComputeDistance(uv,_FromPoint,_ToPoint);
+    float4 col = _Color*_Gradient[(_Width-1)*dist];
+    PaintDist(id.xy,Concentration(dist),col);
+}
+
+[numthreads(1,1,1)]
+void DrawLineGradient (uint3 id : SV_DispatchThreadID)
+{
+    float2 uv = float2(id.x/(float)_Width , id.y/(float)_Height);
     
     float dist = ComputeDistance(uv,_FromPoint,_ToPoint);
-    PaintDist(id.xy,Concentration(dist));
+    float4 col = _Color*GetGradient(uv,_FromPoint,_ToPoint);    
+    PaintDist(id.xy,Concentration(dist),col);
 }
 
 int _TriangleID;
@@ -218,46 +245,159 @@ void TriangleFill (int3 id : SV_DispatchThreadID)
     }
 }
 
+[numthreads(1,1,1)]
+void TriangleFillGradient (int3 id : SV_DispatchThreadID)
+{
+    float2 uv = float2((float)id.x/(float)_Width,(float)id.y/(float)_Height);
+    float2 uv0 = _UVs[_Triangles[_TriangleID*3+0]];
+    float2 uv1 = _UVs[_Triangles[_TriangleID*3+1]];
+    float2 uv2 = _UVs[_Triangles[_TriangleID*3+2]];
+    /*float2 v0 = normalize(uv1 - uv0)*0.5 + normalize(uv2 - uv0)*0.5;
+    float2 v1 = normalize(uv2 - uv1)*0.5 + normalize(uv0 - uv1)*0.5;
+    float2 v2 = normalize(uv0 - uv2)*0.5 + normalize(uv1 - uv2)*0.5;
+    float w0 = dot(uv,v0)/(dot(uv0,v0)-dot(uv1,v0)) - dot(uv1,v0);
+    float w1 = dot(uv,v1)/(dot(uv1,v1)-dot(uv2,v1)) - dot(uv2,v1);
+    float w2 = dot(uv,v2)/(dot(uv2,v2)-dot(uv0,v2)) - dot(uv0,v2);
+    float3 p0 = _Vertices[_Triangles[_TriangleID*3+0]];
+    float3 p1 = _Vertices[_Triangles[_TriangleID*3+1]];
+    float3 p2 = _Vertices[_Triangles[_TriangleID*3+2]];
+    float3 p = (p0*w0 + p1*w1 + p2*w2) / (w0+w1+w2);*/
+    float c0 = sign(uv,uv0,uv1);
+    float c1 = sign(uv,uv1,uv2);
+    float c2 = sign(uv,uv2,uv0);
+    float4 col = _Color*GetGradient(uv,_FromPoint,_ToPoint);  
+    if(sign(c0)==sign(c1) && sign(c0)==sign(c2))
+    {
+        _ResultTex[id.xy] = col;
+    }
+}
+
 RWBuffer<int> _SeedPixels;
 int _AreaExpansion;
 [numthreads(1,1,1)]
 void FillColor (int3 id : SV_DispatchThreadID)
 {
+    float4 col = _Color;
     if(_SeedPixels[_Width*(id.y+1)+id.x+1] > 0)
     {
-        _ResultTex[id.xy] = _Color;
+        _ResultTex[id.xy] = col;
     }
     if(_SeedPixels[_Width*(id.y+1)+id.x] > 0)
     {
-        _ResultTex[id.xy] = _Color;
+        _ResultTex[id.xy] = col;
     }
     if(_SeedPixels[_Width*(id.y+1)+id.x-1] > 0)
     {
-        _ResultTex[id.xy] = _Color;
+        _ResultTex[id.xy] = col;
     }
     if(_SeedPixels[_Width*(id.y)+id.x+1] > 0)
     {
-        _ResultTex[id.xy] = _Color;
+        _ResultTex[id.xy] = col;
     }
     if(_SeedPixels[_Width*(id.y)+id.x] > 0)
     {
-        _ResultTex[id.xy] = _Color;
+        _ResultTex[id.xy] = col;
     }
     if(_SeedPixels[_Width*(id.y)+id.x-1] > 0)
     {
-        _ResultTex[id.xy] = _Color;
+        _ResultTex[id.xy] = col;
     }
     if(_SeedPixels[_Width*(id.y-1)+id.x+1] > 0)
     {
-        _ResultTex[id.xy] = _Color;
+        _ResultTex[id.xy] = col;
     }
     if(_SeedPixels[_Width*(id.y-1)+id.x] > 0)
     {
-        _ResultTex[id.xy] = _Color;
+        _ResultTex[id.xy] = col;
     }
     if(_SeedPixels[_Width*(id.y-1)+id.x-1] > 0)
     {
-        _ResultTex[id.xy] = _Color;
+        _ResultTex[id.xy] = col;
+    }
+}
+[numthreads(1,1,1)]
+void FillColorPoint (int3 id : SV_DispatchThreadID)
+{
+    float2 uv = float2((float)id.x/(float)_Width,(float)id.y/(float)_Height);
+    float dist = saturate(distance(uv,_Point));
+    float4 col = _Color*_Gradient[(_Width-1)*dist];
+    if(_SeedPixels[_Width*(id.y+1)+id.x+1] > 0)
+    {
+        _ResultTex[id.xy] = col;
+    }
+    if(_SeedPixels[_Width*(id.y+1)+id.x] > 0)
+    {
+        _ResultTex[id.xy] = col;
+    }
+    if(_SeedPixels[_Width*(id.y+1)+id.x-1] > 0)
+    {
+        _ResultTex[id.xy] = col;
+    }
+    if(_SeedPixels[_Width*(id.y)+id.x+1] > 0)
+    {
+        _ResultTex[id.xy] = col;
+    }
+    if(_SeedPixels[_Width*(id.y)+id.x] > 0)
+    {
+        _ResultTex[id.xy] = col;
+    }
+    if(_SeedPixels[_Width*(id.y)+id.x-1] > 0)
+    {
+        _ResultTex[id.xy] = col;
+    }
+    if(_SeedPixels[_Width*(id.y-1)+id.x+1] > 0)
+    {
+        _ResultTex[id.xy] = col;
+    }
+    if(_SeedPixels[_Width*(id.y-1)+id.x] > 0)
+    {
+        _ResultTex[id.xy] = col;
+    }
+    if(_SeedPixels[_Width*(id.y-1)+id.x-1] > 0)
+    {
+        _ResultTex[id.xy] = col;
+    }
+}
+[numthreads(1,1,1)]
+void FillColorLine (int3 id : SV_DispatchThreadID)
+{
+    float2 uv = float2((float)id.x/(float)_Width,(float)id.y/(float)_Height);
+    float4 col = _Color*GetGradient(uv,_FromPoint,_ToPoint);  
+    if(_SeedPixels[_Width*(id.y+1)+id.x+1] > 0)
+    {
+        _ResultTex[id.xy] = col;
+    }
+    if(_SeedPixels[_Width*(id.y+1)+id.x] > 0)
+    {
+        _ResultTex[id.xy] = col;
+    }
+    if(_SeedPixels[_Width*(id.y+1)+id.x-1] > 0)
+    {
+        _ResultTex[id.xy] = col;
+    }
+    if(_SeedPixels[_Width*(id.y)+id.x+1] > 0)
+    {
+        _ResultTex[id.xy] = col;
+    }
+    if(_SeedPixels[_Width*(id.y)+id.x] > 0)
+    {
+        _ResultTex[id.xy] = col;
+    }
+    if(_SeedPixels[_Width*(id.y)+id.x-1] > 0)
+    {
+        _ResultTex[id.xy] = col;
+    }
+    if(_SeedPixels[_Width*(id.y-1)+id.x+1] > 0)
+    {
+        _ResultTex[id.xy] = col;
+    }
+    if(_SeedPixels[_Width*(id.y-1)+id.x] > 0)
+    {
+        _ResultTex[id.xy] = col;
+    }
+    if(_SeedPixels[_Width*(id.y-1)+id.x-1] > 0)
+    {
+        _ResultTex[id.xy] = col;
     }
 }
 
@@ -611,14 +751,4 @@ void Gaussian (uint3 id : SV_DispatchThreadID)
                  2.*_ResultTex[id.xy+int2(-x, 0)] + 4.*_ResultTex[id.xy+int2( 0, 0)] + 2.*_ResultTex[id.xy+int2( x, 0)] +
                  1.*_ResultTex[id.xy+int2(-x, y)] + 2.*_ResultTex[id.xy+int2( 0, y)] + 1.*_ResultTex[id.xy+int2( x, y)];
     _ResultTex[id.xy] = lerp(_ResultTex[id.xy],gau * 0.0625,concentration);
-    /*float4 l = _Stamp[int2(uv.x*_StampWidth,uv.y*_StampHeight)] * _Color;
-    float4 col = _ResultTex[id.xy];
-    
-    col.rgb = lerp(
-        lerp(col.rgb,l.rgb,l.a),
-        l.rgb,
-        l.a);
-    col.a = saturate(col.a+(1.0-col.a)*l.a);
-    
-    _ResultTex[id.xy] = col;*/
 }
