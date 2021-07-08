@@ -11,7 +11,6 @@
             <e p="Editor" t="Include">
               <e p="AnimationClipCreator.cs" t="Include" />
               <e p="AnimatorControllerCreator.cs" t="Include" />
-              <e p="AnimatorControllerGenerator.cs" t="Include" />
               <e p="AvatarModifyData.cs" t="Include" />
               <e p="AvatarModifyTool.cs" t="Include" />
               <e p="AvatarMonitor.cs" t="Include" />
@@ -19,16 +18,6 @@
               <e p="MenuCreater.cs" t="Include" />
               <e p="MeshCreater.cs" t="Include" />
               <e p="TextureCombinater.cs" t="Include" />
-            </e>
-          </e>
-          <e p="AvatarPainter" t="Include">
-            <e p="Editor" t="Include">
-              <e p="AvatarPaintar.cs" t="Include" />
-              <e p="LayersSaveData.cs" t="Include" />
-              <e p="TextureCompute.compute" t="Include" />
-              <e p="TexturePainter.cs" t="Include" />
-              <e p="TexturePainter.shader" t="Include" />
-              <e p="TexturePreview.shader" t="Include" />
             </e>
           </e>
           <e p="AvatarPen" t="Include">
@@ -45,6 +34,19 @@
           <e p="MeshModifyTool" t="Include">
             <e p="Editor" t="Include">
               <e p="MeshModifyTool.cs" t="Include" />
+              <e p="UVViewer.compute" t="Include" />
+              <e p="UVViewer.cs" t="Include" />
+              <e p="UVViewer.shader" t="Include" />
+            </e>
+          </e>
+          <e p="TextureModifyTool" t="Include">
+            <e p="Editor" t="Include">
+              <e p="LayersSaveData.cs" t="Include" />
+              <e p="TextureCompute.compute" t="Include" />
+              <e p="TextureModifyTool.cs" t="Include" />
+              <e p="TexturePainter.cs" t="Include" />
+              <e p="TexturePainter.shader" t="Include" />
+              <e p="TexturePreview.shader" t="Include" />
             </e>
           </e>
         </e>

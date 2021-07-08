@@ -1,18 +1,18 @@
-﻿using System.Collections.Generic;
+﻿using HhotateA.AvatarModifyTools.Core;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
-namespace HhotateA
+namespace HhotateA.AvatarModifyTools.TextureModifyTool
 {
-    public class AvatarPaintar : EditorWindow
+    public class TextureModifyTool : EditorWindow
     {
-        [MenuItem("Window/HhotateA/にゃんにゃんテクスチャエディター(AvatarPainter)")]
+        [MenuItem("Window/HhotateA/にゃんにゃんアバターペインター(TextureModifyTool)")]
         static void  ShowWindow()
         {
-            // Get existing open window or if none, make a new one:
-            AvatarPaintar window = (AvatarPaintar)EditorWindow.GetWindow(typeof(AvatarPaintar));
-            window.Show();
+            TextureModifyTool wnd = (TextureModifyTool)EditorWindow.GetWindow(typeof(TextureModifyTool));
+            wnd.titleContent = new GUIContent("にゃんにゃんアバターペインター");
         }
         
         // ボタン設定
@@ -24,8 +24,8 @@ namespace HhotateA
         private GameObject avatar;
         
         // 改造前後のマテリアルの保持
-        private Material[] currentMaterials;
-        private Material[] editMaterials;
+        private Material[] currentMaterials = new Material[0];
+        private Material[] editMaterials = new Material[0];
         
         // 判定用オブジェクト
         private MeshCollider editMeshCollider;
@@ -53,10 +53,11 @@ namespace HhotateA
         private int editIndex = -1;
         
         // 各種オプション
+        private bool loadUVMap = true;
         private bool straightMode = false; // 定規モード
         private Vector2 straightBuffer = Vector2.zero;
         private bool squareMode = true; // 正方形固定(TextureWindow)
-        private bool maskAllTexture = true;
+        private bool maskAllLayers = true;
 
         private Color brushBuffer;
         
@@ -93,7 +94,7 @@ namespace HhotateA
                         new TexturePenTool("8ad291433c7f5354eacb47ad671c2c38","Splay",TexturePenTool.ExtraTool.Default,0.05f,0.04f, 0f,null), 
                         new TexturePenTool("b4686199bb51a574db19610a6e0fd2fa","Eraser",TexturePenTool.ExtraTool.Default,2f,0.02f, 1f,Color.clear), 
                         new TexturePenTool("b9567d145a3193046939b1cb6b5eea56","Stamp",TexturePenTool.ExtraTool.Stamp,1f,0.1f, 0f,null), 
-                        new TexturePenTool("44a2288e1ff487947b5c586fe23cbb95","Fill",TexturePenTool.ExtraTool.Fill,2f,0.01f, 0f,null), 
+                        new TexturePenTool("44a2288e1ff487947b5c586fe23cbb95","Fill",TexturePenTool.ExtraTool.Fill,1f,0.03f, 0f,null), 
                         new TexturePenTool("6cadb4cec0b66a449af35ab94a1085db","Gaussian",TexturePenTool.ExtraTool.Gaussian,2f,0.01f, 0f,Color.clear), 
                         new TexturePenTool("61a3819337bf0184b84c23f1838e049f","ColorPick",TexturePenTool.ExtraTool.ColorPick,0,0, 0,null),
                     };
@@ -102,8 +103,6 @@ namespace HhotateA
                 return _penTools;
             }
         }
-
-        private List<int> fillTriangle = new List<int>();
         
         private void OnGUI()
         {
@@ -111,9 +110,11 @@ namespace HhotateA
             {
                 using (new EditorGUILayout.VerticalScope(GUILayout.Width(380)))
                 {
+                    EditorGUILayout.Space();
                     avatar = EditorGUILayout.ObjectField("", avatar, typeof(GameObject), true) as GameObject;
                     if (GUILayout.Button("Setup"))
                     {
+                        Release();
                         var rends = avatar.GetComponentsInChildren<Renderer>();
                         var mcs = rends.Select(r => new MeshCreater(r)).ToArray();
                         meshCreater = new MeshCreater(avatar.transform, mcs);
@@ -124,23 +125,36 @@ namespace HhotateA
                         GenerateEditMesh();
                         currentMaterials = meshCreater.GetMaterials();
                         editMaterials = currentMaterials.Select(m => new Material(m)).ToArray();
-                        for (int i = 0; i < texturePainters.Length; i++)
+                        if (loadUVMap)
                         {
-                            if (meshCreater.GetMaterials()[i].mainTexture != null)
+                            for (int i = 0; i < texturePainters.Length; i++)
                             {
-                                texturePainters[i].ReadUVMap(meshCreater.CreateSubMesh(i));
-                                texturePainters[i].AddLayer();
-                                texturePainters[i].SetLayerActive(0, true);
-                                texturePainters[i].SetLayerActive(1, false);
-                                texturePainters[i].SetLayerActive(2, true);
-                                texturePainters[i].ChangeEditLayer(2);
-                                ReplaceMaterials(currentMaterials[i], editMaterials[i]);
+                                if (meshCreater.GetMaterials()[i].mainTexture != null)
+                                {
+                                    texturePainters[i].ReadUVMap(meshCreater.CreateSubMesh(i));
+                                    texturePainters[i].AddLayer();
+                                    texturePainters[i].SetLayerActive(0, true);
+                                    texturePainters[i].SetLayerActive(1, false);
+                                    texturePainters[i].SetLayerActive(2, true);
+                                    texturePainters[i].ChangeEditLayer(2);
+                                    ReplaceMaterials(currentMaterials[i], editMaterials[i]);
+                                }
                             }
                         }
                     }
+                    
+                    EditorGUILayout.Space();
+                    EditorGUILayout.Space();
 
-                    if (meshCreater == null) return;
+                    if (meshCreater == null)
+                    {
+                        loadUVMap = EditorGUILayout.Toggle("Load UVMap", loadUVMap);
+                        EditorGUILayout.Space();
+                        return;
+                    }
+                    
                     rendsScroll = EditorGUILayout.BeginScrollView(rendsScroll);
+                    
                     using (new EditorGUILayout.VerticalScope())
                     {
                         for (int i = 0; i < meshCreater.GetMaterials().Length; i++)
@@ -156,9 +170,16 @@ namespace HhotateA
                         }
                     }
                     EditorGUILayout.EndScrollView();
-                    if (texturePainter == null) return;
 
+                    EditorGUILayout.Space();
+                    loadUVMap = EditorGUILayout.Toggle("Load UVMap", loadUVMap);
+                    EditorGUILayout.Space();
                     squareMode = EditorGUILayout.Toggle("Texture Square Mode", squareMode);
+                    EditorGUILayout.Space();
+                    deleateLayerActive = EditorGUILayout.Toggle("Deleate Layer", deleateLayerActive);
+                    EditorGUILayout.Space();
+                    
+                    if (texturePainter == null) return;
 
                     using (new EditorGUILayout.VerticalScope(GUI.skin.box))
                     {
@@ -229,24 +250,29 @@ namespace HhotateA
                         }
                     }
 
-                    using (new EditorGUILayout.HorizontalScope())
-                    {
-                        if (GUILayout.Button("Reset", GUILayout.Width(150)))
-                        {
-                            gradient = new Gradient();
-                        }
-
-                        gradient = EditorGUILayout.GradientField("", gradient);
-                    }
-
-                    straightMode = EditorGUILayout.Toggle("StraightMode", straightMode);
-                    
-                    EditorGUILayout.Space();
-
                     using (new EditorGUILayout.VerticalScope())
                     {
                         if (pen.extraTool == TexturePenTool.ExtraTool.Default)
                         {
+                            if (straightMode)
+                            {
+                                using (new EditorGUILayout.HorizontalScope())
+                                {
+                                    if (GUILayout.Button("Reset", GUILayout.Width(150)))
+                                    {
+                                        gradient = new Gradient();
+                                    }
+
+                                    gradient = EditorGUILayout.GradientField("", gradient);
+                                }
+                            }
+                            else
+                            {
+                                EditorGUILayout.LabelField("");
+                            }
+                            straightMode = EditorGUILayout.Toggle("Straight Line", straightMode);
+                            EditorGUILayout.Space();
+                            
                             pen.brushStrength = EditorGUILayout.Slider("Brush Strength", pen.brushStrength, 0.5f, 2.5f);
                             EditorGUILayout.Space();
                             pen.brushWidth = EditorGUILayout.Slider("Brush Width", pen.brushWidth, 0.0f, 0.05f);
@@ -256,20 +282,49 @@ namespace HhotateA
                         else
                         if (pen.extraTool == TexturePenTool.ExtraTool.Stamp)
                         {
+                            EditorGUILayout.Space();
+                            using (new EditorGUILayout.HorizontalScope())
+                            {
+                                //straightMode = EditorGUILayout.Toggle("Copy Texture", straightMode);
+                                using (new EditorGUI.DisabledScope(straightMode))
+                                {
+                                    if (GUILayout.Button("Copy"))
+                                    {
+                                        straightMode = true;
+                                    }
+                                }
+                                using (new EditorGUI.DisabledScope(!straightMode))
+                                {
+                                    if (GUILayout.Button("Paste"))
+                                    {
+                                        straightMode = false;
+                                    }
+                                }
+                            }
+
+                            if (straightMode)
+                            {
+                                maskAllLayers = EditorGUILayout.Toggle("Copy All Layers", maskAllLayers);
+                            }
+                            else
+                            {
+                                EditorGUILayout.LabelField("");
+                            }
+                            
                             using (new EditorGUILayout.HorizontalScope())
                             {
                                 var stamp = (Texture2D) EditorGUILayout.ObjectField(pen.icon, typeof(Texture2D), false,
                                     GUILayout.Width(60), GUILayout.Height(60));
                                 if (stamp != null)
                                 {
-                                    pen.icon = stamp;
+                                    UpdateStampTexture(stamp);
                                 }
 
                                 using (new EditorGUILayout.VerticalScope())
                                 {
-                                    pen.brushStrength = EditorGUILayout.Slider("Aspect", pen.brushStrength, 0.5f, 2f);
+                                    pen.brushStrength = EditorGUILayout.FloatField("Aspect Ratio", pen.brushStrength);
                                     EditorGUILayout.Space();
-                                    pen.brushWidth = EditorGUILayout.Slider("Size", pen.brushWidth, 0.0f, 0.5f);
+                                    pen.brushWidth = EditorGUILayout.Slider("Size", pen.brushWidth, 0.0f, 1f);
                                     EditorGUILayout.Space();
                                     pen.brushPower =
                                         EditorGUILayout.Slider("Rotation", pen.brushPower * 360f, 0f, 360f) /
@@ -280,24 +335,42 @@ namespace HhotateA
                         else
                         if (pen.extraTool == TexturePenTool.ExtraTool.Fill)
                         {
-                            pen.brushStrength = EditorGUILayout.Slider("Area Expansion", pen.brushStrength, 0.5f, 2.5f);
+                            using (new EditorGUILayout.HorizontalScope())
+                            {
+                                if (GUILayout.Button("Reset", GUILayout.Width(150)))
+                                {
+                                    gradient = new Gradient();
+                                }
+
+                                gradient = EditorGUILayout.GradientField("", gradient);
+                            }
+                            straightMode = EditorGUILayout.Toggle("StraightGradation", straightMode);
+                            EditorGUILayout.Space();
+                            
+                            pen.brushStrength = EditorGUILayout.Slider("Area Expansion", pen.brushStrength, 0f, 10f);
                             EditorGUILayout.Space();
                             pen.brushWidth = EditorGUILayout.Slider("Threshold", pen.brushWidth, 0.0f, 0.1f);
                             EditorGUILayout.Space();
-                            maskAllTexture = EditorGUILayout.Toggle("Mask All Texture (Fill/ColorPick)", maskAllTexture);
+                            maskAllLayers = EditorGUILayout.Toggle("Mask All Texture", maskAllLayers);
                         }
                         else if (pen.extraTool == TexturePenTool.ExtraTool.ColorPick)
                         {
                             EditorGUILayout.LabelField("");
+                            EditorGUILayout.LabelField("");
+                            
+                            EditorGUILayout.LabelField("");
                             EditorGUILayout.Space();
                             EditorGUILayout.LabelField("");
                             EditorGUILayout.Space();
-                            maskAllTexture = EditorGUILayout.Toggle("Mask All Texture (Fill/ColorPick)", maskAllTexture);
-                            straightMode = EditorGUILayout.Toggle("StraightMode", straightMode);
+                            maskAllLayers = EditorGUILayout.Toggle("Read All Layers", maskAllLayers);
                         }
                         else
                         if (pen.extraTool == TexturePenTool.ExtraTool.Gaussian)
                         {
+                            EditorGUILayout.LabelField("");
+                            straightMode = EditorGUILayout.Toggle("Straight Line", straightMode);
+                            EditorGUILayout.Space();
+                            
                             pen.brushStrength = EditorGUILayout.Slider("Brush Strength", pen.brushStrength, 0.5f, 2.5f);
                             EditorGUILayout.Space();
                             pen.brushWidth = EditorGUILayout.Slider("Brush Width", pen.brushWidth, 0.0f, 0.05f);
@@ -306,7 +379,18 @@ namespace HhotateA
                         }
                         else
                         {
-                            maskAllTexture = EditorGUILayout.Toggle("Mask All Texture (Fill/ColorPick)", maskAllTexture);
+                            using (new EditorGUILayout.HorizontalScope())
+                            {
+                                if (GUILayout.Button("Reset", GUILayout.Width(150)))
+                                {
+                                    gradient = new Gradient();
+                                }
+                                gradient = EditorGUILayout.GradientField("", gradient);
+                            }
+                            straightMode = EditorGUILayout.Toggle("straightMode", straightMode);
+                            EditorGUILayout.Space();
+                            
+                            maskAllLayers = EditorGUILayout.Toggle("maskAllLayers", maskAllLayers);
                             pen.brushStrength = EditorGUILayout.Slider("pen.brushStrength", pen.brushStrength, 0.5f, 2.5f);
                             pen.brushWidth = EditorGUILayout.Slider("pen.brushWidth", pen.brushWidth, 0.0f, 0.05f);
                             pen.brushPower = EditorGUILayout.Slider("pen.brushPower", pen.brushPower, 0f, 1f);
@@ -349,14 +433,14 @@ namespace HhotateA
                     {
                         if (GUILayout.Button("Save"))
                         {
-                            var path = EditorUtility.SaveFilePanel("Save", "Assets", meshCreater.GetMaterials()[editIndex].name+"_Layers", "asset");
+                            var path = EditorUtility.SaveFilePanel("Save", "Assets", meshCreater.GetMaterials()[editIndex].name+"_Layers", "layersavedata.asset");
                             if (string.IsNullOrWhiteSpace(path)) return;
                             texturePainter.SaveLayerData(path);
                         }
 
                         if (GUILayout.Button("Load"))
                         {
-                            var path = EditorUtility.OpenFilePanel("Load", "Assets",  "asset");
+                            var path = EditorUtility.OpenFilePanel("Load", "Assets",  "layersavedata.asset");
                             if (string.IsNullOrWhiteSpace(path)) return;
                             texturePainter.LoadLayerData(path);
                         }
@@ -400,8 +484,8 @@ namespace HhotateA
                     {
                         using (new EditorGUILayout.HorizontalScope())
                         {
-                            avatarMonitor?.Display(((int) position.width - 400)/2 - 10, (int) position.height - 5,rotateButton,moveButton);
-                            texturePainter?.Display( ((int) position.width - 400)/2 - 10, (int) position.height - 5,squareMode,rotateButton,moveButton);
+                            avatarMonitor?.Display(((int) position.width - 400)/2 - 5, (int) position.height - 5,rotateButton,moveButton);
+                            texturePainter?.Display( ((int) position.width - 400)/2 - 5, (int) position.height - 5,squareMode,rotateButton,moveButton);
                         }
                     }
                 }
@@ -429,10 +513,6 @@ namespace HhotateA
                 }
             }
             editMaterials[editIndex].mainTexture = texturePainter?.GetTexture();
-            if (fillTriangle.Count > 0)
-            {
-                texturePainter.FillTriangle(editMeshCollider.sharedMesh,fillTriangle[0],brushColor);
-            }
         }
         
         public bool LayerButtons()
@@ -446,26 +526,28 @@ namespace HhotateA
                 {
                     using (new EditorGUI.DisabledScope(texturePainter?.LayerCount() > 16))
                     {
-                        if (GUILayout.Button("Add Layer", GUILayout.Width(300)))
+                        if (GUILayout.Button("Add Layer", GUILayout.Height(25)))
                         {
                             texturePainter.AddLayer(newLayer);
                             newLayer = null;
                         }
 
-                        if (GUILayout.Button("Add Mask", GUILayout.Width(300)))
+                        GUILayout.Space(5);
+
+                        if (GUILayout.Button("Add Mask", GUILayout.Height(25)))
                         {
                             texturePainter.AddMask(brushColor,gradient);
                         }
                     }
-
-                    if (GUILayout.Button("Deleate Layer", GUILayout.Width(300)))
+                    /*if (GUILayout.Button("Deleate Layer", GUILayout.Width(300)))
                     {
                         deleateLayerActive = !deleateLayerActive;
-                    }
+                    }*/
                 }
             }
             EditorGUILayout.LabelField("");
-            layersScroll = EditorGUILayout.BeginScrollView(layersScroll);
+            layersScroll = EditorGUILayout.BeginScrollView(layersScroll, false, false, GUIStyle.none, GUI.skin.verticalScrollbar, GUI.skin.scrollView);
+            //layersScroll = GUI.BeginScrollView(GUILayoutUtility.GetRect(300, 300),layersScroll,new Rect(0, 0, 300, 300));
             texturePainter.LayerButtons(deleateLayerActive);
             EditorGUILayout.EndScrollView();
 
@@ -495,7 +577,12 @@ namespace HhotateA
         }
 
         private void OnDestroy()
-        {    
+        {
+            Release();
+        }
+
+        private void Release()
+        {
             DestroyEditMesh();
             for (int i = 0; i < editMaterials.Length; i++)
             {
@@ -531,7 +618,10 @@ namespace HhotateA
             {
                 if (Event.current.type == EventType.MouseDown && Event.current.button == drawButton)
                 {
-                    straightBuffer  = texturePainter.Touch();
+                    avatarMonitor?.GetTriangle(editMeshCollider,(tri, pos) =>
+                    {
+                        straightBuffer = meshCreater.GetUVDelta(editIndex, tri, pos);
+                    });
                 }
             }
             
@@ -544,30 +634,32 @@ namespace HhotateA
                         avatarMonitor?.GetTriangle(editMeshCollider, (tri, pos) =>
                         {
                             var uv = meshCreater.GetUVDelta(editIndex, tri, pos);
-                            texturePainter.DrawLineGradient(straightBuffer, uv, brushColor, gradient, pen.brushWidth,
+                            texturePainter.DrawLine(straightBuffer, uv, brushColor, gradient, pen.brushWidth,
                                 pen.brushStrength, pen.brushPower);
                         });
                     }
                 }
-                if (Event.current.type == EventType.MouseDrag && Event.current.button == drawButton)
+                else
                 {
-                    avatarMonitor?.GetDragTriangle(editMeshCollider, (tt, pt, tf, pf) =>
+                    if (Event.current.type == EventType.MouseDrag && Event.current.button == drawButton)
                     {
-                        var from = meshCreater.GetUVDelta(editIndex, tf, pf);
-                        var to = meshCreater.GetUVDelta(editIndex, tt, pt);
-                        var delta = meshCreater.GetUVdelta(editIndex, tt, pt);
-                        // あまりにUVが飛んでたら処理をやめる 2.5fの部分はよしなに
-                        if (Vector2.Distance(to, from) / Vector3.Distance(pt, pf) < delta * 1.2f)
+                        avatarMonitor?.GetDragTriangle(editMeshCollider, (tt, pt, tf, pf) =>
                         {
-                            texturePainter?.DrawLine(from, to, brushColor, gradient,pen.brushWidth * delta, pen.brushStrength, pen.brushPower);
-                        }
-                    });
+                            var from = meshCreater.GetUVDelta(editIndex, tf, pf);
+                            var to = meshCreater.GetUVDelta(editIndex, tt, pt);
+                            var delta = meshCreater.GetUVdelta(editIndex, tt, pt);
+                            // あまりにUVが飛んでたら処理をやめる 2.5fの部分はよしなに
+                            if (Vector2.Distance(to, from) / Vector3.Distance(pt, pf) < delta * 1.2f)
+                            {
+                                texturePainter?.DrawLine(from, to, brushColor, gradient,pen.brushWidth * delta, pen.brushStrength, pen.brushPower);
+                            }
+                        });
+                    }
                 }
             }
 
             if (pen.extraTool == TexturePenTool.ExtraTool.Fill)
             {
-                // 0.1 の時透明以外選択の修正 // `irann
                 if (straightMode)
                 {
                     if (Event.current.type == EventType.MouseUp && Event.current.button == drawButton && !meshCreater.IsComputeLandVertexes())
@@ -590,7 +682,8 @@ namespace HhotateA
                                     brushColor,
                                     gradient,
                                     straightBuffer,
-                                    uv
+                                    uv,
+                                    (int) pen.brushStrength
                                 );
                             }, false);
                         });
@@ -603,7 +696,7 @@ namespace HhotateA
                     {
                         avatarMonitor?.GetTriangle(editMeshCollider, (tri,pos) =>
                         {
-                            texturePainter.FillTriangle(editMeshCollider.sharedMesh,tri,brushColor);
+                            texturePainter.FillTriangle(editMeshCollider.sharedMesh,tri,brushColor,(int) pen.brushStrength);
                         });
                     }
                 }
@@ -611,15 +704,30 @@ namespace HhotateA
 
             if (pen.extraTool == TexturePenTool.ExtraTool.Stamp)
             {
-                if (Event.current.type == EventType.MouseDown && Event.current.button == drawButton)
+                if (straightMode)
                 {
-                    avatarMonitor?.GetTriangle(editMeshCollider, (tri,pos) =>
+                    if (Event.current.type == EventType.MouseUp && Event.current.button == drawButton)
                     {
-                        var uv = meshCreater.GetUVDelta(editIndex, tri, pos);
-                        var delta = meshCreater.GetUVdelta(editIndex, tri, pos);
-                        var axi = meshCreater.GetUVAxi(editIndex, tri, avatarMonitor.WorldSpaceCameraUp()).normalized;
-                        texturePainter.DrawStamp(pen.icon,uv,new Vector2(pen.brushWidth*pen.brushStrength,pen.brushWidth/pen.brushStrength)*delta, brushColor, -Mathf.Atan2(axi.y,axi.x)+pen.brushPower*Mathf.PI*2f);
-                    });
+                        avatarMonitor?.GetTriangle(editMeshCollider, (tri, pos) =>
+                        {
+                            var uv = meshCreater.GetUVDelta(editIndex, tri, pos);
+                            var stamp = texturePainter.GetStamp(straightBuffer, uv, maskAllLayers);
+                            UpdateStampTexture(stamp);
+                        });
+                    }
+                }
+                else
+                {
+                    if (Event.current.type == EventType.MouseDown && Event.current.button == drawButton)
+                    {
+                        avatarMonitor?.GetTriangle(editMeshCollider, (tri,pos) =>
+                        {
+                            var uv = meshCreater.GetUVDelta(editIndex, tri, pos);
+                            var delta = meshCreater.GetUVdelta(editIndex, tri, pos);
+                            var axi = meshCreater.GetUVAxi(editIndex, tri, avatarMonitor.WorldSpaceCameraUp()).normalized;
+                            texturePainter.DrawStamp(pen.icon,uv,new Vector2(pen.brushWidth*pen.brushStrength,pen.brushWidth/pen.brushStrength)*delta, brushColor, -Mathf.Atan2(axi.y,axi.x)+pen.brushPower*Mathf.PI*2f);
+                        });
+                    }
                 }
             }
             
@@ -648,7 +756,7 @@ namespace HhotateA
                     avatarMonitor?.GetTriangle(editMeshCollider, (tri,pos) =>
                     {
                         var uv = meshCreater.GetUVDelta(editIndex, tri, pos);
-                        brushColors[colorIndex] = texturePainter.SpuitColor(uv,maskAllTexture);
+                        brushColors[colorIndex] = texturePainter.SpuitColor(uv,maskAllLayers);
                     });
                 }
             }
@@ -695,7 +803,7 @@ namespace HhotateA
                     if (Event.current.type == EventType.MouseUp && Event.current.button == drawButton)
                     {
                         var uv  = texturePainter.Touch();
-                        texturePainter.DrawLineGradient(straightBuffer, uv, brushColor, gradient, pen.brushWidth, pen.brushStrength, pen.brushPower);
+                        texturePainter.DrawLine(straightBuffer, uv, brushColor, gradient, pen.brushWidth, pen.brushStrength, pen.brushPower);
                     }
                 }
                 else
@@ -717,7 +825,7 @@ namespace HhotateA
                     if (Event.current.type == EventType.MouseUp && Event.current.button == drawButton)
                     {
                         var uv  = texturePainter.Touch();
-                        texturePainter.FillColor(straightBuffer,uv,brushColor,gradient,pen.brushWidth,(int) pen.brushStrength,maskAllTexture);
+                        texturePainter.FillColor(straightBuffer,uv,brushColor,gradient,pen.brushWidth,(int) pen.brushStrength,maskAllLayers);
                     }
                 }
                 else
@@ -725,17 +833,29 @@ namespace HhotateA
                     if (Event.current.type == EventType.MouseDown && Event.current.button == drawButton)
                     {
                         var uv  = texturePainter.Touch();
-                        texturePainter.FillColor(uv,brushColor,gradient,pen.brushWidth,(int) pen.brushStrength,maskAllTexture);
+                        texturePainter.FillColor(uv,brushColor,gradient,pen.brushWidth,(int) pen.brushStrength,maskAllLayers);
                     }
                 }
             }
 
             if (pen.extraTool == TexturePenTool.ExtraTool.Stamp)
             {
-                if (Event.current.type == EventType.MouseDown && Event.current.button == drawButton)
+                if (straightMode)
                 {
-                    var uv  = texturePainter.Touch();
-                    texturePainter.DrawStamp(pen.icon,uv,new Vector2(pen.brushWidth*pen.brushStrength,pen.brushWidth/pen.brushStrength), brushColor ,pen.brushPower*Mathf.PI*2f);
+                    if (Event.current.type == EventType.MouseUp && Event.current.button == drawButton)
+                    {
+                        var uv  = texturePainter.Touch();
+                        var stamp = texturePainter.GetStamp(straightBuffer, uv, maskAllLayers);
+                        UpdateStampTexture(stamp);
+                    }
+                }
+                else
+                {
+                    if (Event.current.type == EventType.MouseDown && Event.current.button == drawButton)
+                    {
+                        var uv  = texturePainter.Touch();
+                        texturePainter.DrawStamp(pen.icon,uv,new Vector2(pen.brushWidth*pen.brushStrength,pen.brushWidth/pen.brushStrength), brushColor ,pen.brushPower*Mathf.PI*2f);
+                    }
                 }
             }
             
@@ -766,7 +886,7 @@ namespace HhotateA
                 if (Event.current.type == EventType.MouseDown && Event.current.button == drawButton)
                 {
                     var uv  = texturePainter.Touch();
-                    brushColors[colorIndex] = texturePainter.SpuitColor(uv,maskAllTexture);
+                    brushColors[colorIndex] = texturePainter.SpuitColor(uv,maskAllLayers);
                 }
             }
             
@@ -785,6 +905,17 @@ namespace HhotateA
                         texturePainter?.Gaussian(from, to, pen.brushWidth, pen.brushStrength, 0.1f);
                     });
                 }
+            }
+        }
+
+        void UpdateStampTexture(Texture tex)
+        {
+            if(tex==null) return;
+            if (pen.icon != tex)
+            {
+                pen.icon = tex;
+                pen.brushStrength = Mathf.Sqrt(((float)pen.icon.width / (float)texturePainter.GetEditTexture().width)/((float)pen.icon.height / (float)texturePainter.GetEditTexture().height));
+                pen.brushWidth = ((float)pen.icon.width / (float)texturePainter.GetEditTexture().width) / pen.brushStrength;
             }
         }
         

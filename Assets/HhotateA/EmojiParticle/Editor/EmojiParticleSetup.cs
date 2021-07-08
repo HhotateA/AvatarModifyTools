@@ -1,4 +1,5 @@
-﻿using System;
+﻿using HhotateA.AvatarModifyTools.Core;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -10,7 +11,7 @@ using UnityEditor.Callbacks;
 using VRC.SDK3.Avatars.Components;
 #endif
 
-namespace HhotateA
+namespace HhotateA.AvatarModifyTools.EmojiParticle
 {
     public class EmojiParticleSetup : EditorWindow
     {

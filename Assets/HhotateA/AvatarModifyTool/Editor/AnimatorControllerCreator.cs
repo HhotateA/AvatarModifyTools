@@ -7,7 +7,7 @@ using UnityEditor.Animations;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
-namespace HhotateA
+namespace HhotateA.AvatarModifyTools.Core
 {
     public class AnimatorControllerCreator
     {

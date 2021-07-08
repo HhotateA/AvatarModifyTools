@@ -66,6 +66,22 @@
         _Mode13 ("",int) = 1
         _Mode14 ("",int) = 1
         _Mode15 ("",int) = 1
+        _Alpha0 ("",int) = 1
+        _Alpha1 ("",int) = 1
+        _Alpha2 ("",int) = 1
+        _Alpha3 ("",int) = 1
+        _Alpha4 ("",int) = 1
+        _Alpha5 ("",int) = 1
+        _Alpha6 ("",int) = 1
+        _Alpha7 ("",int) = 1
+        _Alpha8 ("",int) = 1
+        _Alpha9 ("",int) = 1
+        _Alpha10 ("",int) = 1
+        _Alpha11 ("",int) = 1
+        _Alpha12 ("",int) = 1
+        _Alpha13 ("",int) = 1
+        _Alpha14 ("",int) = 1
+        _Alpha15 ("",int) = 1
         _Settings0 ("Settings", vector) = (0,0,0,0)
         _Settings1 ("Settings", vector) = (0,0,0,0)
         _Settings2 ("Settings", vector) = (0,0,0,0)
@@ -136,6 +152,7 @@
                 uniform sampler2D _Layer##num;\
                 uniform float4 _Layer##num##_ST;\
                 uniform int _Mode##num;\
+                uniform int _Alpha##num;\
                 uniform float4 _Settings##num;\
                 uniform int _Mask##num;\
 
@@ -144,12 +161,12 @@
                 {\
                     ##origin = lerp(\
                                 ##origin,\
-                                OverrideColor(##origin,_Layer##num,TRANSFORM_TEX(IN.localTexcoord.xy,_Layer##num),_Color##num,_Comparison##num,_Settings##num,_Mode##num),\
-                                mask);\
+                                OverrideColor(##origin,_Layer##num,TRANSFORM_TEX(IN.localTexcoord.xy,_Layer##num),_Color##num,_Comparison##num,_Settings##num,_Mode##num,_Alpha##num),\
+                                float4(mask.rgb*mask.a,mask.a));\
                 }\
                 else\
                 {\
-                    ##mask = OverrideColor(##mask,_Layer##num,TRANSFORM_TEX(IN.localTexcoord.xy,_Layer##num),_Color##num,_Comparison##num,_Settings##num,_Mode##num);\
+                    ##mask = OverrideColor(##mask,_Layer##num,TRANSFORM_TEX(IN.localTexcoord.xy,_Layer##num),_Color##num,_Comparison##num,_Settings##num,_Mode##num,_Alpha##num);\
                 }\
 
             /*float4 _Color0,_Color1,_Color2,_Color3,_Color4,_Color5,_Color6,_Color7,_Color8,_Color9,_Color10,_Color11,_Color12,_Color13,_Color14,_Color15;
@@ -173,7 +190,6 @@
             Layer(13)
             Layer(14)
             Layer(15)
-
 
             static float3 linecolumn[41]={
                                                                                                                 float3(-4.0, 0.0, 1.0),
@@ -214,7 +230,7 @@
                 return (rgb.x+rgb.y+rgb.z)*0.3333333333333333;
             }
             
-            float4 OverrideColor(float4 col,sampler2D tex,float2 uv,float4 color,float4 comparison,float4 settings,int mode)
+            float4 OverrideColor(float4 col,sampler2D tex,float2 uv,float4 color,float4 comparison,float4 settings,int mode,int alpha)
             {
 		        if(uv.x<0.0 || 1.0<uv.x || uv.y<0.0 || 1.0<uv.y ) return col;
                 float4 l = tex2D(tex,uv);
@@ -229,21 +245,21 @@
                 }
                 else if (mode == 2) // additive
                 {
-                    col = lerp(col,col+lc,lc.a);
+                    col.rgb = lerp(col.rgb,col.rgb+lc.rgb,lc.a);
                 }
                 else if (mode == 3) // multiply
                 {
-                    col = lerp(col,col*lc,lc.a);
+                    col.rgb = lerp(col.rgb,col.rgb*lc.rgb,lc.a);
                 }
                 else if (mode == 4) // subtraction
                 {
-                    col = lerp(col,col-lc,lc.a);
+                    col.rgb = lerp(col.rgb,col.rgb-lc.rgb,lc.a);
                 }
                 else if (mode == 5) //division
                 {
                     if(l.a>0.0)
                     {
-                        col = lerp(col,col/lc,lc.a);
+                        col.rgb = lerp(col.rgb,col.rgb/lc.rgb,lc.a);
                     }
                 }
                 else if(mode == 6) // bloom

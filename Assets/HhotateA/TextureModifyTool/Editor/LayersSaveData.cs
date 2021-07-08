@@ -1,11 +1,11 @@
-﻿using System.Collections.Generic;
+﻿using HhotateA.AvatarModifyTools.Core;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 using System;
-using JetBrains.Annotations;
 using UnityEngine.Serialization;
 
-namespace HhotateA
+namespace HhotateA.AvatarModifyTools.TextureModifyTool
 {
     public class LayersSaveData : ScriptableObject
     {
@@ -31,6 +31,8 @@ namespace HhotateA
 
         public void DeleateLayer(int index)
         {
+            layers[index].Texture.Release();
+            layers[index].Texture.DiscardContents();
             layers.RemoveAt(index);
         }
 
@@ -137,21 +139,21 @@ namespace HhotateA
                 }
             }
 
-            using (new EditorGUILayout.VerticalScope(GUILayout.Width(30)))
+            using (new EditorGUILayout.VerticalScope(GUILayout.Width(150)))
             {
                 if (l.layerMode == BlendMode.HSV)
                 {
                     EditorGUILayout.BeginHorizontal();
                     EditorGUILayout.LabelField("H", GUILayout.Width(20));
-                    var h = GUILayout.HorizontalSlider(l.settings.x, -1f, 1f, GUILayout.Width(130));
+                    var h = GUILayout.HorizontalSlider(l.settings.x, -1f, 1f, GUILayout.Width(120));
                     EditorGUILayout.EndHorizontal();
                     EditorGUILayout.BeginHorizontal();
                     EditorGUILayout.LabelField("S", GUILayout.Width(20));
-                    var s = GUILayout.HorizontalSlider(l.settings.y, -1f, 1f, GUILayout.Width(130));
+                    var s = GUILayout.HorizontalSlider(l.settings.y, -1f, 1f, GUILayout.Width(120));
                     EditorGUILayout.EndHorizontal();
                     EditorGUILayout.BeginHorizontal();
                     EditorGUILayout.LabelField("V", GUILayout.Width(20));
-                    var v = GUILayout.HorizontalSlider(l.settings.z, -1f, 1f, GUILayout.Width(130));
+                    var v = GUILayout.HorizontalSlider(l.settings.z, -1f, 1f, GUILayout.Width(120));
                     EditorGUILayout.EndHorizontal();
                     l.settings = new Vector4(h,s,v,l.settings.w);
                 }
@@ -160,33 +162,33 @@ namespace HhotateA
                 {
                     EditorGUILayout.BeginHorizontal();
                     EditorGUILayout.LabelField("From", GUILayout.Width(50));
-                    l.comparison = EditorGUILayout.ColorField( l.comparison, GUILayout.Width(100));
+                    l.comparison = EditorGUILayout.ColorField( l.comparison, GUILayout.Width(90));
                     EditorGUILayout.EndHorizontal();
                     EditorGUILayout.BeginHorizontal();
                     EditorGUILayout.LabelField("To", GUILayout.Width(50));
-                    l.color = EditorGUILayout.ColorField( l.color, GUILayout.Width(100));
+                    l.color = EditorGUILayout.ColorField( l.color, GUILayout.Width(90));
                     EditorGUILayout.EndHorizontal();
                     EditorGUILayout.BeginHorizontal();
-                    EditorGUILayout.LabelField("Brightness", GUILayout.Width(30));
-                    var z = GUILayout.HorizontalSlider(l.settings.z, 0f, 1f, GUILayout.Width(120));
+                    EditorGUILayout.LabelField("Brightness", GUILayout.Width(50));
+                    var z = GUILayout.HorizontalSlider(l.settings.z, 0f, 1f, GUILayout.Width(90));
                     EditorGUILayout.EndHorizontal();
                     EditorGUILayout.BeginHorizontal();
-                    EditorGUILayout.LabelField("Threshold", GUILayout.Width(30));
-                    var w = GUILayout.HorizontalSlider(l.settings.w, 0f, 2f, GUILayout.Width(120));
+                    EditorGUILayout.LabelField("Threshold", GUILayout.Width(50));
+                    var w = GUILayout.HorizontalSlider(l.settings.w, 0f, 2f, GUILayout.Width(90));
                     EditorGUILayout.EndHorizontal();
                     l.settings = new Vector4(l.settings.x,l.settings.y,z,w);
                 }
                 else
                 if(l.layerMode == BlendMode.Bloom)
                 {
-                    l.color = EditorGUILayout.ColorField(new GUIContent(), l.color, true, true, true,  GUILayout.Width(130));
+                    l.color = EditorGUILayout.ColorField(new GUIContent(), l.color, true, true, true,  GUILayout.Width(120));
                     EditorGUILayout.BeginHorizontal();
-                    EditorGUILayout.LabelField("Intensity", GUILayout.Width(30));
-                    var z = GUILayout.HorizontalSlider(l.settings.z, 1f, 10f, GUILayout.Width(120));
+                    EditorGUILayout.LabelField("Intensity", GUILayout.Width(50));
+                    var z = GUILayout.HorizontalSlider(l.settings.z, 1f, 10f, GUILayout.Width(90));
                     EditorGUILayout.EndHorizontal();
                     EditorGUILayout.BeginHorizontal();
-                    EditorGUILayout.LabelField("Threshold", GUILayout.Width(30));
-                    var w = GUILayout.HorizontalSlider(l.settings.w, 0f, 2f, GUILayout.Width(120));
+                    EditorGUILayout.LabelField("Threshold", GUILayout.Width(50));
+                    var w = GUILayout.HorizontalSlider(l.settings.w, 0f, 2f, GUILayout.Width(90));
                     EditorGUILayout.EndHorizontal();
                     l.settings = new Vector4(l.settings.x,l.settings.y,z,w);
                 }
@@ -216,10 +218,13 @@ namespace HhotateA
         {
             get
             {
-                if (texture == null && origin != null)
+                if (texture == null)
                 {
-                    var t = TexturePainter.Bytes2Texture(origin);
-                    texture = TexturePainter.GetReadableTexture(t);
+                    if(origin != null)
+                    {
+                        var t = TextureCombinater.Bytes2Texture(origin);
+                        texture = TextureCombinater.GetReadableRenderTexture(t);
+                    }
                 }
                 return texture;
             }
@@ -245,7 +250,10 @@ namespace HhotateA
 
         public void SaveTexture(string path)
         {
-            origin = TexturePainter.Texture2Bytes(texture);
+            origin = TextureCombinater.Texture2Bytes(texture);
+            texture.Release();
+            texture.DiscardContents();
+            texture = null;
         }
     }
 

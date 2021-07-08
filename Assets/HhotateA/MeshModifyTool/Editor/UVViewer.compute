@@ -1,0 +1,37 @@
+﻿#pragma kernel DrawUV
+
+StructuredBuffer<float2> _UVs;
+StructuredBuffer<float4> _Vertices;
+StructuredBuffer<int> _Triangles;
+
+RWTexture2D<float4> _ResultTex;
+int _Width;
+int _Height;
+float4 _Color;
+
+CGPROGRAM
+void PaintFromTo(uint2 from,uint2 to)
+{
+    float dist = distance(from,to);
+    int2 d = (to - from);
+    for(float i=0;i<dist;i++)
+    {
+        _ResultTex[from + d/dist * i] = _Color;        
+    }
+}
+ENDCG
+
+// 参考:https://qiita.com/gatosyocora/items/9025d0eadc6b80012e28
+[numthreads(1,1,1)]
+void DrawUV (uint3 id : SV_DispatchThreadID)
+{
+    float2 uv0 = _UVs[_Triangles[id.x*3+0]];
+    float2 uv1 = _UVs[_Triangles[id.x*3+1]];
+    float2 uv2 = _UVs[_Triangles[id.x*3+2]];
+    uint2 xy0 = uint2(uv0.x*_Width , uv0.y*_Height);
+    uint2 xy1 = uint2(uv1.x*_Width , uv1.y*_Height);
+    uint2 xy2 = uint2(uv2.x*_Width , uv2.y*_Height);
+    PaintFromTo(xy0,xy1);
+    PaintFromTo(xy1,xy2);
+    PaintFromTo(xy2,xy0);
+}

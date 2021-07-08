@@ -1,7 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using HhotateA.AvatarModifyTools.Core;
+using System.Collections.Generic;
 using UnityEngine;
 
-namespace HhotateA
+namespace HhotateA.AvatarModifyTools.EmojiParticle
 {
     [CreateAssetMenu(menuName = "HhotateA/EmojiSaveData")]
     public class EmojiSaveData : ScriptableObject

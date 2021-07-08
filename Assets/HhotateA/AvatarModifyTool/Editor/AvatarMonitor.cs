@@ -2,7 +2,7 @@
 using UnityEngine;
 using UnityEditor;
 
-namespace HhotateA
+namespace HhotateA.AvatarModifyTools.Core
 {
     /// <summary>
     /// 編集画面のカメラ画像出すための補助クラス
@@ -83,10 +83,7 @@ namespace HhotateA
 
             var e = Event.current;
 
-            if (rect.x < e.mousePosition.x &&
-                rect.x + targetTexture.width > e.mousePosition.x &&
-                rect.y < e.mousePosition.y &&
-                rect.y + targetTexture.height > e.mousePosition.y)
+            if (rect.Contains(e.mousePosition))
             {
                 if (e.type == EventType.MouseDrag && e.button == rotationDrag)
                 {
@@ -127,19 +124,13 @@ namespace HhotateA
 
         public bool IsInDisplay(Vector2 pos)
         {
-            return (rect.x < pos.x &&
-                    rect.x + targetTexture.width > pos.x &&
-                    rect.y < pos.y &&
-                    rect.y + targetTexture.height > pos.y);
+            return rect.Contains(pos);
         }
 
         public void GetControllPoint(MeshCollider meshCollider, bool isSelectVertex, Action<Vector3> onHit)
         {
             var e = Event.current;
-            if (rect.x < e.mousePosition.x &&
-                rect.x + targetTexture.width > e.mousePosition.x &&
-                rect.y < e.mousePosition.y &&
-                rect.y + targetTexture.height > e.mousePosition.y)
+            if (rect.Contains(e.mousePosition))
             {
                 // Drag
                 var p = new Vector3(e.mousePosition.x - rect.x, targetTexture.height - e.mousePosition.y + rect.y,
@@ -174,10 +165,7 @@ namespace HhotateA
         public void GetTriangle(MeshCollider meshCollider, Action<int> onhit = null)
         {
             var e = Event.current;
-            if (rect.x < e.mousePosition.x &&
-                rect.x + targetTexture.width > e.mousePosition.x &&
-                rect.y < e.mousePosition.y &&
-                rect.y + targetTexture.height > e.mousePosition.y)
+            if (rect.Contains(e.mousePosition))
             {
                 var p = new Vector3(e.mousePosition.x - rect.x, targetTexture.height - e.mousePosition.y + rect.y,
                     1f);
@@ -201,10 +189,7 @@ namespace HhotateA
         {
             var e = Event.current;
             
-            if (rect.x < e.mousePosition.x &&
-                rect.x + targetTexture.width > e.mousePosition.x &&
-                rect.y < e.mousePosition.y &&
-                rect.y + targetTexture.height > e.mousePosition.y)
+            if (rect.Contains(e.mousePosition))
             {
                 var p = new Vector3(e.mousePosition.x - rect.x, targetTexture.height - e.mousePosition.y + rect.y,
                     1f);
@@ -228,10 +213,7 @@ namespace HhotateA
         {
             var e = Event.current;
             
-            if (rect.x < e.mousePosition.x &&
-                rect.x + targetTexture.width > e.mousePosition.x &&
-                rect.y < e.mousePosition.y &&
-                rect.y + targetTexture.height > e.mousePosition.y)
+            if (rect.Contains(e.mousePosition))
             {
                 var p = new Vector3(e.mousePosition.x - rect.x, rect.height - e.mousePosition.y + rect.y,1f);
                 var ray = camera.ScreenPointToRay(p);
@@ -271,10 +253,7 @@ namespace HhotateA
         {
             var e = Event.current;
             
-            if (rect.x < e.mousePosition.x &&
-                rect.x + targetTexture.width > e.mousePosition.x &&
-                rect.y < e.mousePosition.y &&
-                rect.y + targetTexture.height > e.mousePosition.y)
+            if (rect.Contains(e.mousePosition))
             {
                 // Drag
                 var p = new Vector3(e.mousePosition.x - rect.x, targetTexture.height - e.mousePosition.y + rect.y,1f);

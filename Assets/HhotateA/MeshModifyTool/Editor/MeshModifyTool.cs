@@ -1,4 +1,5 @@
-﻿using System;
+﻿using HhotateA.AvatarModifyTools.Core;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -6,7 +7,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.Animations;
 
-namespace HhotateA
+namespace HhotateA.AvatarModifyTools.MeshModifyTool
 {
     public class MeshModifyTool : EditorWindow
     {
@@ -87,6 +88,11 @@ namespace HhotateA
         private Vector3 transformPosition;
         private Vector3 transformRotation;
         private Vector3 transformScale;
+        
+        // UV変形用
+        private UVViewer uvViewer;
+        private Vector4 uvTexelSize;
+        private Material activeMaterial;
 
         // 保存するBlendShapeの名前
         private string blendShapeName = "BlendShapeName";
@@ -168,7 +174,7 @@ namespace HhotateA
         private int casheCount = -1;
         
         // 最終選択頂点のデータ
-        private bool displayRawData = true;
+        private bool displayRawData => activeExperimentalBeta;
         Vector3 rawPosition = Vector3.zero;
         Vector3 rawNormal = Vector3.up;
         Vector3 rawTangent = Vector3.right;
@@ -435,45 +441,6 @@ namespace HhotateA
                                 }
                             }
                         }
-
-                        if (displayRawData)
-                        {
-                            using (new EditorGUILayout.HorizontalScope())
-                            {
-                                for (int i = 0; i < rawIDs.Length; i++)
-                                {
-                                    rawIDs[i] = EditorGUILayout.IntField("", rawIDs[i]);
-                                }
-                            }
-                            rawPosition = EditorGUILayout.Vector3Field("Position", rawPosition);
-                            rawNormal = EditorGUILayout.Vector3Field("Normal", rawNormal);
-                            rawTangent = EditorGUILayout.Vector3Field("Tangent", rawTangent);
-                            rawColor = EditorGUILayout.ColorField("Color", rawColor);
-                            for (int i = 0; i < rawUVs.Length; i++)
-                            {
-                                rawUVs[i] = EditorGUILayout.Vector2Field("UV" + i, rawUVs[i]);
-                            }
-                            for (int i = 0; i < rawWeights.Length; i++)
-                            {
-                                using (new EditorGUILayout.HorizontalScope())
-                                {
-                                    rawWeights[i] = new KeyValuePair<int, float>(
-                                        EditorGUILayout.IntField("BoneIndex"+i, rawWeights[i].Key),
-                                        EditorGUILayout.FloatField("Weight", rawWeights[i].Value));
-                                }
-                            }
-                            using (new EditorGUILayout.HorizontalScope())
-                            {
-                                if (GUILayout.Button("Set"))
-                                {
-                                    SetRawData();
-                                }
-                                if (GUILayout.Button("Generate"))
-                                {
-                                    GenerateTriangle();
-                                }
-                            }
-                        }
                     }
                     EditorGUILayout.Space();
                     
@@ -664,10 +631,94 @@ namespace HhotateA
                 {
                     if (avatarMonitor != null)
                     {
-                        avatarMonitor.Display( (int) position.width-300, (int) position.height-10,rotateButton,moveButton);
+                        var avatarMonitorWidth = displayRawData ? 1100 : 300;
+                        avatarMonitor.Display( (int) position.width-avatarMonitorWidth, (int) position.height-10,rotateButton,moveButton);
                         if (editIndex != -1)
                         {
                             AvatarMonitorTouch(editMeshCreater);
+                        }
+                    }
+                }
+                
+                if (displayRawData)
+                {
+                    using (new EditorGUILayout.VerticalScope())
+                    {
+                        using (new EditorGUILayout.VerticalScope(GUI.skin.box))
+                        {
+                            rawPosition = EditorGUILayout.Vector3Field("Position", rawPosition);
+                            rawNormal = EditorGUILayout.Vector3Field("Normal", rawNormal);
+                            rawTangent = EditorGUILayout.Vector3Field("Tangent", rawTangent);
+                            rawColor = EditorGUILayout.ColorField("Color", rawColor);
+                            for (int i = 0; i < rawUVs.Length; i++)
+                            {
+                                rawUVs[i] = EditorGUILayout.Vector2Field("UV" + i, rawUVs[i]);
+                            }
+
+                            for (int i = 0; i < rawWeights.Length; i++)
+                            {
+                                using (new EditorGUILayout.HorizontalScope())
+                                {
+                                    rawWeights[i] = new KeyValuePair<int, float>(
+                                        EditorGUILayout.IntField("BoneIndex" + i, rawWeights[i].Key),
+                                        EditorGUILayout.FloatField("Weight", rawWeights[i].Value));
+                                }
+                            }
+
+                            if (GUILayout.Button("UpdateData"))
+                            {
+                                SetRawData();
+                            }
+                        }
+
+                        EditorGUILayout.Space();
+
+                        using (new EditorGUILayout.VerticalScope(GUI.skin.box))
+                        {
+                            using (new EditorGUILayout.HorizontalScope())
+                            {
+                                for (int i = 0; i < rawIDs.Length; i++)
+                                {
+                                    rawIDs[i] = EditorGUILayout.IntField("", rawIDs[i]);
+                                }
+                            }
+
+                            if (GUILayout.Button("GenerateTriangle"))
+                            {
+                                GenerateTriangle();
+                            }
+                        }
+
+                        EditorGUILayout.Space();
+                        
+                        using (new EditorGUILayout.VerticalScope(GUI.skin.box))
+                        {
+                            using (new EditorGUILayout.HorizontalScope())
+                            {
+                                EditorGUILayout.LabelField("UV_ST");
+                                uvTexelSize = EditorGUILayout.Vector4Field("", uvTexelSize);
+                            }
+                            using (new EditorGUI.DisabledScope(uvTexelSize.x==0f || uvTexelSize.y==0f))
+                            {
+                                if (GUILayout.Button("TransformUV"))
+                                {
+                                    editMeshCreater.TransformUV( new Vector2(1f/uvTexelSize.x,1f/uvTexelSize.y),new Vector2(-uvTexelSize.z,-uvTexelSize.w),controll_vertexes);
+                                    ReloadMesh(false);
+                                    uvTexelSize = new Vector4(1f,1f,0f,0f);
+                                    uvViewer?.ReadUVMap(editMeshCreater.GetMesh(),controll_vertexes);
+                                }
+                            }
+                            uvViewer?.UVTextureSize(new Vector2(uvTexelSize.x,uvTexelSize.y),new Vector2(uvTexelSize.z,uvTexelSize.w));
+                            uvViewer?.Display(700,700);
+                            if (GUILayout.Button("Divided 4"))
+                            {
+                                editMeshCreater.TransformUV(new Vector2(0.5f,0.5f),new Vector2(0f,0f));
+                                ReloadMesh(false);
+                                uvTexelSize = new Vector4(1f,1f,0f,0f);
+                                uvViewer?.BaseTextureSize(new Vector2(2f,2f),new Vector2(0f,0f));
+                                uvViewer?.ReadUVMap(editMeshCreater.GetMesh(),controll_vertexes);
+                                activeMaterial.SetTextureScale("_MainTex",new Vector2(2f,2f));
+                            }
                         }
                     }
                 }
@@ -691,7 +742,7 @@ namespace HhotateA
             {
                 rends[i].SetMesh(defaultMeshs[i]);
             }
-            avatarMonitor.Release();
+            avatarMonitor?.Release();
             avatarMonitor = null;
         }
 
@@ -1014,10 +1065,32 @@ namespace HhotateA
                     avatarMonitor.GetVertex(GetEditMeshCollider(), (h, p) =>
                     {
                         GetRawData(h);
+                        InitializeUVViewer(h);
                     });
                 }
             }
-            
+        }
+
+        void InitializeUVViewer(int v)
+        {
+            editMeshCreater.GetTriangleList(new List<int>(v), (s, l) =>
+            {
+                var m = editMeshCreater.GetMaterials()[s];
+                if (uvViewer == null)
+                {
+                    uvViewer = new UVViewer(m);
+                }
+                else
+                if (activeMaterial != m)
+                {
+                    uvViewer.Release();
+                    uvViewer = new UVViewer(m);
+                }
+                activeMaterial = m;
+                
+                uvViewer?.ReadUVMap(editMeshCreater.GetMesh(),controll_vertexes);
+            },3);
+
         }
 
         /// <summary>
@@ -1173,6 +1246,7 @@ namespace HhotateA
             transformPosition = mc.ComputeCenterPoint(controll_vertexes);
             transformRotation = Vector3.zero;
             transformScale = Vector3.one;
+            uvTexelSize = new Vector4(1f,1f,0f,0f);
         }
         
         /// <summary>

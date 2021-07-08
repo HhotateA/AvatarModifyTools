@@ -8,7 +8,7 @@ using UnityEditor.Animations;
 using UnityEngine;
 using System.Reflection;
 
-namespace HhotateA
+namespace HhotateA.AvatarModifyTools.Core
 {
     public class AnimationClipCreator
     {

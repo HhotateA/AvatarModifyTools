@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using Random = UnityEngine.Random;
 using System.Threading;
 
-namespace HhotateA
+namespace HhotateA.AvatarModifyTools.Core
 {
     public class MeshCreater
     {
@@ -1586,6 +1586,27 @@ namespace HhotateA
             }
         }
 
+        public void TransformUV(
+            Vector2 scale, 
+            Vector2 position,
+            List<int> verts = null)
+        {
+            if (verts != null)
+            {
+                foreach (var vert in verts)
+                {
+                    uvs[0][vert] = uvs[0][vert] * scale + position;
+                }
+            }
+            else
+            {
+                for (int i = 0; i < vertexs.Count; i++)
+                {
+                    uvs[0][i] = uvs[0][i] * scale + position;
+                }
+            }
+        }
+
         /// <summary>
         /// キャッシュを1つ戻す
         /// </summary>
@@ -1780,33 +1801,6 @@ namespace HhotateA
             var ws = MeshUtil.ComputeBasis(wp, vs.Select(v => vertexs[v]).ToList());
             var wuv = MeshUtil.Average(vs.Select(v => uvs[0][v]).ToList(),ws);
             return wuv;
-            
-            /*var vs = GetVertexIndex(triangle).Distinct().ToList();
-            var normal = Vector3.Cross(
-                Vector3.Normalize(vertexs[vs[1]] - vertexs[vs[0]]),
-                Vector3.Normalize(vertexs[vs[2]] - vertexs[vs[0]]));
-            var xaxi = Vector3.Normalize(Vector3.Cross(normal, Vector3.up));
-            var yaxi = Vector3.Normalize(Vector3.Cross(normal, xaxi));
-            var wuv = MeshUtil.Average(vs.Select(v => uvs[0][v]).ToList(),
-                MeshUtil.ComputeBasis(wp + xaxi
-                    ,vs.Select(v => vertexs[v]).ToList()));
-            if (getAxxis != null)
-            {
-                var wu = MeshUtil.Average(vs.Select(v => uvs[0][v]).ToList(),
-                    MeshUtil.ComputeBasis(wp + xaxi
-                        ,vs.Select(v => vertexs[v]).ToList()));
-                var wv = MeshUtil.Average(vs.Select(v => uvs[0][v]).ToList(),
-                    MeshUtil.ComputeBasis(wp + yaxi
-                        ,vs.Select(v => vertexs[v]).ToList()));
-                var submesh = GetSubmeshID(triangle);
-                getAxxis?.Invoke(wuv,
-                    new Vector2[2]
-                    {
-                        wu-wuv,
-                        wv-wuv, 
-                    });
-            }
-            return wuv;*/
         }
         
         public float GetUVdelta(int submesh, int triangle, Vector3 wp)

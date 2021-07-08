@@ -13,7 +13,7 @@ using VRC.SDK3.Avatars.ScriptableObjects;
 using VRC.SDK3.Avatars.Components;
 #endif
 
-namespace HhotateA
+namespace HhotateA.AvatarModifyTools.Core
 {
     /// <summary>
     /// VRCAvatarDescriptorへのアセット適応を一括して行うクラス

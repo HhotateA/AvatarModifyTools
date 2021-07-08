@@ -4,7 +4,7 @@ using UnityEngine;
 using VRC.SDK3.Avatars.ScriptableObjects;
 #endif
 
-namespace HhotateA
+namespace HhotateA.AvatarModifyTools.Core
 {
     [CreateAssetMenu(menuName = "HhotateA/AvatarModifyData")]
     public class AvatarModifyData : ScriptableObject

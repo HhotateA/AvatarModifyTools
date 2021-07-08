@@ -1,4 +1,5 @@
-﻿using System;
+﻿using HhotateA.AvatarModifyTools.Core;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
@@ -8,7 +9,7 @@ using UnityEngine;
 using VRC.SDK3.Avatars.Components;
 #endif
 
-namespace HhotateA
+namespace HhotateA.AvatarModifyTools.AvatarPen
 {
     public class AvatarPenSetup : EditorWindow
     {
