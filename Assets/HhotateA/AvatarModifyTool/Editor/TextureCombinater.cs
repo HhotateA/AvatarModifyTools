@@ -90,11 +90,39 @@ namespace HhotateA.AvatarModifyTools.Core
             //Pngに変換
             byte[] bytes = tex.EncodeToPNG();
             //保存
-            File.WriteAllBytes(path, bytes);
+            using (var fs = new System.IO.FileStream(path, System.IO.FileMode.Create, System.IO.FileAccess.Write)) {
+                fs.Write(bytes, 0, bytes.Length);
+            }
+            path = FileUtil.GetProjectRelativePath(path);
             AssetDatabase.ImportAsset(path);
             var i = TextureImporter.GetAtPath(path) as TextureImporter;
             i.alphaIsTransparency = true;
             i.streamingMipmaps = true;
+            for (int texsize = 32; texsize <= tex.width; texsize = texsize * 2)
+            {
+                i.maxTextureSize = texsize;
+            }
+            i.SaveAndReimport();
+            return AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+        }
+
+        public static Texture2D ConvertToPngAndSave(string path,RenderTexture tex)
+        {
+            byte[] bytes = Texture2Bytes(tex);
+            //File.WriteAllBytes(path, bytes);
+            using (var fs = new System.IO.FileStream(path, System.IO.FileMode.Create, System.IO.FileAccess.Write)) {
+                fs.Write(bytes, 0, bytes.Length);
+            }
+            path = FileUtil.GetProjectRelativePath(path);
+            AssetDatabase.ImportAsset(path);
+            var i = TextureImporter.GetAtPath(path) as TextureImporter;
+            i.alphaIsTransparency = true;
+            i.streamingMipmaps = true;
+            for (int texsize = 32; texsize <= tex.width; texsize = texsize * 2)
+            {
+                i.maxTextureSize = texsize;
+            }
+            i.SaveAndReimport();
             return AssetDatabase.LoadAssetAtPath<Texture2D>(path);
         }
 
@@ -191,10 +219,5 @@ namespace HhotateA.AvatarModifyTools.Core
         {
             return tex.mipmapCount;
         }
-    }
-
-    public static class TextureUtil
-    {
-        
     }
 }

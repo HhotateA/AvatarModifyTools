@@ -259,7 +259,7 @@
                 {
                     if(l.a>0.0)
                     {
-                        col.rgb = lerp(col.rgb,col.rgb/lc.rgb,lc.a);
+                        col.rgb = lerp(col.rgb,saturate(col.rgb/max(lc.rgb,0.001)),lc.a);
                     }
                 }
                 else if(mode == 6) // bloom

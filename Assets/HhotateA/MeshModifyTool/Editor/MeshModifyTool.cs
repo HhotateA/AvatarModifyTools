@@ -705,7 +705,7 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
                                     editMeshCreater.TransformUV( new Vector2(1f/uvTexelSize.x,1f/uvTexelSize.y),new Vector2(-uvTexelSize.z,-uvTexelSize.w),controll_vertexes);
                                     ReloadMesh(false);
                                     uvTexelSize = new Vector4(1f,1f,0f,0f);
-                                    uvViewer?.ReadUVMap(editMeshCreater.GetMesh(),controll_vertexes);
+                                    uvViewer?.ReadUVMap(editMeshCreater.CreateEditMesh(controll_vertexes));
                                 }
                             }
                             uvViewer?.UVTextureSize(new Vector2(uvTexelSize.x,uvTexelSize.y),new Vector2(uvTexelSize.z,uvTexelSize.w));
@@ -716,7 +716,7 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
                                 ReloadMesh(false);
                                 uvTexelSize = new Vector4(1f,1f,0f,0f);
                                 uvViewer?.BaseTextureSize(new Vector2(2f,2f),new Vector2(0f,0f));
-                                uvViewer?.ReadUVMap(editMeshCreater.GetMesh(),controll_vertexes);
+                                uvViewer?.ReadUVMap(editMeshCreater.CreateEditMesh(controll_vertexes));
                                 activeMaterial.SetTextureScale("_MainTex",new Vector2(2f,2f));
                             }
                         }
@@ -1088,7 +1088,7 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
                 }
                 activeMaterial = m;
                 
-                uvViewer?.ReadUVMap(editMeshCreater.GetMesh(),controll_vertexes);
+                uvViewer?.ReadUVMap(editMeshCreater.CreateEditMesh(controll_vertexes));
             },3);
 
         }

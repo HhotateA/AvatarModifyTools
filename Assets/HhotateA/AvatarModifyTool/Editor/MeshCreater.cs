@@ -477,7 +477,6 @@ namespace HhotateA.AvatarModifyTools.Core
             {
                 offset += triangles[i].Count / 3;
             }
-            Debug.Log(offset);
 
             return offset;
         }
@@ -1518,7 +1517,10 @@ namespace HhotateA.AvatarModifyTools.Core
         // 頂点位置の履歴(index0は常に初期位置の記録(BlendShapeに基準となる))
         private List<List<Vector3>> vertexsCaches = new List<List<Vector3>>();
         // 最大キャッシュ数
-        private const int maxCaches = 16;
+        private int maxCaches
+        {
+            get => EnvironmentVariable.maxCaches;
+        }
         // 現在参照中のキャッシュインデックス
         private int currentCacheIndex = -1;
 
@@ -2029,7 +2031,7 @@ namespace HhotateA.AvatarModifyTools.Core
             combinedMesh.subMeshCount = 1;
             combinedMesh.SetTriangles(triangles[submeshID].ToArray(),0);
 
-            if (false)
+            /*if (false)
             {
                 combinedMesh.bindposes = bindPoses.ToArray();
                 combinedMesh.boneWeights = boneWeights.ToArray();
@@ -2039,7 +2041,7 @@ namespace HhotateA.AvatarModifyTools.Core
                 {
                     blendShape.Apply(ref combinedMesh);
                 }
-            }
+            }*/
 
             if (meshTransforms[submeshID]!=null)
             {

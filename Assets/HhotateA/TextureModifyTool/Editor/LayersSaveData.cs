@@ -1,9 +1,6 @@
 ﻿using HhotateA.AvatarModifyTools.Core;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEditor;
-using System;
-using UnityEngine.Serialization;
 
 namespace HhotateA.AvatarModifyTools.TextureModifyTool
 {
@@ -11,266 +8,45 @@ namespace HhotateA.AvatarModifyTools.TextureModifyTool
     {
         [SerializeField] List<LayerData> layers = new List<LayerData>();
 
-        public List<LayerData> Layers => layers;
-        
-        public class MaterialData
+        public void SetLayersData(List<LayerData> layerList)
         {
-            public RenderTexture texture;
-            public Vector4 tilling;
-            public BlendMode mode;
-            public Color color;
-            public Color comparison;
-            public Vector4 setting;
-            public int mask;
-        }
-
-        public void AddLayer(RenderTexture tex)
-        {
-            layers.Add(new LayerData(tex));
-        }
-
-        public void DeleateLayer(int index)
-        {
-            layers[index].Texture.Release();
-            layers[index].Texture.DiscardContents();
-            layers.RemoveAt(index);
-        }
-
-        public int LayerCount()
-        {
-            return layers.Count;
-        }
-
-        public MaterialData GetLayer(int index)
-        {
-            if (index < layers.Count)
+            foreach (var layer in layerList)
             {
-                var l = layers[index];
-                var ld = new MaterialData()
+                layers.Add(new LayerData(TextureCombinater.Texture2Bytes(layer.texture))
                 {
-                    texture = l.Texture,
-                    tilling = new Vector4(l.scale.x,l.scale.y,l.offset.x,l.offset.y),
-                    mode = l.layerMode,
-                    color = l.color,
-                    comparison = l.comparison,
-                    mask = -1,
-                };
-                if (l.active == false)
-                {
-                    ld.mode = BlendMode.Disable;
-                }
-
-                if (ld.mode == BlendMode.HSV)
-                {
-                    ld.setting = l.settings;
-                }
-                else
-                if(ld.mode == BlendMode.Color)
-                {
-                    ld.setting = new Vector4(1f, 0f, l.settings.z, l.settings.w);
-                }
-                else
-                if(ld.mode == BlendMode.Bloom)
-                {
-                    ld.setting = new Vector4(1f/(float)l.Texture.width, 1f/(float)l.Texture.height, l.settings.z, l.settings.w); 
-                }
-
-                if (l.isMask)
-                {
-                    ld.mask = 1;
-                }
-                return ld;
-            }
-
-            return null;
-        }
-
-        public string GetLayerName(int index)
-        {
-            return layers[index].name;
-        }
-        public bool GetLayerActive(int index)
-        {
-            return layers[index].active;
-        }
-
-        public void SetLayer(int index,string newName,bool? isActive,BlendMode? newMode,bool? isMask)
-        {
-            if (index < layers.Count)
-            {
-                layers[index].name = newName ?? layers[index].name;
-                layers[index].active = isActive ?? layers[index].active;
-                layers[index].layerMode = newMode ?? layers[index].layerMode;
-                layers[index].isMask = isMask ?? layers[index].isMask;
+                    active = layer.active,
+                    color = layer.color,
+                    comparison = layer.comparison,
+                    isMask = layer.isMask,
+                    layerMode = layer.layerMode,
+                    name = layer.name,
+                    offset = layer.offset,
+                    scale = layer.scale,
+                    settings = layer.settings
+                });
             }
         }
 
-        public void ReplaceLayer(int from,int to)
+        public List<LayerData> GetLayersData()
         {
-            if (from < layers.Count && to < layers.Count)
+            var layerList = new List<LayerData>();
+            foreach (var layer in layers)
             {
-                var l = layers[from];
-                layers[from] = layers[to];
-                layers[to] = l;
-            }
-        }
-        
-        public bool LayerButton(int index,bool disableButton = false)
-        {
-            var l = layers[index];
-
-            using (new EditorGUI.DisabledScope(disableButton))
-            {
-                if (GUILayout.Button(l.Texture, GUILayout.Width(60), GUILayout.Height(60)))
+                layerList.Add(new LayerData(TextureCombinater.GetReadableRenderTexture(TextureCombinater.Bytes2Texture(layer.origin)))
                 {
-                    return true;
-                }
+                    active = layer.active,
+                    color = layer.color,
+                    comparison = layer.comparison,
+                    isMask = layer.isMask,
+                    layerMode = layer.layerMode,
+                    name = layer.name,
+                    offset = layer.offset,
+                    scale = layer.scale,
+                    settings = layer.settings
+                });
             }
 
-            using (new EditorGUILayout.VerticalScope(GUILayout.Width(30)))
-            {
-                l.layerMode = (BlendMode) EditorGUILayout.EnumPopup("", l.layerMode, GUILayout.Width(75));
-                l.scale = EditorGUILayout.Vector2Field("", l.scale, GUILayout.Width(75));
-                l.offset = EditorGUILayout.Vector2Field("", l.offset, GUILayout.Width(75));
-                using (new EditorGUILayout.HorizontalScope())
-                {
-                    EditorGUILayout.LabelField("isMask",GUILayout.Width(50));
-                    l.isMask = EditorGUILayout.Toggle("", l.isMask, GUILayout.Width(25));
-                }
-            }
-
-            using (new EditorGUILayout.VerticalScope(GUILayout.Width(150)))
-            {
-                if (l.layerMode == BlendMode.HSV)
-                {
-                    EditorGUILayout.BeginHorizontal();
-                    EditorGUILayout.LabelField("H", GUILayout.Width(20));
-                    var h = GUILayout.HorizontalSlider(l.settings.x, -1f, 1f, GUILayout.Width(120));
-                    EditorGUILayout.EndHorizontal();
-                    EditorGUILayout.BeginHorizontal();
-                    EditorGUILayout.LabelField("S", GUILayout.Width(20));
-                    var s = GUILayout.HorizontalSlider(l.settings.y, -1f, 1f, GUILayout.Width(120));
-                    EditorGUILayout.EndHorizontal();
-                    EditorGUILayout.BeginHorizontal();
-                    EditorGUILayout.LabelField("V", GUILayout.Width(20));
-                    var v = GUILayout.HorizontalSlider(l.settings.z, -1f, 1f, GUILayout.Width(120));
-                    EditorGUILayout.EndHorizontal();
-                    l.settings = new Vector4(h,s,v,l.settings.w);
-                }
-                else
-                if(l.layerMode == BlendMode.Color)
-                {
-                    EditorGUILayout.BeginHorizontal();
-                    EditorGUILayout.LabelField("From", GUILayout.Width(50));
-                    l.comparison = EditorGUILayout.ColorField( l.comparison, GUILayout.Width(90));
-                    EditorGUILayout.EndHorizontal();
-                    EditorGUILayout.BeginHorizontal();
-                    EditorGUILayout.LabelField("To", GUILayout.Width(50));
-                    l.color = EditorGUILayout.ColorField( l.color, GUILayout.Width(90));
-                    EditorGUILayout.EndHorizontal();
-                    EditorGUILayout.BeginHorizontal();
-                    EditorGUILayout.LabelField("Brightness", GUILayout.Width(50));
-                    var z = GUILayout.HorizontalSlider(l.settings.z, 0f, 1f, GUILayout.Width(90));
-                    EditorGUILayout.EndHorizontal();
-                    EditorGUILayout.BeginHorizontal();
-                    EditorGUILayout.LabelField("Threshold", GUILayout.Width(50));
-                    var w = GUILayout.HorizontalSlider(l.settings.w, 0f, 2f, GUILayout.Width(90));
-                    EditorGUILayout.EndHorizontal();
-                    l.settings = new Vector4(l.settings.x,l.settings.y,z,w);
-                }
-                else
-                if(l.layerMode == BlendMode.Bloom)
-                {
-                    l.color = EditorGUILayout.ColorField(new GUIContent(), l.color, true, true, true,  GUILayout.Width(120));
-                    EditorGUILayout.BeginHorizontal();
-                    EditorGUILayout.LabelField("Intensity", GUILayout.Width(50));
-                    var z = GUILayout.HorizontalSlider(l.settings.z, 1f, 10f, GUILayout.Width(90));
-                    EditorGUILayout.EndHorizontal();
-                    EditorGUILayout.BeginHorizontal();
-                    EditorGUILayout.LabelField("Threshold", GUILayout.Width(50));
-                    var w = GUILayout.HorizontalSlider(l.settings.w, 0f, 2f, GUILayout.Width(90));
-                    EditorGUILayout.EndHorizontal();
-                    l.settings = new Vector4(l.settings.x,l.settings.y,z,w);
-                }
-                else
-                {
-                    l.color = EditorGUILayout.ColorField("", l.color, GUILayout.Width(150));
-                }
-                //l.colorChange = EditorGUILayout.Slider("", l.colorChange, 0.001f, 2f);
-            }
-            
-            return false;
-        }
-        
-        public void SaveTextures(string path)
-        {
-            for (int i = 0; i < layers.Count; i++)
-            {
-                layers[i].SaveTexture(path);
-            }
+            return layerList;
         }
     }
-
-    [System.SerializableAttribute]
-    public class LayerData
-    {
-        public RenderTexture Texture
-        {
-            get
-            {
-                if (texture == null)
-                {
-                    if(origin != null)
-                    {
-                        var t = TextureCombinater.Bytes2Texture(origin);
-                        texture = TextureCombinater.GetReadableRenderTexture(t);
-                    }
-                }
-                return texture;
-            }
-        }
-
-        public string name = "";
-        public RenderTexture texture;
-        private byte[] origin;
-        public Vector2 scale = new Vector2(1,1);
-        public Vector2 offset = new Vector2(0,0);
-        public bool active = true;
-        public BlendMode layerMode = BlendMode.Normal;
-        public Color color = Color.white;
-        public Color comparison = Color.black;
-        public Vector4 settings = Vector4.zero;
-        public bool isMask = false;
-
-        public LayerData(RenderTexture rt)
-        {
-            texture = rt;
-            name = rt.name;
-        }
-
-        public void SaveTexture(string path)
-        {
-            origin = TextureCombinater.Texture2Bytes(texture);
-            texture.Release();
-            texture.DiscardContents();
-            texture = null;
-        }
-    }
-
-    public enum BlendMode
-    {
-        Disable,
-        Normal,
-        Additive,
-        Multiply,
-        Subtraction,
-        Division,
-
-        Bloom,
-        HSV,
-        Color,
-        AlphaMask,
-        
-        Override,
-    };
 }
