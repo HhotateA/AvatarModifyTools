@@ -2,7 +2,7 @@
 using UnityEngine;
 using UnityEditor;
 
-namespace HhotateA
+namespace HhotateA.AvatarModifyTools.Core
 {
     /// <summary>
     /// 編集画面のカメラ画像出すための補助クラス
@@ -47,6 +47,11 @@ namespace HhotateA
         {
             return camera.transform.forward;
         }
+        
+        public Vector3 WorldSpaceCameraUp()
+        {
+            return camera.transform.up;
+        }
 
         public void Release()
         {
@@ -66,7 +71,7 @@ namespace HhotateA
             ;
         }
 
-        public void Display(int width, int height)
+        public void Display(int width, int height, int rotationDrag = 1, int positionDrag = 2)
         {
             if (width != targetTexture.width || height != targetTexture.height)
             {
@@ -78,12 +83,9 @@ namespace HhotateA
 
             var e = Event.current;
 
-            if (rect.x < e.mousePosition.x &&
-                rect.x + targetTexture.width > e.mousePosition.x &&
-                rect.y < e.mousePosition.y &&
-                rect.y + targetTexture.height > e.mousePosition.y)
+            if (rect.Contains(e.mousePosition))
             {
-                if (e.type == EventType.MouseDrag && e.button == 1)
+                if (e.type == EventType.MouseDrag && e.button == rotationDrag)
                 {
                     // Drag
                     var r = baseObject.transform.rotation;
@@ -92,7 +94,7 @@ namespace HhotateA
                         e.delta.y * 0.1f);
                 }
 
-                if (e.type == EventType.MouseDrag && e.button == 0)
+                if (e.type == EventType.MouseDrag && e.button == positionDrag)
                 {
                     // Drag
                     var r = baseObject.transform.rotation;
@@ -120,27 +122,26 @@ namespace HhotateA
             camera.Render();
         }
 
+        public bool IsInDisplay(Vector2 pos)
+        {
+            return rect.Contains(pos);
+        }
+
         public void GetControllPoint(MeshCollider meshCollider, bool isSelectVertex, Action<Vector3> onHit)
         {
             var e = Event.current;
-            if (rect.x < e.mousePosition.x &&
-                rect.x + targetTexture.width > e.mousePosition.x &&
-                rect.y < e.mousePosition.y &&
-                rect.y + targetTexture.height > e.mousePosition.y)
+            if (rect.Contains(e.mousePosition))
             {
-                if (e.type == EventType.MouseDown && e.button == 0)
+                // Drag
+                var p = new Vector3(e.mousePosition.x - rect.x, targetTexture.height - e.mousePosition.y + rect.y,
+                    1f);
+                if (isSelectVertex)
                 {
-                    // Drag
-                    var p = new Vector3(e.mousePosition.x - rect.x, targetTexture.height - e.mousePosition.y + rect.y,
-                        1f);
-                    if (isSelectVertex)
-                    {
-                        GetVertexPosition(meshCollider, camera.ScreenPointToRay(p), h => { onHit?.Invoke(h); });
-                    }
-                    else
-                    {
-                        GetHit(meshCollider, camera.ScreenPointToRay(p), h => { onHit?.Invoke(h); });
-                    }
+                    GetVertexPosition(meshCollider, camera.ScreenPointToRay(p), h => { onHit?.Invoke(h); });
+                }
+                else
+                {
+                    GetHit(meshCollider, camera.ScreenPointToRay(p), h => { onHit?.Invoke(h); });
                 }
             }
         }
@@ -164,27 +165,21 @@ namespace HhotateA
         public void GetTriangle(MeshCollider meshCollider, Action<int> onhit = null)
         {
             var e = Event.current;
-            if (rect.x < e.mousePosition.x &&
-                rect.x + targetTexture.width > e.mousePosition.x &&
-                rect.y < e.mousePosition.y &&
-                rect.y + targetTexture.height > e.mousePosition.y)
+            if (rect.Contains(e.mousePosition))
             {
-                if (e.type == EventType.MouseDown && e.button == 0)
+                var p = new Vector3(e.mousePosition.x - rect.x, targetTexture.height - e.mousePosition.y + rect.y,
+                    1f);
+                var ray = camera.ScreenPointToRay(p);
+                var hits = Physics.RaycastAll(ray, 1f, 1 << previewLayer);
+
+                foreach (var hit in hits)
                 {
-                    var p = new Vector3(e.mousePosition.x - rect.x, targetTexture.height - e.mousePosition.y + rect.y,
-                        1f);
-                    var ray = camera.ScreenPointToRay(p);
-                    var hits = Physics.RaycastAll(ray, 1f, 1 << previewLayer);
+                    MeshCollider mc = hit.collider as MeshCollider;
 
-                    foreach (var hit in hits)
+                    if (mc == meshCollider)
                     {
-                        MeshCollider mc = hit.collider as MeshCollider;
-
-                        if (mc == meshCollider)
-                        {
-                            onhit?.Invoke(hit.triangleIndex);
-                            return;
-                        }
+                        onhit?.Invoke(hit.triangleIndex);
+                        return;
                     }
                 }
             }
@@ -193,68 +188,98 @@ namespace HhotateA
         public void GetTriangle(MeshCollider meshCollider, Action<int,Vector3> onhit = null)
         {
             var e = Event.current;
-            if (rect.x < e.mousePosition.x &&
-                rect.x + targetTexture.width > e.mousePosition.x &&
-                rect.y < e.mousePosition.y &&
-                rect.y + targetTexture.height > e.mousePosition.y)
+            
+            if (rect.Contains(e.mousePosition))
             {
-                if (e.type == EventType.MouseDown && e.button == 0)
+                var p = new Vector3(e.mousePosition.x - rect.x, targetTexture.height - e.mousePosition.y + rect.y,
+                    1f);
+                var ray = camera.ScreenPointToRay(p);
+                var hits = Physics.RaycastAll(ray, 1f, 1 << previewLayer);
+
+                foreach (var hit in hits)
                 {
-                    var p = new Vector3(e.mousePosition.x - rect.x, targetTexture.height - e.mousePosition.y + rect.y,
-                        1f);
-                    var ray = camera.ScreenPointToRay(p);
-                    var hits = Physics.RaycastAll(ray, 1f, 1 << previewLayer);
+                    MeshCollider mc = hit.collider as MeshCollider;
 
-                    foreach (var hit in hits)
+                    if (mc == meshCollider)
                     {
-                        MeshCollider mc = hit.collider as MeshCollider;
-
-                        if (mc == meshCollider)
-                        {
-                            onhit?.Invoke(hit.triangleIndex,meshCollider.transform.InverseTransformPoint(hit.point));
-                            return;
-                        }
+                        onhit?.Invoke(hit.triangleIndex,meshCollider.transform.InverseTransformPoint(hit.point));
+                        return;
                     }
                 }
+            }
+        }
+        
+        public void GetDragTriangle(MeshCollider meshCollider, Action<int,Vector3,int,Vector3> onhit = null)
+        {
+            var e = Event.current;
+            
+            if (rect.Contains(e.mousePosition))
+            {
+                var p = new Vector3(e.mousePosition.x - rect.x, rect.height - e.mousePosition.y + rect.y,1f);
+                var ray = camera.ScreenPointToRay(p);
+                var hits = Physics.RaycastAll(ray, 1f, 1 << previewLayer);
+                
+                // drag前
+                var pd = new Vector3(e.mousePosition.x - rect.x - e.delta.x, rect.height - e.mousePosition.y + rect.y + e.delta.y,1f);
+                var rayd = camera.ScreenPointToRay(pd);
+                var hitsd = Physics.RaycastAll(rayd, 1f, 1 << previewLayer);
+
+                foreach (var hit in hits)
+                {
+                    MeshCollider mc = hit.collider as MeshCollider;
+                    if (mc == meshCollider)
+                    {
+                        foreach (var hitd in hitsd)
+                        {
+                            MeshCollider mcd = hitd.collider as MeshCollider;
+
+                            if (mcd == meshCollider)
+                            {
+                                onhit?.Invoke(hitd.triangleIndex,
+                                    meshCollider.transform.InverseTransformPoint(hitd.point),
+                                    hit.triangleIndex,
+                                    meshCollider.transform.InverseTransformPoint(hit.point));
+                                return;
+                            }
+                        }
+                        return;
+                    }
+                }
+            
             }
         }
         
         public void GetVertex(MeshCollider meshCollider, Action<int,Vector3> onHit)
         {
             var e = Event.current;
-            if (rect.x < e.mousePosition.x &&
-                rect.x + targetTexture.width > e.mousePosition.x &&
-                rect.y < e.mousePosition.y &&
-                rect.y + targetTexture.height > e.mousePosition.y)
+            
+            if (rect.Contains(e.mousePosition))
             {
-                if (e.type == EventType.MouseDown && e.button == 0)
+                // Drag
+                var p = new Vector3(e.mousePosition.x - rect.x, targetTexture.height - e.mousePosition.y + rect.y,1f);
+                
+                var hits = Physics.RaycastAll(camera.ScreenPointToRay(p), 1f, 1 << previewLayer);
+
+                foreach (var hit in hits)
                 {
-                    // Drag
-                    var p = new Vector3(e.mousePosition.x - rect.x, targetTexture.height - e.mousePosition.y + rect.y,1f);
-                    
-                    var hits = Physics.RaycastAll(camera.ScreenPointToRay(p), 1f, 1 << previewLayer);
+                    MeshCollider mc = hit.collider as MeshCollider;
 
-                    foreach (var hit in hits)
+                    if (mc == meshCollider)
                     {
-                        MeshCollider mc = hit.collider as MeshCollider;
+                        Mesh mesh = meshCollider.sharedMesh;
+                        Vector3[] vertices = mesh.vertices;
+                        int[] triangles = mesh.triangles;
+                        int[] indexs = new int[3] {triangles[hit.triangleIndex * 3 + 0],triangles[hit.triangleIndex * 3 + 1],triangles[hit.triangleIndex * 3 + 2]};
 
-                        if (mc == meshCollider)
-                        {
-                            Mesh mesh = meshCollider.sharedMesh;
-                            Vector3[] vertices = mesh.vertices;
-                            int[] triangles = mesh.triangles;
-                            int[] indexs = new int[3] {triangles[hit.triangleIndex * 3 + 0],triangles[hit.triangleIndex * 3 + 1],triangles[hit.triangleIndex * 3 + 2]};
+                        int i = GetNearIndex(
+                            meshCollider.transform.InverseTransformPoint(hit.point),
+                            new Vector3[] {vertices[indexs[0]], vertices[indexs[1]], vertices[indexs[2]]});
 
-                            int i = GetNearIndex(
-                                meshCollider.transform.InverseTransformPoint(hit.point),
-                                new Vector3[] {vertices[indexs[0]], vertices[indexs[1]], vertices[indexs[2]]});
+                        int index = indexs[i];
 
-                            int index = indexs[i];
+                        onHit?.Invoke(index,vertices[index]);
 
-                            onHit?.Invoke(index,vertices[index]);
-
-                            return;
-                        }
+                        return;
                     }
                 }
             }

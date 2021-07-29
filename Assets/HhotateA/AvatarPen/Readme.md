@@ -33,3 +33,4 @@ VRChatのアバターで使用できる，トレイルタイプの指ペンの�
 ## 更新履歴
 2021/04/04 v0.9
 2021/04/06 v1.1 EmojiParticleSetupToolに伴うAvatarModifyToolの破壊的アップデート
+2021/07/08 v1.2 TextureModifyToolのリリースとAvatarModifityToolのアップデート

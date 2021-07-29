@@ -35,3 +35,4 @@ VRChatのアバターで使用できる，絵文字パーティクルのセッ�
 
 ## 更新履歴
 2021/04/05 v1.0
+2021/07/08 v1.2 TextureModifyToolのリリースとAvatarModifityToolのアップデート

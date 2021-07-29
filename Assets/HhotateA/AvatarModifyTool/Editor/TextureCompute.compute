@@ -1,0 +1,722 @@
+﻿#pragma kernel DrawUV
+#pragma kernel ClearColorGradient
+#pragma kernel DrawPoint
+#pragma kernel DrawLine
+#pragma kernel DrawLineGradient
+#pragma kernel TriangleFill
+#pragma kernel TriangleFillGradient
+#pragma kernel FillColorPointGradient
+#pragma kernel FillColorLineGradient
+#pragma kernel AreaExpansion
+#pragma kernel SeedFill
+#pragma kernel DrawStamp
+#pragma kernel Gaussian
+
+StructuredBuffer<float2> _UVs;
+StructuredBuffer<float4> _Vertices;
+StructuredBuffer<int> _Triangles;
+
+RWTexture2D<float4> _ResultTex;
+int _Width;
+int _Height;
+float4 _Color;
+
+StructuredBuffer<float4> _Gradient;
+
+float _BrushStrength;
+float _BrushWidth;
+float _BrushPower;
+
+float2 _FromPoint;
+float2 _ToPoint;
+
+RWBuffer<int> _SeedPixels;
+int _AreaExpansion;
+
+float4 _BaseColor;
+float _ColorMargin;
+
+Texture2D<float4> _Stamp;
+int _StampWidth;
+int _StampHeight;
+
+float2 _StampUV;
+float2 _StampScale;
+float _StampRotation;
+
+CGPROGRAM
+float ComputeDistance(float2 p,float2 to)
+{
+    if(_BrushWidth<0.0001)
+    {
+        uint2 pxy = uint2(p.x*_Width,p.y*_Height);
+        uint2 toxy = uint2(to.x*_Width,to.y*_Height);
+        if(pxy.x==toxy.x && pxy.y==toxy.y)
+        {
+            return 0.0;
+        }
+        else
+        {
+            return 1.0;
+        }
+    }
+    return distance(p,to);
+}
+
+float ComputeDistance(float2 p,float2 from,float2 to)
+{
+    if(distance(from ,to)<0.0001)
+    {
+        return ComputeDistance(p,to);
+    }
+    if(_BrushWidth<0.0001)
+    {
+        uint2 pxy = uint2(p.x*(float)_Width,p.y*(float)_Height);
+        uint2 fromxy = uint2(from.x*(float)_Width,from.y*(float)_Height);
+        uint2 toxy = uint2(to.x*(float)_Width,to.y*(float)_Height);
+        float dist = distance(fromxy,toxy);
+        int2 d = (toxy - fromxy);
+        for(float i=0;i<dist;i++)
+        {
+            uint2 xy = fromxy + d/dist * i;
+            if(pxy.x==xy.x && pxy.y==xy.y)
+            {
+                return 0.0;
+            }
+        }
+        return 1.0;
+    }
+    float x0 = p.x;
+    float y0 = p.y;
+    float x1 = from.x;
+    float y1 = from.y;
+    float x2 = to.x;
+    float y2 = to.y;
+
+    float a = x2 - x1;
+    float b = y2 - y1;
+    float a2 = a * a;
+    float b2 = b * b;
+    float r2 = a2 + b2;
+    float tt = -(a * (x1-x0)+b*(y1-y0));
+
+    if(tt<0)
+    {
+        return sqrt((x1-x0)*(x1-x0) + (y1-y0)*(y1-y0));
+    }
+    else if (tt>r2)
+    {
+        return sqrt((x2-x0)*(x2-x0) + (y2-y0)*(y2-y0));    
+    }
+    
+    float f1 = a * (y1-y0) - b * (x1-x0);
+    return sqrt((f1*f1)/r2);
+}
+
+void PaintFromTo(uint2 from,uint2 to)
+{
+    float dist = distance(from,to);
+    int2 d = (to - from);
+    for(float i=0;i<dist;i++)
+    {
+        _ResultTex[from + d/dist * i] = _Color;        
+    }
+}
+
+float Concentration(float dist)
+{
+    if(_BrushWidth<0.0001)
+    {
+        if(dist<0.001) return 1.0;
+        else return 0.0;
+    }
+    if(_BrushStrength < 2.5)
+    {
+        return saturate(pow(1.0-saturate(dist/_BrushWidth),1.0/_BrushStrength));
+    }
+    else
+    {
+        return step(dist,_BrushWidth);
+    }
+}
+
+void PaintDist(int2 xy,float concentration,float4 col)
+{
+    if(concentration>0.0)
+    {
+        if(_ResultTex[xy].a < col.a*0.01)
+        {
+            _ResultTex[xy] = float4( col.rgb, col.a*concentration);
+        }
+        else
+        {
+            _ResultTex[xy].rgb = _ResultTex[xy].rgb*(1.-concentration*col.a) + col.rgb*(concentration*col.a);
+            _ResultTex[xy].a = lerp(
+                _ResultTex[xy].a + (1.-_ResultTex[xy].a) * col.a * concentration,
+                _ResultTex[xy].a * (1.-concentration) + col.a * (concentration),
+                _BrushPower);
+        }
+    }
+}
+
+float4 GetGradient(float2 uv,float2 from,float2 to)
+{
+    float2 vec = to - from;
+    float val = dot(vec,uv);
+    float val0 = dot(vec,from);
+    float val1 = dot(vec,to);
+    float dist = saturate((val-val0)/(val1-val0));
+    return _Gradient[(_Width-1)*dist];
+}
+
+float sign (float2 p1, float2 p2, float2 p3)
+{
+    return (p1.x - p3.x) * (p2.y - p3.y) - (p2.x - p3.x) * (p1.y - p3.y);
+}
+ENDCG
+
+// 参考:https://qiita.com/gatosyocora/items/9025d0eadc6b80012e28
+[numthreads(1,1,1)]
+void DrawUV (uint3 id : SV_DispatchThreadID)
+{
+    float2 uv0 = _UVs[_Triangles[id.x*3+0]];
+    float2 uv1 = _UVs[_Triangles[id.x*3+1]];
+    float2 uv2 = _UVs[_Triangles[id.x*3+2]];
+    uint2 xy0 = uint2(uv0.x*_Width , uv0.y*_Height);
+    uint2 xy1 = uint2(uv1.x*_Width , uv1.y*_Height);
+    uint2 xy2 = uint2(uv2.x*_Width , uv2.y*_Height);
+    PaintFromTo(xy0,xy1);
+    PaintFromTo(xy1,xy2);
+    PaintFromTo(xy2,xy0);
+}
+
+[numthreads(1,1,1)]
+void DrawUVPix (uint3 id : SV_DispatchThreadID)
+{
+    float2 uv = float2((float)id.x/(float)_Width,(float)id.y/(float)_Height);
+    
+    float2 uv0 = _UVs[_Triangles[id.z*3+0]];
+    float2 uv1 = _UVs[_Triangles[id.z*3+1]];
+    float2 uv2 = _UVs[_Triangles[id.z*3+2]];
+    float d0 = ComputeDistance(uv,uv0,uv1);
+    float d1 = ComputeDistance(uv,uv1,uv2);
+    float d2 = ComputeDistance(uv,uv2,uv0);
+    float d = min(d0,min(d1,d2));
+    if(d<0.001)
+    {
+        _ResultTex[id.xy] = _Color;
+    }
+}
+
+[numthreads(1,1,1)]
+void ClearColorGradient (uint3 id : SV_DispatchThreadID)
+{
+    _ResultTex[id.xy] = _Color * _Gradient[id.y];
+}
+
+float2 _Point;
+[numthreads(1,1,1)]
+void DrawPoint (uint3 id : SV_DispatchThreadID)
+{
+    float2 uv = float2(id.x/(float)_Width , id.y/(float)_Height);
+    float dist = ComputeDistance(uv,_Point);
+    PaintDist(id.xy,Concentration(dist),_Color);
+}
+
+[numthreads(1,1,1)]
+void DrawLine (uint3 id : SV_DispatchThreadID)
+{
+    float2 uv = float2(id.x/(float)_Width , id.y/(float)_Height);
+    float dist = ComputeDistance(uv,_FromPoint,_ToPoint);
+    PaintDist(id.xy,Concentration(dist),_Color);
+}
+
+[numthreads(1,1,1)]
+void DrawLineGradient (uint3 id : SV_DispatchThreadID)
+{
+    float2 uv = float2(id.x/(float)_Width , id.y/(float)_Height);
+    
+    float dist = ComputeDistance(uv,_FromPoint,_ToPoint);
+    float4 col = _Color*GetGradient(uv,_FromPoint,_ToPoint);    
+    PaintDist(id.xy,Concentration(dist),col);
+}
+
+int _TriangleID;
+[numthreads(1,1,1)]
+void TriangleFill (int3 id : SV_DispatchThreadID)
+{
+    float2 uv = float2((float)id.x/(float)_Width,(float)id.y/(float)_Height);
+    float2 uv0 = _UVs[_Triangles[_TriangleID*3+0]];
+    float2 uv1 = _UVs[_Triangles[_TriangleID*3+1]];
+    float2 uv2 = _UVs[_Triangles[_TriangleID*3+2]];
+    float c0 = sign(uv,uv0,uv1);
+    float c1 = sign(uv,uv1,uv2);
+    float c2 = sign(uv,uv2,uv0);
+    float4 col = _Color;  
+    if(sign(c0)==sign(c1) && sign(c0)==sign(c2))
+    {
+        _ResultTex[id.xy+int2(-_AreaExpansion,-_AreaExpansion)] = col;
+        _ResultTex[id.xy+int2(-_AreaExpansion, 0)] = col;
+        _ResultTex[id.xy+int2(-_AreaExpansion, _AreaExpansion)] = col;
+        _ResultTex[id.xy+int2( 0,-_AreaExpansion)] = col;
+        _ResultTex[id.xy+int2( 0, 0)] = col;
+        _ResultTex[id.xy+int2( 0, _AreaExpansion)] = col;
+        _ResultTex[id.xy+int2( _AreaExpansion,-_AreaExpansion)] = col;
+        _ResultTex[id.xy+int2( _AreaExpansion, 0)] = col;
+        _ResultTex[id.xy+int2( _AreaExpansion, _AreaExpansion)] = col;
+    }
+}
+
+[numthreads(1,1,1)]
+void TriangleFillGradient (int3 id : SV_DispatchThreadID)
+{
+    float2 uv = float2((float)id.x/(float)_Width,(float)id.y/(float)_Height);
+    float2 uv0 = _UVs[_Triangles[_TriangleID*3+0]];
+    float2 uv1 = _UVs[_Triangles[_TriangleID*3+1]];
+    float2 uv2 = _UVs[_Triangles[_TriangleID*3+2]];
+    float c0 = sign(uv,uv0,uv1);
+    float c1 = sign(uv,uv1,uv2);
+    float c2 = sign(uv,uv2,uv0);
+    float4 col = _Color*GetGradient(uv,_FromPoint,_ToPoint);  
+    if(sign(c0)==sign(c1) && sign(c0)==sign(c2))
+    {
+        _ResultTex[id.xy+int2(-_AreaExpansion,-_AreaExpansion)] = col;
+        _ResultTex[id.xy+int2(-_AreaExpansion, 0)] = col;
+        _ResultTex[id.xy+int2(-_AreaExpansion, _AreaExpansion)] = col;
+        _ResultTex[id.xy+int2( 0,-_AreaExpansion)] = col;
+        _ResultTex[id.xy+int2( 0, 0)] = col;
+        _ResultTex[id.xy+int2( 0, _AreaExpansion)] = col;
+        _ResultTex[id.xy+int2( _AreaExpansion,-_AreaExpansion)] = col;
+        _ResultTex[id.xy+int2( _AreaExpansion, 0)] = col;
+        _ResultTex[id.xy+int2( _AreaExpansion, _AreaExpansion)] = col;
+    }
+}
+
+[numthreads(1,1,1)]
+void FillColorPointGradient (int3 id : SV_DispatchThreadID)
+{
+    float2 uv = float2((float)id.x/(float)_Width,(float)id.y/(float)_Height);
+    float dist = saturate(distance(uv,_Point));
+    float4 col = _Color*_Gradient[(_Width-1)*dist];
+    if(_SeedPixels[_Width*(id.y+_AreaExpansion)+id.x+_AreaExpansion] > 0)
+    {
+        _ResultTex[id.xy] = col;
+    }
+    if(_SeedPixels[_Width*(id.y+_AreaExpansion)+id.x] > 0)
+    {
+        _ResultTex[id.xy] = col;
+    }
+    if(_SeedPixels[_Width*(id.y+_AreaExpansion)+id.x-_AreaExpansion] > 0)
+    {
+        _ResultTex[id.xy] = col;
+    }
+    if(_SeedPixels[_Width*(id.y)+id.x+_AreaExpansion] > 0)
+    {
+        _ResultTex[id.xy] = col;
+    }
+    if(_SeedPixels[_Width*(id.y)+id.x] > 0)
+    {
+        _ResultTex[id.xy] = col;
+    }
+    if(_SeedPixels[_Width*(id.y)+id.x-_AreaExpansion] > 0)
+    {
+        _ResultTex[id.xy] = col;
+    }
+    if(_SeedPixels[_Width*(id.y-_AreaExpansion)+id.x+_AreaExpansion] > 0)
+    {
+        _ResultTex[id.xy] = col;
+    }
+    if(_SeedPixels[_Width*(id.y-_AreaExpansion)+id.x] > 0)
+    {
+        _ResultTex[id.xy] = col;
+    }
+    if(_SeedPixels[_Width*(id.y-_AreaExpansion)+id.x-_AreaExpansion] > 0)
+    {
+        _ResultTex[id.xy] = col;
+    }
+}
+
+[numthreads(1,1,1)]
+void FillColorLineGradient (int3 id : SV_DispatchThreadID)
+{
+    float2 uv = float2((float)id.x/(float)_Width,(float)id.y/(float)_Height);
+    float4 col = _Color*GetGradient(uv,_FromPoint,_ToPoint);  
+    if(_SeedPixels[_Width*(id.y+_AreaExpansion)+id.x+_AreaExpansion] > 0)
+    {
+        _ResultTex[id.xy] = col;
+    }
+    if(_SeedPixels[_Width*(id.y+_AreaExpansion)+id.x] > 0)
+    {
+        _ResultTex[id.xy] = col;
+    }
+    if(_SeedPixels[_Width*(id.y+_AreaExpansion)+id.x-_AreaExpansion] > 0)
+    {
+        _ResultTex[id.xy] = col;
+    }
+    if(_SeedPixels[_Width*(id.y)+id.x+_AreaExpansion] > 0)
+    {
+        _ResultTex[id.xy] = col;
+    }
+    if(_SeedPixels[_Width*(id.y)+id.x] > 0)
+    {
+        _ResultTex[id.xy] = col;
+    }
+    if(_SeedPixels[_Width*(id.y)+id.x-_AreaExpansion] > 0)
+    {
+        _ResultTex[id.xy] = col;
+    }
+    if(_SeedPixels[_Width*(id.y-_AreaExpansion)+id.x+_AreaExpansion] > 0)
+    {
+        _ResultTex[id.xy] = col;
+    }
+    if(_SeedPixels[_Width*(id.y-_AreaExpansion)+id.x] > 0)
+    {
+        _ResultTex[id.xy] = col;
+    }
+    if(_SeedPixels[_Width*(id.y-_AreaExpansion)+id.x-_AreaExpansion] > 0)
+    {
+        _ResultTex[id.xy] = col;
+    }
+}
+
+[numthreads(1,1,1)]
+void AreaExpansion (uint3 id : SV_DispatchThreadID)
+{
+    if(_SeedPixels[_Width*(id.y+1)+id.x+1] > 0)
+    {
+        _SeedPixels[_Width*id.y+id.x] = 1;
+    }
+    if(_SeedPixels[_Width*(id.y+1)+id.x] > 0)
+    {
+        _SeedPixels[_Width*id.y+id.x] = 1;
+    }
+    if(_SeedPixels[_Width*(id.y+1)+id.x-1] > 0)
+    {
+        _SeedPixels[_Width*id.y+id.x] = 1;
+    }
+    if(_SeedPixels[_Width*(id.y)+id.x+1] > 0)
+    {
+        _SeedPixels[_Width*id.y+id.x] = 1;
+    }
+    if(_SeedPixels[_Width*(id.y)+id.x] > 0)
+    {
+        _SeedPixels[_Width*id.y+id.x] = 1;
+    }
+    if(_SeedPixels[_Width*(id.y)+id.x-1] > 0)
+    {
+        _SeedPixels[_Width*id.y+id.x] = 1;
+    }
+    if(_SeedPixels[_Width*(id.y-1)+id.x+1] > 0)
+    {
+        _SeedPixels[_Width*id.y+id.x] = 1;
+    }
+    if(_SeedPixels[_Width*(id.y-1)+id.x] > 0)
+    {
+        _SeedPixels[_Width*id.y+id.x] = 1;
+    }
+    if(_SeedPixels[_Width*(id.y-1)+id.x-1] > 0)
+    {
+        _SeedPixels[_Width*id.y+id.x] = 1;
+    }
+}
+
+/*[numthreads(1,1,1)]
+void FillLine (uint3 id : SV_DispatchThreadID)
+{
+    int2 pix = id.xy;
+    if(_SeedPixels[_Width*id.y+id.x] == 2)
+    {
+        _SeedPixels[_Width*id.y+id.x] = 1;
+        
+        // 横方向
+        int2 left = pix - int2(1,0);
+        while (left.x>=0)
+        {
+            if(_SeedPixels[_Width*left.y+left.x] == 0)
+            {
+                if( distance(
+                    _BaseColor,
+                    _ResultTex[left])
+                    <= _ColorMargin)
+                {
+                    _SeedPixels[_Width*left.y+left.x] = 1;
+                }
+                else
+                {
+                    _SeedPixels[_Width*left.y+left.x] = -1;
+                    break;
+                }
+            }
+            else if(_SeedPixels[_Width*left.y+left.x] == -1)
+            {
+                break;
+            }
+            left = left - int2(1,0);
+        }
+        
+        int2 right = pix + int2(1,0);
+        while (right.x<_Width)
+        {
+            if(_SeedPixels[_Width*right.y+right.x] == 0)
+            {
+                if( distance(
+                    _BaseColor,
+                    _ResultTex[right])
+                    <= _ColorMargin)
+                {
+                    _SeedPixels[_Width*right.y+right.x] = 1;
+                }
+                else
+                {
+                    _SeedPixels[_Width*right.y+right.x] = -1;
+                    break;
+                }
+            }
+            else if(_SeedPixels[_Width*right.y+right.x] == -1)
+            {
+                break;
+            }
+            right = right + int2(1,0);
+        }
+
+        bool upperFill = false;
+        bool lowerFill = false;
+        for(int i = left.x+1; i < right.x-1; i++)
+        {
+            int2 upper = int2(i,left.y-1);
+            {
+                if(distance(_ResultTex[upper],_BaseColor)<=_ColorMargin)
+                {
+                    if(!upperFill && _SeedPixels[_Width*upper.y+upper.x] == 0)
+                    {
+                        _SeedPixels[_Width*upper.y+upper.x] = 2;
+                    }
+                    upperFill = true;
+                }
+                else
+                {
+                    upperFill = false;
+                }
+            }
+        
+            int2 lower = int2(i,left.y+1);
+            {
+                if(distance(_ResultTex[lower],_BaseColor)<=_ColorMargin)
+                {
+                    if(!lowerFill && _SeedPixels[_Width*lower.y+lower.x] == 0)
+                    {
+                        _SeedPixels[_Width*lower.y+lower.x] = 2;
+                    }
+                    lowerFill = true;
+                }
+                else
+                {
+                    lowerFill = false;
+                } 
+            }
+        }
+        
+        // 縦方向    
+        int2 down = pix - int2(0,1);
+        while (down.y>=0)
+        {
+            if(_SeedPixels[_Width*down.y+down.x] == 0)
+            {
+                if( distance(
+                    _BaseColor,
+                    _ResultTex[down])
+                    <= _ColorMargin)
+                {
+                    _SeedPixels[_Width*down.y+down.x] = 1;
+                }
+                else
+                {
+                    _SeedPixels[_Width*down.y+down.x] = -1;
+                    break;
+                }
+            }
+            else if(_SeedPixels[_Width*down.y+down.x] == -1)
+            {
+                break;
+            }
+            down = down - int2(0,1);
+        }
+        
+        int2 up = pix + int2(0,1);
+        while (up.y<_Height)
+        {
+            if(_SeedPixels[_Width*up.y+up.x] == 0)
+            {
+                if( distance(
+                    _BaseColor,
+                    _ResultTex[up])
+                    <= _ColorMargin)
+                {
+                    _SeedPixels[_Width*up.y+up.x] = 1;
+                }
+                else
+                {
+                    _SeedPixels[_Width*up.y+up.x] = -1;
+                    break;
+                }
+            }
+            else if(_SeedPixels[_Width*up.y+up.x] == -1)
+            {
+                break;
+            }
+            up = up + int2(0,1);
+        }
+
+        bool rightFill = false;
+        bool leftFill = false;
+        for(int j = down.y+1; j < up.y-1; j++)
+        {
+            int2 right = int2(down.x+1,j);
+            {
+                if(distance(_ResultTex[right],_BaseColor)<=_ColorMargin)
+                {
+                    if(!rightFill && _SeedPixels[_Width*right.y+right.x] == 0)
+                    {
+                        _SeedPixels[_Width*right.y+right.x] = 2;
+                    }
+                    rightFill = true;
+                }
+                else
+                {
+                    rightFill = false;
+                }
+            }
+        
+            int2 left = int2(down.x-1,j);
+            {
+                if(distance(_ResultTex[left],_BaseColor)<=_ColorMargin)
+                {
+                    if(!leftFill && _SeedPixels[_Width*left.y+left.x] == 0)
+                    {
+                        _SeedPixels[_Width*left.y+left.x] = 2;
+                    }
+                    leftFill = true;
+                }
+                else
+                {
+                    leftFill = false;
+                } 
+            }
+        }
+    }
+}*/
+
+[numthreads(1,1,1)]
+void SeedFill (uint3 id : SV_DispatchThreadID)
+{
+    if(_SeedPixels[_Width*id.y+id.x] == 2)
+    {
+        int2 pix = id.xy;
+        _SeedPixels[_Width*id.y+id.x] = 1;
+        int2 p = pix;
+        while( p.x < _Width)
+        {
+            int2 p2 = p + int2(1,0);
+            if(_SeedPixels[_Width*p2.y+p2.x] != 0) break;
+            if(distance(_ResultTex[p],_ResultTex[p2]) <= _ColorMargin)
+            {
+                _SeedPixels[_Width*p2.y+p2.x] = 2;
+            }
+            else
+            {
+                break;
+            }
+            p = p2;
+        }
+        
+        p = pix;
+        while( p.x >= 0)
+        {
+            int2 p2 = p - int2(1,0);
+            if(_SeedPixels[_Width*p2.y+p2.x] != 0) break;
+            if(distance(_ResultTex[p],_ResultTex[p2]) <= _ColorMargin)
+            {
+                _SeedPixels[_Width*p2.y+p2.x] = 2;
+            }
+            else
+            {
+                break;
+            }
+            p = p2;
+        }
+
+        p = pix;
+        while( p.y < _Height)
+        {
+            int2 p2 = p + int2(0,1);
+            if(_SeedPixels[_Width*p2.y+p2.x] != 0) break;
+            if(distance(_ResultTex[p],_ResultTex[p2]) <= _ColorMargin)
+            {
+                _SeedPixels[_Width*p2.y+p2.x] = 2;
+            }
+            else
+            {
+                break;
+            }
+            p = p2;
+        }
+        
+        p = pix;
+        while( p.y >= 0)
+        {
+            int2 p2 = p - int2(0,1);
+            if(_SeedPixels[_Width*p2.y+p2.x] != 0) break;
+            if(distance(_ResultTex[p],_ResultTex[p2]) <= _ColorMargin)
+            {
+                _SeedPixels[_Width*p2.y+p2.x] = 2;
+            }
+            else
+            {
+                break;
+            }
+            p = p2;
+        }
+    }
+}
+
+[numthreads(1,1,1)]
+void DrawStamp (uint3 id : SV_DispatchThreadID)
+{
+    float2 uv = float2((float)id.x/(float)_Width,(float)id.y/(float)_Height);
+    uv -= _StampUV;
+    uv /= _StampScale;
+    uv = float2(
+        uv.x*cos(_StampRotation) - uv.y*sin(_StampRotation),
+        uv.x*sin(_StampRotation) + uv.y*cos(_StampRotation));
+    uv += float2(0.5,0.5);
+    if(0<uv.x&&uv.x<1 &&
+        0<uv.y&&uv.y<1)
+    {
+        float4 l = _Stamp[int2(uv.x*_StampWidth,uv.y*_StampHeight)] * _Color;
+        float4 col = _ResultTex[id.xy];
+        
+        col.rgb = lerp(
+            lerp(col.rgb,l.rgb,l.a),
+            l.rgb,
+            l.a);
+        col.a = saturate(col.a+(1.0-col.a)*l.a);
+        
+        _ResultTex[id.xy] = col;
+    }
+}
+
+[numthreads(1,1,1)]
+void Gaussian (uint3 id : SV_DispatchThreadID)
+{
+    float2 uv = float2(id.x/(float)_Width , id.y/(float)_Height);
+    float dist = ComputeDistance(uv,_FromPoint,_ToPoint);
+    float concentration = Concentration(dist);
+
+    int x = lerp(1,_Width*.01,_BrushPower*concentration);
+    int y = lerp(1,_Height*.01,_BrushPower*concentration);
+    
+    float4 gau = 1.*_ResultTex[id.xy+int2(-x,-y)] + 2.*_ResultTex[id.xy+int2( 0,-y)] + 1.*_ResultTex[id.xy+int2( x,-y)] +
+                 2.*_ResultTex[id.xy+int2(-x, 0)] + 4.*_ResultTex[id.xy+int2( 0, 0)] + 2.*_ResultTex[id.xy+int2( x, 0)] +
+                 1.*_ResultTex[id.xy+int2(-x, y)] + 2.*_ResultTex[id.xy+int2( 0, y)] + 1.*_ResultTex[id.xy+int2( x, y)];
+    _ResultTex[id.xy] = lerp(_ResultTex[id.xy],gau * 0.0625,concentration);
+}

@@ -6,7 +6,7 @@ using UnityEngine;
 using VRC.SDK3.Avatars.ScriptableObjects;
 #endif
 
-namespace HhotateA
+namespace HhotateA.AvatarModifyTools.Core
 {
     public class MenuCreater
     {
@@ -60,7 +60,6 @@ namespace HhotateA
             if (index < 1) return null;
             return MenuSplite(menus[index - 1], menus[index]);
         }
-        
 
         public void AddControll(VRCExpressionsMenu.Control controll,int i = -1)
         {
@@ -110,23 +109,61 @@ namespace HhotateA
 
         public void AddAxis(
             string name, Texture2D icon,
+            string param,
             string param_u, string param_r, string param_d = "", string param_l = "",
             string name_u = "", string name_r = "", string name_d = "", string name_l = "",
             Texture2D icon_u = null, Texture2D icon_r = null, Texture2D icon_d = null, Texture2D icon_l = null)
         {
             AddControll(AxisControl(
                 name,icon,
+                param,
                 param_u,param_r,param_d,param_l,
                 name_u,name_r,name_d,name_l,
                 icon_u,icon_r,icon_d,icon_l));
         }
+        public void AddAxis(
+            string name, Texture2D icon,
+            string param,
+            string param_X, string param_Y,
+            string name_u = "", string name_r = "", string name_d = "", string name_l = "",
+            Texture2D icon_u = null, Texture2D icon_r = null, Texture2D icon_d = null, Texture2D icon_l = null)
+        {
+            AddControll(AxisControl(
+                name,icon,
+                param,
+                param_X,param_Y,"","",
+                name_u,name_r,name_d,name_l,
+                icon_u,icon_r,icon_d,icon_l));
+        }
+
+        public void AddRadial(
+            string name, Texture2D icon,
+            string param, string radialParam)
+        {
+            var c = new VRCExpressionsMenu.Control()
+            {
+                icon = icon,
+                name = name,
+                type = VRCExpressionsMenu.Control.ControlType.RadialPuppet
+            };
+
+            if (!string.IsNullOrWhiteSpace(param))
+            {
+                c.parameter = new VRCExpressionsMenu.Control.Parameter(){name = param};
+            }
+            
+            c.subParameters = new VRCExpressionsMenu.Control.Parameter[1]
+            {
+                new VRCExpressionsMenu.Control.Parameter(){name = radialParam}, 
+            };
+            AddControll(c);
+        }
 
         static VRCExpressionsMenu.Control NextPageControl(VRCExpressionsMenu subMenu)
         {
-            var iconPath = AssetDatabase.GUIDToAssetPath("ab0f6a0e53ae8fd4aab1efed5effa7eb");
             return SubMenuControl(
                     "NextPage",
-                    AssetDatabase.LoadAssetAtPath<Texture2D>(iconPath),
+                    AssetUtility.LoadAssetAtGuid<Texture2D>(EnvironmentVariable.arrowIcon),
                         subMenu);
         }
         
@@ -167,6 +204,7 @@ namespace HhotateA
         
         static VRCExpressionsMenu.Control AxisControl(
             string name,Texture2D icon,
+            string param,
             string param_u,string param_r,string param_d = "",string param_l = "",
             string name_u = "",string name_r = "", string name_d = "",string name_l = "",
             Texture2D icon_u = null,Texture2D icon_r = null,Texture2D icon_d = null,Texture2D icon_l = null)
@@ -184,6 +222,11 @@ namespace HhotateA
             else
             {
                 c.type = VRCExpressionsMenu.Control.ControlType.FourAxisPuppet;
+            }
+
+            if (!string.IsNullOrWhiteSpace(param))
+            {
+                c.parameter = new VRCExpressionsMenu.Control.Parameter(){name = param};
             }
             c.subParameters = new VRCExpressionsMenu.Control.Parameter[4]
             {

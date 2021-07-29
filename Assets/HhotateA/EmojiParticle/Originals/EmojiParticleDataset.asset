@@ -17,7 +17,8 @@ MonoBehaviour:
   gesture_controller: {fileID: 0}
   action_controller: {fileID: 0}
   fx_controller: {fileID: 0}
+  items:
+  - prefab: {fileID: 6880226074683845, guid: 1ed7af9f3244e954d83c99e2ec259025, type: 3}
+    target: 0
   parameter: {fileID: 11400000, guid: 461eebd41dcb8f64b85d931957c1e770, type: 2}
   menu: {fileID: 11400000, guid: 07d50fbbad7dcb446b3a6ff5770e7f31, type: 2}
-  prefab: {fileID: 6880226074683845, guid: 1ed7af9f3244e954d83c99e2ec259025, type: 3}
-  target: 0

@@ -4,7 +4,7 @@ using UnityEngine;
 using VRC.SDK3.Avatars.ScriptableObjects;
 #endif
 
-namespace HhotateA
+namespace HhotateA.AvatarModifyTools.Core
 {
     [CreateAssetMenu(menuName = "HhotateA/AvatarModifyData")]
     public class AvatarModifyData : ScriptableObject
@@ -14,12 +14,17 @@ namespace HhotateA
         public AnimatorController gesture_controller;
         public AnimatorController action_controller;
         public AnimatorController fx_controller;
-        public GameObject prefab;
-        public HumanBodyBones target;
+        public Item[] items;
 #if VRC_SDK_VRCSDK3
         public VRCExpressionParameters parameter;
         public VRCExpressionsMenu menu;
 #endif
-        
+    }
+
+    [System.Serializable]
+    public class Item
+    {
+        public GameObject prefab;
+        public HumanBodyBones target;
     }
 }

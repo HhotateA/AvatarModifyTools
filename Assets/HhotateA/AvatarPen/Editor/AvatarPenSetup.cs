@@ -1,4 +1,5 @@
-﻿using System;
+﻿using HhotateA.AvatarModifyTools.Core;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
@@ -8,7 +9,7 @@ using UnityEngine;
 using VRC.SDK3.Avatars.Components;
 #endif
 
-namespace HhotateA
+namespace HhotateA.AvatarModifyTools.AvatarPen
 {
     public class AvatarPenSetup : EditorWindow
     {
@@ -24,7 +25,6 @@ namespace HhotateA
 #if VRC_SDK_VRCSDK3
         private VRCAvatarDescriptor avatar;
 #endif
-        private string assetDatabaseGUID = "e5cd1ff11d13fed44bd5d0b8b4a2be8c";
         private string msg = "OK";
         GUIStyle msgStyle = new GUIStyle(GUIStyle.none);
 
@@ -60,45 +60,33 @@ namespace HhotateA
             }
             EditorGUILayout.EndHorizontal();
 
-            EditorGUI.BeginDisabledGroup(avatar==null);
-            if (GUILayout.Button("Setup"))
+            using (new EditorGUI.DisabledScope(avatar==null))
             {
-                try
+                if (GUILayout.Button("Setup"))
                 {
-                    string path = AssetDatabase.GUIDToAssetPath(assetDatabaseGUID);
-                    if (!string.IsNullOrWhiteSpace(path))
+                    try
                     {
-                        AvatarModifyData assets = AssetDatabase.LoadAssetAtPath<AvatarModifyData>(path);
+                        var asset = AssetUtility.LoadAssetAtGuid<AvatarModifyData>(EnvironmentGUIDs.penModifyData);
                         var mod = new AvatarModifyTool(avatar);
-                        mod.ModifyAvatar(assets);
+                        mod.ModifyAvatar(asset);
                         msgStyle.normal = new GUIStyleState()
                         {
                             textColor = Color.green
                         };
                         msg = "Success!";
                     }
-                    else
+                    catch (Exception e)
                     {
-                        msg = "AvatarPen : AssetDatabase file not found. Please reimport.";
-                        Debug.LogError(msg);
                         msgStyle.normal = new GUIStyleState()
                         {
                             textColor = Color.red
                         };
+                        msg = e.Message;
+                        Console.WriteLine(e);
+                        throw;
                     }
                 }
-                catch (Exception e)
-                {
-                    msgStyle.normal = new GUIStyleState()
-                    {
-                        textColor = Color.red
-                    };
-                    msg = e.Message;
-                    Console.WriteLine(e);
-                    throw;
-                }
             }
-            EditorGUI.EndDisabledGroup();
             
             EditorGUILayout.BeginHorizontal();
             {

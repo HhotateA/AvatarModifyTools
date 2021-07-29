@@ -5,7 +5,7 @@ using UnityEngine;
 using System.IO;
 using Color = UnityEngine.Color;
 
-namespace HhotateA
+namespace HhotateA.AvatarModifyTools.Core
 {
     public class TextureCombinater
     {
@@ -90,11 +90,39 @@ namespace HhotateA
             //Pngに変換
             byte[] bytes = tex.EncodeToPNG();
             //保存
-            File.WriteAllBytes(path, bytes);
+            using (var fs = new System.IO.FileStream(path, System.IO.FileMode.Create, System.IO.FileAccess.Write)) {
+                fs.Write(bytes, 0, bytes.Length);
+            }
+            path = FileUtil.GetProjectRelativePath(path);
             AssetDatabase.ImportAsset(path);
             var i = TextureImporter.GetAtPath(path) as TextureImporter;
             i.alphaIsTransparency = true;
             i.streamingMipmaps = true;
+            for (int texsize = 32; texsize <= tex.width; texsize = texsize * 2)
+            {
+                i.maxTextureSize = texsize;
+            }
+            i.SaveAndReimport();
+            return AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+        }
+
+        public static Texture2D ConvertToPngAndSave(string path,RenderTexture tex)
+        {
+            byte[] bytes = Texture2Bytes(tex);
+            //File.WriteAllBytes(path, bytes);
+            using (var fs = new System.IO.FileStream(path, System.IO.FileMode.Create, System.IO.FileAccess.Write)) {
+                fs.Write(bytes, 0, bytes.Length);
+            }
+            path = FileUtil.GetProjectRelativePath(path);
+            AssetDatabase.ImportAsset(path);
+            var i = TextureImporter.GetAtPath(path) as TextureImporter;
+            i.alphaIsTransparency = true;
+            i.streamingMipmaps = true;
+            for (int texsize = 32; texsize <= tex.width; texsize = texsize * 2)
+            {
+                i.maxTextureSize = texsize;
+            }
+            i.SaveAndReimport();
             return AssetDatabase.LoadAssetAtPath<Texture2D>(path);
         }
 
@@ -111,15 +139,85 @@ namespace HhotateA
                 width,height,0,
                 RenderTextureFormat.Default,
                 RenderTextureReadWrite.Default);
+            RenderTexture currentRT = RenderTexture.active;
             Graphics.Blit(srcTexture, rt);
-            RenderTexture previous = RenderTexture.active;
             RenderTexture.active = rt;
             var t = new Texture2D(width,height);
             t.ReadPixels(new Rect(0, 0, rt.width, rt.height), 0, 0);
             t.Apply();
-            RenderTexture.active = previous;
+            RenderTexture.active = currentRT;
             RenderTexture.ReleaseTemporary(rt);
             return t;
+        }
+        
+        public static RenderTexture GetReadableRenderTexture(Texture srcTexture)
+        {
+            RenderTexture rt = new RenderTexture(srcTexture.width,srcTexture.height,0,RenderTextureFormat.ARGBFloat, RenderTextureReadWrite.Default);
+            rt.enableRandomWrite = true;
+            rt.Create();
+            RenderTexture currentRT = RenderTexture.active;
+            Graphics.Blit(srcTexture, rt);
+            RenderTexture.active = currentRT;
+            rt.name = srcTexture.name;
+            return rt;
+        }
+        
+        public static Texture2D Bytes2Texture(byte[] bytes)
+        {
+            int pos = 16;
+            int width = 0;
+            for (int i = 0; i < 4; i++)
+            {
+                width = width * 256 + bytes[pos++];
+            }
+            int height = 0;
+            for (int i = 0; i < 4; i++)
+            {
+                height = height * 256 + bytes[pos++];
+            }
+
+            Texture2D texture = new Texture2D(width, height, TextureFormat.RGBAFloat, false);
+            texture.LoadImage(bytes);
+            return texture;
+        }
+
+        public static byte[] Texture2Bytes(RenderTexture texture)
+        {
+            Texture2D tex = new Texture2D(texture.width, texture.height, TextureFormat.RGBAFloat, false);
+            var current = RenderTexture.active;
+            RenderTexture.active = texture;
+            tex.ReadPixels(new Rect(0, 0, texture.width, texture.height), 0, 0);
+            RenderTexture.active = current;
+            tex.Apply();
+            return tex.EncodeToPNG();
+        }
+
+        public static Color GetPixel(RenderTexture rt,int x,int y)
+        {
+            var currentRT = RenderTexture.active;
+            RenderTexture.active = rt;
+            var texture = new Texture2D(rt.width, rt.height);
+            texture.ReadPixels(new Rect(0, 0, rt.width, rt.height), 0, 0);
+            texture.Apply();
+            var colors = texture.GetPixel(x,y);
+            RenderTexture.active = currentRT;
+            return colors;
+        }
+        
+        public static Vector4[] GetGradientBuffer(Gradient gradient,int step = 256)
+        {
+            var buffer = new Vector4[step];
+            for (int i = 0;i<step;i++)
+            {
+                buffer[i] = gradient.Evaluate((float)i / (float)step);
+            }
+
+            return buffer;
+        }
+
+        public static int GetMipMapCount(Texture2D tex)
+        {
+            return tex.mipmapCount;
         }
     }
 }
