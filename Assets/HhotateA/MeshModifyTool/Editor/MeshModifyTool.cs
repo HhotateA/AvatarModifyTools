@@ -120,10 +120,10 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
                 {
                     _penTools = new MeshPenTool[4]
                     {
-                        new MeshPenTool("9a511d19d82d2f847b4945e967929e53","Smooth",MeshPenTool.ExtraTool.Default,2f,0.003f,0.03f), 
-                        new MeshPenTool("e8e8182176f763e48850311a752c0e02","Liner",MeshPenTool.ExtraTool.Default,1f,-0.01f,0.03f), 
-                        new MeshPenTool("37b755ed53afcfc408a733b5f4580816","Constant",MeshPenTool.ExtraTool.Default,10f,null,0f), 
-                        new MeshPenTool("00da790a00e523643a5e648c07452823","Detail",MeshPenTool.ExtraTool.DetailMode,null,null,0f), 
+                        new MeshPenTool(EnvironmentGUIDs.smoothTooIcon,"Smooth",MeshPenTool.ExtraTool.Default,2f,0.003f,0.03f), 
+                        new MeshPenTool(EnvironmentGUIDs.linerToolIcon,"Liner",MeshPenTool.ExtraTool.Default,1f,-0.01f,0.03f), 
+                        new MeshPenTool(EnvironmentGUIDs.constantToolIcon,"Constant",MeshPenTool.ExtraTool.Default,10f,null,0f), 
+                        new MeshPenTool(EnvironmentGUIDs.detailToolIcon,"Detail",MeshPenTool.ExtraTool.DetailMode,null,null,0f), 
                     };
                 }
 
@@ -141,10 +141,10 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
                 {
                     _extraTools = new MeshPenTool[4]
                     {
-                        new MeshPenTool("b3cf85d36df40664caa41453c91c4a10","SelectLand",MeshPenTool.ExtraTool.SelectLand,null,null,0f),
-                        new MeshPenTool("0a05c27f8b748874f8c8a001841555cd","UnSelectLand",MeshPenTool.ExtraTool.UnSelectLand,null,null,0f),
-                        new MeshPenTool("f1ed57a871c76eb458353aec0d255979","SelectVertex",MeshPenTool.ExtraTool.SelectVertex,null,null,0f),
-                        new MeshPenTool("69b440a5753b0864d9ab6f9591898c87","UnSelectVertex",MeshPenTool.ExtraTool.UnSelectVertex,null,null,0f),
+                        new MeshPenTool(EnvironmentGUIDs.selectLandToolIcon,"SelectLand",MeshPenTool.ExtraTool.SelectLand,null,null,0f),
+                        new MeshPenTool(EnvironmentGUIDs.unSelectLandToolIcon,"UnSelectLand",MeshPenTool.ExtraTool.UnSelectLand,null,null,0f),
+                        new MeshPenTool(EnvironmentGUIDs.selectVertexToolIcon,"SelectVertex",MeshPenTool.ExtraTool.SelectVertex,null,null,0f),
+                        new MeshPenTool(EnvironmentGUIDs.unSelectVertexToolIcon,"UnSelectVertex",MeshPenTool.ExtraTool.UnSelectVertex,null,null,0f),
                     };
                 }
                 return _extraTools;
@@ -313,7 +313,7 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
                                     {
                                         SaveAll(() =>
                                         {
-                                            if (rends[editIndex].GetType() == typeof(SkinnedMeshRenderer))
+                                            if (rends[editIndex] is SkinnedMeshRenderer)
                                             {
                                                 var rend = rends[editIndex] as SkinnedMeshRenderer;
                                                 DisableNonHumanBone(rend);
@@ -327,7 +327,7 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
                                     {
                                         SaveAll(() =>
                                         {
-                                            if (rends[editIndex].GetType() == typeof(SkinnedMeshRenderer))
+                                            if (rends[editIndex] is SkinnedMeshRenderer)
                                             {
                                                 var rend = rends[editIndex] as SkinnedMeshRenderer;
                                                 DeleateDisableBone();
@@ -1775,7 +1775,7 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
             {
                 if (!string.IsNullOrWhiteSpace(guid))
                 {
-                    var i = AssetDatabase.LoadAssetAtPath<Texture>(AssetDatabase.GUIDToAssetPath(guid));
+                    var i = AssetUtility.LoadAssetAtGuid<Texture>(guid);
                     icon = i;
                 }
                 name = n;
@@ -1785,6 +1785,20 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
                 brushStrength = s;
             }
             public MeshPenTool(Texture i, string n,
+                ExtraTool? e = null,
+                float? s = null,
+                float? p = null,
+                float? w = null)
+            {
+                icon = i;
+                name = n;
+                extraTool = e;
+                brushPower = p;
+                brushWidth = w;
+                brushStrength = s;
+            }
+
+            public MeshPenTool(Texture2D i, string n,
                 ExtraTool? e = null,
                 float? s = null,
                 float? p = null,

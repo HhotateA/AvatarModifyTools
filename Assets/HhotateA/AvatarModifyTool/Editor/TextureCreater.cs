@@ -10,15 +10,11 @@ namespace HhotateA.AvatarModifyTools.Core
         public string name = "";
         private CustomRenderTexture targetTexture;
         private Material targetMaterial;
-        private int editIndex = -1;
+        // private int editIndex = -1;
         private List<LayerData> layerDatas = new List<LayerData>();
-        LayerData layerData
-        {
-            get
-            {
-                return layerDatas[editIndex];
-            }
-        }
+        public List<LayerData> LayerDatas => layerDatas;
+        public LayerData GetLayerData(int index) => layerDatas[index];
+        private LayerData editLayer;
         
         public TextureCreator(Texture baselayer)
         {
@@ -32,7 +28,7 @@ namespace HhotateA.AvatarModifyTools.Core
         
         ComputeShader GetComputeShader()
         {
-            return EnvironmentVariable.GetComputeShader();
+            return AssetUtility.LoadAssetAtGuid<ComputeShader>(EnvironmentVariable.computeShader);
         }
         
         public Texture GetTexture(int index = -1)
@@ -42,12 +38,6 @@ namespace HhotateA.AvatarModifyTools.Core
                 return layerDatas[index].texture;
             }
             return targetTexture;
-        }
-        public LayerData GetLayerData(int index) => layerDatas[index];
-
-        public List<LayerData> GetLayers()
-        {
-            return layerDatas;
         }
         public void SetLayers(List<LayerData> layers)
         {
@@ -59,7 +49,8 @@ namespace HhotateA.AvatarModifyTools.Core
         }
         public void AddLayers(List<LayerData> layers)
         {
-            layerDatas.AddRange(layers);
+            layers.AddRange(layerDatas);
+            layerDatas = layers;
         }
 
         // 最大キャッシュ数
@@ -72,7 +63,12 @@ namespace HhotateA.AvatarModifyTools.Core
         
         public RenderTexture GetEditTexture()
         {
-            return layerData.texture;
+            return editLayer.texture;
+        }
+
+        public LayerData GetEditLayer()
+        {
+            return editLayer;
         }
 
         public RenderTexture GetTemporaryTexture()
@@ -181,10 +177,27 @@ namespace HhotateA.AvatarModifyTools.Core
                 tex = TextureCombinater.GetReadableRenderTexture(tex);
             }
 
-            layerDatas.Add(new LayerData((RenderTexture)tex));
+            layerDatas.Insert(0,new LayerData((RenderTexture)tex));
             SyncLayers();
         }
         
+        public void AddLayer(Color col,Gradient gradient)
+        {
+            if(LayerCount() > 16) return;
+            var rt = new RenderTexture(targetTexture.width,targetTexture.height,0,RenderTextureFormat.ARGBFloat, RenderTextureReadWrite.Default);
+            rt.enableRandomWrite = true;
+            rt.Create();
+            var tex = rt;
+            
+            ClearColor(tex,col,gradient);
+            
+            tex.name = "NewLayer" + LayerCount().ToString();
+            layerDatas.Insert(0,new LayerData((RenderTexture)tex)
+            {
+                active = true,
+            });
+            SyncLayers();
+        }
         public void AddMask(Color col,Gradient gradient)
         {
             if(LayerCount() > 16) return;
@@ -196,7 +209,7 @@ namespace HhotateA.AvatarModifyTools.Core
             ClearColor(tex,col,gradient);
             
             tex.name = "Mask" + LayerCount().ToString();
-            layerDatas.Add(new LayerData((RenderTexture)tex)
+            layerDatas.Insert(0,new LayerData((RenderTexture)tex)
             {
                 active = true,
                 layerMode = BlendMode.Override,
@@ -211,7 +224,7 @@ namespace HhotateA.AvatarModifyTools.Core
             {
                 if (i < LayerCount())
                 {
-                    var ld = layerDatas[i];
+                    var ld = layerDatas[layerDatas.Count-1-i];
                     targetMaterial.SetTexture("_Layer"+i,ld.texture);
                     targetMaterial.SetTextureScale("_Layer"+i,new Vector2(ld.scale.x,ld.scale.y));
                     targetMaterial.SetTextureOffset("_Layer"+i,new Vector2(ld.offset.x,ld.offset.y));
@@ -253,11 +266,8 @@ namespace HhotateA.AvatarModifyTools.Core
         {
             if (0 <= index && index < LayerCount())
             {
-                editIndex = index;
-            }
-            ResetCashes();
-            if (0 <= editIndex && editIndex < LayerCount())
-            {
+                editLayer = layerDatas[index];
+                ResetCashes();
                 AddCash();
             }
         }
@@ -281,7 +291,7 @@ namespace HhotateA.AvatarModifyTools.Core
 
         public void CopyLayer(int index)
         {
-            layerDatas.Add(new LayerData(TextureCombinater.GetReadableRenderTexture(layerDatas[index].texture))
+            layerDatas.Insert(0,new LayerData(TextureCombinater.GetReadableRenderTexture(layerDatas[index].texture))
             {
                 active = layerDatas[index].active,
                 color = layerDatas[index].color,
@@ -302,7 +312,7 @@ namespace HhotateA.AvatarModifyTools.Core
 
         public void DrawLine(Vector2 from,Vector2 to,Color brushColor,Gradient gradient,float brushWidth,float brushStrength,float brushPower = 0f)
         {
-            if (editIndex == -1) return;
+            if (editLayer == null) return;
             if (0f < from.x && from.x < 1f &&
                 0f < from.y && from.y < 1f &&
                 0f < to.x && to.x < 1f &&

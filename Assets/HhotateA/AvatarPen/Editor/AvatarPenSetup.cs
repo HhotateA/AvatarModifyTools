@@ -25,7 +25,6 @@ namespace HhotateA.AvatarModifyTools.AvatarPen
 #if VRC_SDK_VRCSDK3
         private VRCAvatarDescriptor avatar;
 #endif
-        private string assetDatabaseGUID = "e5cd1ff11d13fed44bd5d0b8b4a2be8c";
         private string msg = "OK";
         GUIStyle msgStyle = new GUIStyle(GUIStyle.none);
 
@@ -67,27 +66,14 @@ namespace HhotateA.AvatarModifyTools.AvatarPen
                 {
                     try
                     {
-                        string path = AssetDatabase.GUIDToAssetPath(assetDatabaseGUID);
-                        if (!string.IsNullOrWhiteSpace(path))
+                        var asset = AssetUtility.LoadAssetAtGuid<AvatarModifyData>(EnvironmentGUIDs.penModifyData);
+                        var mod = new AvatarModifyTool(avatar);
+                        mod.ModifyAvatar(asset);
+                        msgStyle.normal = new GUIStyleState()
                         {
-                            AvatarModifyData assets = AssetDatabase.LoadAssetAtPath<AvatarModifyData>(path);
-                            var mod = new AvatarModifyTool(avatar);
-                            mod.ModifyAvatar(assets);
-                            msgStyle.normal = new GUIStyleState()
-                            {
-                                textColor = Color.green
-                            };
-                            msg = "Success!";
-                        }
-                        else
-                        {
-                            msg = "AvatarPen : AssetDatabase file not found. Please reimport.";
-                            Debug.LogError(msg);
-                            msgStyle.normal = new GUIStyleState()
-                            {
-                                textColor = Color.red
-                            };
-                        }
+                            textColor = Color.green
+                        };
+                        msg = "Success!";
                     }
                     catch (Exception e)
                     {

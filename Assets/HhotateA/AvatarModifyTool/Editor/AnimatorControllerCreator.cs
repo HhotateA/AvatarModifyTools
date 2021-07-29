@@ -5,7 +5,13 @@ using System.Linq;
 using UnityEditor;
 using UnityEditor.Animations;
 using UnityEngine;
+using UnityEngine.UI;
 using Random = UnityEngine.Random;
+#if VRC_SDK_VRCSDK3
+using VRC.SDK3.Avatars.Components;
+using VRC.SDK3.Avatars.ScriptableObjects;
+using VRC.SDKBase;
+#endif
 
 namespace HhotateA.AvatarModifyTools.Core
 {
@@ -14,14 +20,35 @@ namespace HhotateA.AvatarModifyTools.Core
         private AnimatorController asset;
 
         private AnimatorStateMachine stateMachine;
-        private int layer = 0;
+        private int editLayer = -1;
 
         AnimatorStateMachine GetStateMachine()
         {
-            return asset.layers[layer].stateMachine;
+            return asset.layers[editLayer].stateMachine;
         }
         
-        public AnimatorControllerCreator(string name,string layerName = "")
+        public AnimatorControllerCreator(string name,bool defaultLayer = true)
+        {
+            asset = new AnimatorController()
+            {
+                name = name,
+            };
+            if (defaultLayer)
+            {
+                asset.AddLayer(
+                    new AnimatorControllerLayer()
+                    {
+                        avatarMask = null,
+                        blendingMode = AnimatorLayerBlendingMode.Override,
+                        defaultWeight = 1f,
+                        iKPass =  false,
+                        name = name,
+                        stateMachine = new AnimatorStateMachine(),
+                    });
+                editLayer++;
+            }
+        }
+        public AnimatorControllerCreator(string name,string layerName)
         {
             asset = new AnimatorController()
             {
@@ -37,6 +64,7 @@ namespace HhotateA.AvatarModifyTools.Core
                     name = layerName,
                     stateMachine = new AnimatorStateMachine(),
                 });
+            editLayer++;
         }
         
         /// <summary>
@@ -47,6 +75,11 @@ namespace HhotateA.AvatarModifyTools.Core
         public void AddParameter(string name,AnimatorControllerParameterType type)
         {
             asset.AddParameter(name,type);
+        }
+
+        public AnimatorControllerParameter[] GetParameter()
+        {
+            return asset.parameters;
         }
 
         public class MotionConditionPair
@@ -144,13 +177,20 @@ namespace HhotateA.AvatarModifyTools.Core
         /// </summary>
         /// <param name="name"></param>
         /// <param name="motion"></param>
-        public AnimatorState AddState(string name,Motion motion = null)
+        public AnimatorState AddState(string name,Motion motion = null,bool writeDefault = false)
         {
             var s = GetStateMachine().AddState(name, RandomPosition());
             s.name = name;
             s.motion = motion;
-            s.writeDefaultValues = false;
+            s.writeDefaultValues = writeDefault;
             return GetState("name");
+        }
+
+        public AnimatorState SetWriteDefault(string name, bool writeDefault = false)
+        {
+            var state = GetState(name);
+            state.writeDefaultValues = writeDefault;
+            return state;
         }
         
         /// <summary>
@@ -174,7 +214,7 @@ namespace HhotateA.AvatarModifyTools.Core
         /// <param name="duration"></param>
         public void AddTransition(
             string from, string to,
-            AnimatorCondition[] condition,
+            AnimatorCondition[] conditions,
             bool hasExitTime,
             float exitTime,
             float duration)
@@ -200,12 +240,92 @@ namespace HhotateA.AvatarModifyTools.Core
                 return;
             }
 
-            transition.conditions = condition;
+            transition.conditions = conditions;
             transition.hasExitTime = hasExitTime;
             transition.exitTime = exitTime;
             transition.duration = duration;
             transition.canTransitionToSelf = false;
         }
+        
+        public void AddTransition(
+            string from, string to,
+            bool hasExitTime = true,
+            float exitTime = 1f,
+            float duration = 0f)
+        {
+            AddTransition(from, to, new AnimatorCondition[]{}, hasExitTime, exitTime, duration);
+        }
+        
+        public void AddTransition(
+            string from, string to,
+            string param,
+            int value,
+            bool hasExitTime = false,
+            float exitTime = 0f,
+            float duration = 0f)
+        {
+            var conditions = new AnimatorCondition()
+            {
+                mode = AnimatorConditionMode.Equals,
+                parameter = param,
+                threshold = value
+            };
+            
+            if (asset.parameters.All(p=>p.name!=param))
+            {
+                AddParameter(param,AnimatorControllerParameterType.Int);
+            }
+
+            AddTransition(from, to, new AnimatorCondition[1] {conditions}, hasExitTime, exitTime, duration);
+        }
+        
+        public void AddTransition(
+            string from, string to,
+            string param,
+            bool value,
+            bool hasExitTime = false,
+            float exitTime = 0f,
+            float duration = 0f)
+        {
+            var conditions = new AnimatorCondition()
+            {
+                mode = value ? AnimatorConditionMode.If : AnimatorConditionMode.IfNot,
+                parameter = param,
+                threshold = value ? 1 : 0
+            };
+            
+            if (asset.parameters.All(p=>p.name!=param))
+            {
+                AddParameter(param,AnimatorControllerParameterType.Bool);
+            }
+
+            AddTransition(from, to, new AnimatorCondition[1] {conditions}, hasExitTime, exitTime, duration);
+        }
+        
+        public void AddTransition(
+            string from, string to,
+            string param,
+            float value,
+            bool greater = true,
+            bool hasExitTime = false,
+            float exitTime = 0f,
+            float duration = 0f)
+        {
+            var conditions = new AnimatorCondition()
+            {
+                mode = greater ? AnimatorConditionMode.Greater : AnimatorConditionMode.Less,
+                parameter = param,
+                threshold = value
+            };
+            
+            if (asset.parameters.All(p=>p.name!=param))
+            {
+                AddParameter(param,AnimatorControllerParameterType.Float);
+            }
+
+            AddTransition(from, to, new AnimatorCondition[1] {conditions}, hasExitTime, exitTime, duration);
+        }
+
 
         /// <summary>
         /// 名前からStateを探す
@@ -244,7 +364,7 @@ namespace HhotateA.AvatarModifyTools.Core
                         name = layerName,
                         stateMachine = new AnimatorStateMachine(),
                     });
-                layer++;
+                editLayer++;
             }
             return asset;
         }
@@ -279,11 +399,19 @@ namespace HhotateA.AvatarModifyTools.Core
 
                 foreach (var l in asset.layers)
                 {
-                    SaveStateMachine(l.stateMachine, path);
+                    SaveLayer(l, path);
                 }
+
+                AssetDatabase.Refresh();
             }
 
             return asset;
+        }
+
+        void SaveLayer(AnimatorControllerLayer l, string path)
+        {
+            if(l.avatarMask) AssetDatabase.AddObjectToAsset(l.avatarMask,path);
+            SaveStateMachine(l.stateMachine,path);
         }
 
         void SaveStateMachine(AnimatorStateMachine machine,string path)
@@ -292,10 +420,17 @@ namespace HhotateA.AvatarModifyTools.Core
             foreach (var s in machine.states)
             {
                 AssetDatabase.AddObjectToAsset(s.state,path);
+                if(s.state.motion) if(s.state.motion is BlendTree) AssetDatabase.AddObjectToAsset(s.state.motion,path);
                 foreach (var t in s.state.transitions)
                 {
                     AssetDatabase.AddObjectToAsset(t,path);
                 }
+#if VRC_SDK_VRCSDK3
+                foreach (var b in s.state.behaviours)
+                {
+                    AssetDatabase.AddObjectToAsset(b,path);
+                }
+#endif
             }
 
             foreach (var t in machine.entryTransitions)
@@ -309,7 +444,13 @@ namespace HhotateA.AvatarModifyTools.Core
             foreach (var m in machine.stateMachines)
             {
                 SaveStateMachine(m.stateMachine,path);
-            }  
+#if VRC_SDK_VRCSDK3
+                foreach (var b in m.stateMachine.behaviours)
+                {
+                    AssetDatabase.AddObjectToAsset(b,path);
+                }
+#endif
+            }
         }
 
         void AlignmentMachine(AnimatorStateMachine machine)
@@ -445,5 +586,168 @@ namespace HhotateA.AvatarModifyTools.Core
             var z = 0f;
             return new Vector3( x, y, z);
         }
+
+        public void LayerMask(AvatarMaskBodyPart part,bool active,bool? mask = null)
+        {
+            UnityEditor.Animations.AnimatorControllerLayer[] layers = asset.layers;
+            var avatarMask = layers[editLayer].avatarMask;
+            if (avatarMask == null) avatarMask = new AvatarMask();
+            avatarMask.name = part.ToString();
+            if (mask != null)
+            {
+                foreach (AvatarMaskBodyPart p in Enum.GetValues(typeof(AvatarMaskBodyPart)))
+                {
+                    if (p != AvatarMaskBodyPart.LastBodyPart)
+                    {
+                        avatarMask.SetHumanoidBodyPartActive(p,mask ?? false);
+                    }
+                }
+            }
+            avatarMask.SetHumanoidBodyPartActive(part,active);
+            layers[editLayer].avatarMask = avatarMask;
+            asset.layers = layers;
+        }
+        
+        public void EditStateMachineBehaviour <T>(string stateName,Action<T> edit,bool asNew = false) where T : StateMachineBehaviour 
+        {
+            var state = GetState(stateName);
+            var bs = state.behaviours.ToList();
+            T behaviour;
+            if (asNew)
+            {
+                behaviour = ScriptableObject.CreateInstance<T>();
+            }
+            else
+            if (bs.Any(b => b.GetType() == typeof(T)))
+            {
+                behaviour = (T) bs.FirstOrDefault(b => b.GetType() == typeof(T));
+                bs.Remove(behaviour);
+            }
+            else
+            {
+                behaviour = ScriptableObject.CreateInstance<T>();
+            }
+
+            edit(behaviour);
+            
+            bs.Add(behaviour);
+            state.behaviours = bs.ToArray();
+        }
+
+        public void SetStateSpeed(string stateName,string param = "")
+        {
+            var state = GetState(stateName);
+            if (!String.IsNullOrWhiteSpace(param))
+            {
+                AddParameter(param,AnimatorControllerParameterType.Float);
+                state.speedParameter = param;
+                state.speedParameterActive = true;
+            }
+            else
+            {
+                state.speedParameterActive = false;
+            }
+        }
+        public void SetStateSpeed(string stateName,float speed)
+        {
+            var state = GetState(stateName);
+            state.speed = speed;
+            state.speedParameterActive = false;
+        }
+        public void SetStateTime(string stateName,string param = "")
+        {
+            var state = GetState(stateName);
+            if (!String.IsNullOrWhiteSpace(param))
+            {
+                AddParameter(param,AnimatorControllerParameterType.Float);
+                state.timeParameter = param;
+                state.timeParameterActive = true;
+            }
+            else
+            {
+                state.timeParameterActive = false;
+            }
+        }
+        
+#if VRC_SDK_VRCSDK3
+        public void SetAnimationTracking(string stateName,VRCTrackingMask mask,bool isAnimationTracking = true)
+        {
+            EditStateMachineBehaviour<VRCAnimatorTrackingControl>(stateName, (tracking) =>
+            {
+                var type = isAnimationTracking
+                    ? VRC_AnimatorTrackingControl.TrackingType.Animation
+                    : VRC_AnimatorTrackingControl.TrackingType.Tracking;
+                if (mask == VRCTrackingMask.Haad) tracking.trackingHead = type;
+                if (mask == VRCTrackingMask.LeftHand) tracking.trackingLeftHand = type;
+                if (mask == VRCTrackingMask.RightHand) tracking.trackingRightHand = type;
+                if (mask == VRCTrackingMask.Hip) tracking.trackingHip = type;
+                if (mask == VRCTrackingMask.LeftFoot) tracking.trackingLeftFoot = type;
+                if (mask == VRCTrackingMask.RightFoot) tracking.trackingRightFoot = type;
+                if (mask == VRCTrackingMask.LeftFingers) tracking.trackingLeftFingers = type;
+                if (mask == VRCTrackingMask.RightFingers) tracking.trackingRightFingers = type;
+                if (mask == VRCTrackingMask.Eyes) tracking.trackingEyes = type;
+                if (mask == VRCTrackingMask.Mouth) tracking.trackingMouth = type;
+            },false);
+        }
+        
+        public void SetLayerControll(string stateName,VRCLayers layer,float weight,float duration = 0.25f)
+        {
+            EditStateMachineBehaviour<VRCPlayableLayerControl>(stateName, (controll) =>
+            {
+                if (layer == VRCLayers.Action) controll.layer = VRC_PlayableLayerControl.BlendableLayer.Action;
+                if (layer == VRCLayers.Fx) controll.layer = VRC_PlayableLayerControl.BlendableLayer.FX;
+                if (layer == VRCLayers.Gesture) controll.layer = VRC_PlayableLayerControl.BlendableLayer.Gesture;
+                if (layer == VRCLayers.Idle) controll.layer = VRC_PlayableLayerControl.BlendableLayer.Additive;
+
+                controll.goalWeight = weight;
+                controll.blendDuration = duration;
+            },true);
+        }
+        public void SetLayerControll(string stateName,VRCLayers layer,int layerNum,float weight,float duration = 0.25f)
+        {
+            EditStateMachineBehaviour<VRCAnimatorLayerControl>(stateName, (controll) =>
+            {
+                if (layer == VRCLayers.Action) controll.playable = VRC_AnimatorLayerControl.BlendableLayer.Action;
+                if (layer == VRCLayers.Fx) controll.playable = VRC_AnimatorLayerControl.BlendableLayer.FX;
+                if (layer == VRCLayers.Gesture) controll.playable = VRC_AnimatorLayerControl.BlendableLayer.Gesture;
+                if (layer == VRCLayers.Idle) controll.playable = VRC_AnimatorLayerControl.BlendableLayer.Additive;
+                
+                controll.layer = layerNum;
+                controll.goalWeight = weight;
+                controll.blendDuration = duration;
+            },true);
+        }
+        
+        public void SetLayerLocomotion(string stateName,bool active)
+        {
+            EditStateMachineBehaviour<VRCAnimatorLocomotionControl>(stateName, (controll) =>
+            {
+                controll.disableLocomotion = !active;
+            },false);
+        }
+
+        public enum VRCTrackingMask
+        {
+            Haad,
+            LeftHand,
+            RightHand,
+            Hip,
+            LeftFoot,
+            RightFoot,
+            LeftFingers,
+            RightFingers,
+            Eyes,
+            Mouth
+        }
+
+        public enum VRCLayers
+        {
+            Locomotion,
+            Idle,
+            Gesture,
+            Action,
+            Fx,
+        }
+#endif
     }
 }

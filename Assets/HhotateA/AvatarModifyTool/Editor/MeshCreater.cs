@@ -186,8 +186,8 @@ namespace HhotateA.AvatarModifyTools.Core
             if (boneTable == null) boneTable = new int[0];
             if (boneTable.Length != origin.vertexCount) boneTable = Enumerable.Range(0, origin.vertexCount).Select(n => n).ToArray();
             var vs = origin.vertices.Length == origin.vertexCount ? origin.vertices : null;
-            var ns = origin.normals.Length == origin.vertexCount ? origin.normals : null;
-            var ts = origin.tangents.Length == origin.vertexCount ? origin.tangents : null;
+            var ns = origin.normals.Length == origin.vertexCount ? origin.normals : origin.GetCalculateNormals().ToArray();
+            var ts = origin.tangents.Length == origin.vertexCount ? origin.tangents : origin.GetCalculateTangents().ToArray();
             var cs = origin.colors.Length == origin.vertexCount ? origin.colors : null;
             var us = origin.uv.Length == origin.vertexCount ? origin.UVArray() : null;
             var ws = origin.boneWeights.Length == origin.vertexCount ? origin.boneWeights : null;
@@ -1181,24 +1181,35 @@ namespace HhotateA.AvatarModifyTools.Core
             {
                 if (root == null)
                 {
-                    for (int i = 0; i < vertexs.Count; i++)
+                    for (int i = 0; i < vs.Length; i++)
                     {
                         vertexs[i + offset] = vs[i];
-                        normals[i + offset] = ns[i];
-                        tangents[i + offset] = ts[i];
                     }
                 }
                 else
                 {
-                    for (int i = 0; i < vertexs.Count; i++)
+                    for (int i = 0; i < vs.Length; i++)
                     {
                         // 秘伝のタレ的コード
                         // ベイクにTransformが適応されるので逆変換
                         // 方向を治してからscaleを補正している（たぶん）
-                        vertexs[i + offset] = root.InverseTransformVector((root.TransformDirection(vs[i])));
-                        normals[i + offset] = ns[i];
-                        tangents[i + offset] = ts[i];
+                        vertexs[i + offset] = root.InverseTransformVector(root.TransformDirection(vs[i]));
                     }
+                }
+            }
+
+            if (ns.Length == mesh.vertexCount)
+            {
+                for (int i = 0; i < vs.Length; i++)
+                {
+                    normals[i + offset] = ns[i];
+                }
+            }
+            if (ts.Length == mesh.vertexCount)
+            {
+                for (int i = 0; i < vs.Length; i++)
+                {
+                    tangents[i + offset] = ts[i];
                 }
             }
         }
@@ -2019,8 +2030,6 @@ namespace HhotateA.AvatarModifyTools.Core
             
             Mesh combinedMesh = new Mesh();
             combinedMesh.SetVertices(vertexs);
-            combinedMesh.SetNormals(normals);
-            combinedMesh.SetTangents(tangents);
             combinedMesh.SetColors(colors);
             
             for (int i = 0; i < 8; i++)
@@ -2042,6 +2051,9 @@ namespace HhotateA.AvatarModifyTools.Core
                     blendShape.Apply(ref combinedMesh);
                 }
             }*/
+
+            combinedMesh.SetNormals(normals);
+            combinedMesh.SetTangents(tangents);
 
             if (meshTransforms[submeshID]!=null)
             {
@@ -2068,13 +2080,11 @@ namespace HhotateA.AvatarModifyTools.Core
             
             Mesh combinedMesh = new Mesh();
             combinedMesh.SetVertices(vertexs);
-            combinedMesh.SetNormals(normals);
-            combinedMesh.SetTangents(tangents);
             combinedMesh.SetColors(colors);
             
             for (int i = 0; i < 8; i++)
             {
-                combinedMesh.SetUVs(i, uvs[i]);
+                if(uvs[i]!=null) combinedMesh.SetUVs(i, uvs[i]);
             }
             
             combinedMesh.subMeshCount = triangles.Count;
@@ -2091,6 +2101,10 @@ namespace HhotateA.AvatarModifyTools.Core
             {
                 blendShape.Apply(ref combinedMesh);
             }
+
+            combinedMesh.SetNormals(normals);
+
+            combinedMesh.SetTangents(tangents);
 
             asset = combinedMesh;
             
@@ -2534,6 +2548,38 @@ namespace HhotateA.AvatarModifyTools.Core
                 var m = rend.GetComponent<MeshFilter>() as MeshFilter;
                 m.sharedMesh = mesh;
             }
+        }
+
+        public static List<Vector3> GetCalculateNormals(this Mesh mesh)
+        {
+            var m = new Mesh();
+            m.SetVertices(mesh.vertices.ToList());
+            m.subMeshCount = mesh.subMeshCount;
+            for (int i = 0; i < mesh.subMeshCount; i++)
+            {
+                m.SetTriangles(mesh.GetTriangles(i),i);
+            }
+            var ns = Enumerable.Range(0,m.vertexCount).Select(_=>Vector3.zero).ToList();
+            m.SetNormals(ns);
+            m.RecalculateNormals();
+            m.GetNormals(ns);
+            return ns;
+        }
+        
+        public static List<Vector4> GetCalculateTangents(this Mesh mesh)
+        {
+            var m = new Mesh();
+            m.SetVertices(mesh.vertices.ToList());
+            m.subMeshCount = mesh.subMeshCount;
+            for (int i = 0; i < mesh.subMeshCount; i++)
+            {
+                m.SetTriangles(mesh.GetTriangles(i),i);
+            }
+            var ts = Enumerable.Range(0,m.vertexCount).Select(_=>Vector4.zero).ToList();
+            m.SetTangents(ts);
+            m.RecalculateTangents();
+            m.GetTangents(ts);
+            return ts;
         }
 
         public static List<Vector3> Copy(this List<Vector3> origin)

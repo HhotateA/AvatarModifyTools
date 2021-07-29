@@ -40,7 +40,6 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
 #if VRC_SDK_VRCSDK3
         private VRCAvatarDescriptor avatar;
 #endif
-        private string assetDatabaseGUID = "7a095102f4fbaf64db6c9ed439a3e4df";
         private string msg = "OK";
         GUIStyle msgStyle = new GUIStyle(GUIStyle.none);
         private Vector2 _scrollPosition = Vector2.zero;
@@ -164,48 +163,44 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
                 {
                     try
                     {
-                        string databasePath = AssetDatabase.GUIDToAssetPath(assetDatabaseGUID);
-                        if (!string.IsNullOrWhiteSpace(databasePath))
+                        var asset = AssetUtility.LoadAssetAtGuid<AvatarModifyData>(EnvironmentGUIDs.emojiModifyData);
+                        
+                        if (String.IsNullOrWhiteSpace(AssetDatabase.GetAssetPath(data)))
                         {
-                            AvatarModifyData assets = AssetDatabase.LoadAssetAtPath<AvatarModifyData>(databasePath);
-                            
-                            if (String.IsNullOrWhiteSpace(AssetDatabase.GetAssetPath(data)))
-                            {
-                                // 未保存なら保存先を指定させる．
-                                var path = EditorUtility.SaveFilePanel("Save", "Assets", "IconSetupData", "asset");
-                                path = FileUtil.GetProjectRelativePath(path);
-            
-                                if (!string.IsNullOrEmpty(path)) {
-                                    // Assetが消されていた場合対策に新たなInstanceから保存する．
-                                    var d = ScriptableObject.CreateInstance<EmojiSaveData>();
-                                    {
-                                        d.Emojis = data.Emojis;
-                                    }
-                                    data = d;
-                                    AssetDatabase.CreateAsset(data,path);
-                                    AssetDatabase.SaveAssets();
-                                }
-                                else
+                            // 未保存なら保存先を指定させる．
+                            var path = EditorUtility.SaveFilePanel("Save", "Assets", "IconSetupData", "asset");
+                            path = FileUtil.GetProjectRelativePath(path);
+        
+                            if (!string.IsNullOrEmpty(path)) {
+                                // Assetが消されていた場合対策に新たなInstanceから保存する．
+                                var d = ScriptableObject.CreateInstance<EmojiSaveData>();
                                 {
-                                    // 保存先を指定しないなら処理中断
-                                    throw new System.Exception("EmojiParticleSetup : Please save setupdata");
+                                    d.Emojis = data.Emojis;
                                 }
+                                data = d;
+                                AssetDatabase.CreateAsset(data,path);
+                                AssetDatabase.SaveAssets();
                             }
-
-                            var newAssets = Setup(assets);
-
-                            var mod = new AvatarModifyTool(avatar);
-                            mod.ModifyAvatar(newAssets);
-                            
-                            // ゴミ処理忘れずに
-                            DestroyImmediate(newAssets.prefab);
-                            
-                            msgStyle.normal = new GUIStyleState()
+                            else
                             {
-                                textColor = Color.green
-                            };
-                            msg = "Success!";
+                                // 保存先を指定しないなら処理中断
+                                throw new System.Exception("EmojiParticleSetup : Please save setupdata");
+                            }
                         }
+
+                        var newAssets = Setup(asset);
+
+                        var mod = new AvatarModifyTool(avatar);
+                        mod.ModifyAvatar(newAssets);
+                        
+                        // ゴミ処理忘れずに
+                        DestroyImmediate(newAssets.items[0].prefab);
+                        
+                        msgStyle.normal = new GUIStyleState()
+                        {
+                            textColor = Color.green
+                        };
+                        msg = "Success!";
                     }
                     catch (Exception e)
                     {
@@ -286,8 +281,8 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
             menu.controls[0].subMenu = iconMenu;
             
             // オリジナルアセットのパーティクルコンポーネント差し替え
-            var prefab = Instantiate(assets.prefab);
-            prefab.name = assets.prefab.name;
+            var prefab = Instantiate(assets.items[0].prefab);
+            prefab.name = assets.items[0].prefab.name;
             var ps = prefab.GetComponentsInChildren<ParticleSystem>()[0];
             ps.GetComponent<ParticleSystemRenderer>().material = combinatedMaterial;
             var ts = ps.textureSheetAnimation;
@@ -300,19 +295,19 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
             switch (target)
             {
                 case Target.Hip: 
-                    assets.target = HumanBodyBones.Hips;
+                    assets.items[0].target = HumanBodyBones.Hips;
                     ps.transform.localPosition = new Vector3(0.0f,0.25f,0.25f);
                     break;
                 case Target.Head: 
-                    assets.target = HumanBodyBones.Head;
+                    assets.items[0].target = HumanBodyBones.Head;
                     ps.transform.localPosition = new Vector3(0.0f,0.25f,0.25f);
                     break;
                 case Target.RightHand: 
-                    assets.target = HumanBodyBones.RightHand;
+                    assets.items[0].target = HumanBodyBones.RightHand;
                     ps.transform.localPosition = Vector3.zero;
                     break;
                 case Target.LeftHand: 
-                    assets.target = HumanBodyBones.LeftHand;
+                    assets.items[0].target = HumanBodyBones.LeftHand;
                     ps.transform.localPosition = Vector3.zero;
                     break;
             }
@@ -323,8 +318,8 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
             var reset = new AnimationClipCreator("Emoji_Anim_Reset",avatar.gameObject);
             reset.AddKeyframe_Gameobject(ps.gameObject, 0f, false);
             reset.AddKeyframe_Gameobject(ps.gameObject, 1f/60f, false);
-            reset.AddKeyframe(ps,"UVModule.startFrame.scalar",0f,0f);
-            reset.AddKeyframe(ps,"UVModule.startFrame.scalar",1f/60f,0f);
+            reset.AddKeyframe(0f, ps,"UVModule.startFrame.scalar",0f);
+            reset.AddKeyframe(1f/60f, ps,"UVModule.startFrame.scalar",0f);
             //reset.CreateAnimation(ps.gameObject,"m_IsActive",0f,0f,1f);
             //reset.CreateAnimation(ps,"UVModule.startFrame.scalar",0f,0f,0f);
             var r = reset.CreateAsset(settingsPath, true);
@@ -345,7 +340,7 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
                 k.Add(2.1f,1f);
                 anim.CreateAnimation(ps.gameObject, "m_IsActive", 0f, 0f, 0f, k);
                 */
-                anim.AddKeyframe(ps,"UVModule.startFrame.scalar",0f,v,0f);
+                anim.AddKeyframe(0f, ps,"UVModule.startFrame.scalar",v,0f);
                 anim.AddKeyframe_Gameobject(ps.gameObject, 0f, false);
                 anim.AddKeyframe_Gameobject(ps.gameObject, 1f/60f, true);
                 anim.AddKeyframe_Gameobject(ps.gameObject, 2f, true);
@@ -374,9 +369,10 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
                 newAssets.action_controller = assets.action_controller;
                 newAssets.fx_controller = animator;
                 newAssets.parameter = assets.parameter;
-                newAssets.target = assets.target;
                 newAssets.menu = menu;
-                newAssets.prefab = prefab;
+                newAssets.items = new Item[1];
+                newAssets.items[0].target = assets.items[0].target;
+                newAssets.items[0].prefab = prefab;
             }
 
             return newAssets;

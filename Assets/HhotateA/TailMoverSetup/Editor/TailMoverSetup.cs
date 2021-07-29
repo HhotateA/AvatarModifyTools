@@ -1,0 +1,769 @@
+﻿using System;
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEditor;
+using System.Linq;
+using HhotateA.AvatarModifyTools.Core;
+using UnityEditor.Animations;
+using System.IO;
+using HhotateA.AvatarModifyTools.TextureModifyTool;
+using UnityEngine.Serialization;
+#if VRC_SDK_VRCSDK3
+using VRC.SDKBase;
+using UnityEditor.Animations;
+using VRC.SDK3.Avatars.Components;
+using VRC.SDK3.Avatars.ScriptableObjects;
+#endif
+
+namespace HhotateA.AvatarModifyTools.TailMover
+{
+    public class TailMoverSetup : EditorWindow
+    {
+        [MenuItem("Window/HhotateA/TailMoverSetup")]
+        public static void ShowWindow()
+        {
+            var wnd = GetWindow<TailMoverSetup>();
+            wnd.minSize = new Vector2(600,200);
+            wnd.titleContent = new GUIContent("TailMoverSetup");
+        }
+
+        private Animator avatar;
+
+        private bool isHumanoidAnimation = false;
+        
+        private List<Transform> tailRoots = new List<Transform>();
+        private List<Transform> tailIgnores = new List<Transform>();
+        private Vector3 tailaxi = Vector3.zero;
+        private bool expandRoots = true;
+        private bool expandIgnores = false;
+        private bool expandRotSetting = false;
+        
+        Texture2D tailIdleIcon => AssetDatabase.LoadAssetAtPath<Texture2D>(AssetDatabase.GUIDToAssetPath(EnvironmentGUIDs.tailIdleIcon));
+        Texture2D tailControllIcon => AssetDatabase.LoadAssetAtPath<Texture2D>(AssetDatabase.GUIDToAssetPath(EnvironmentGUIDs.tailControllIcon));
+        Texture2D ahogeIdleIcon => AssetDatabase.LoadAssetAtPath<Texture2D>(AssetDatabase.GUIDToAssetPath(EnvironmentGUIDs.ahogeIdleIcon));
+        Texture2D ahogeControllIcon => AssetDatabase.LoadAssetAtPath<Texture2D>(AssetDatabase.GUIDToAssetPath(EnvironmentGUIDs.ahogeControllIcon));
+        Texture2D kemomimiIdleIcon => AssetDatabase.LoadAssetAtPath<Texture2D>(AssetDatabase.GUIDToAssetPath(EnvironmentGUIDs.kemomimiIdleIcon));
+        Texture2D kemomimiControllIcon => AssetDatabase.LoadAssetAtPath<Texture2D>(AssetDatabase.GUIDToAssetPath(EnvironmentGUIDs.kemomimiControllIcon));
+        Texture2D armIdleIcon => AssetDatabase.LoadAssetAtPath<Texture2D>(AssetDatabase.GUIDToAssetPath(EnvironmentGUIDs.armIdleIcon));
+        Texture2D armControllIcon => AssetDatabase.LoadAssetAtPath<Texture2D>(AssetDatabase.GUIDToAssetPath(EnvironmentGUIDs.armControllIcon));
+        Texture2D[] idleIcons;
+        Texture2D[] controllIcons;
+
+        private Presets? preset = null;
+        enum Presets
+        {
+            General,
+            Tail,
+            Ahoge,
+            KemoMimi,
+            RightArm,
+            LeftArm,
+        }
+
+        private TailControlls tailControll = TailControlls.Center;
+        enum TailControlls
+        {
+            Center,
+            Up,
+            Down,
+            Right,
+            Left
+        }
+
+        private Vector2[] controllValues = new Vector2[5]
+        {
+            new Vector2(0f, 0f),
+            new Vector2(0f, 1f),
+            new Vector2(0f, -1f),
+            new Vector2(1f, 0f),
+            new Vector2(-1f, 0f),
+        };
+
+        private Vector3[] tailRots = Enumerable.Range(0,Enum.GetNames(typeof(TailControlls)).Length).Select(_=>Vector3.zero).ToArray();
+
+        private Dictionary<Transform,Quaternion> defaultRots;
+        private Dictionary<Transform,Quaternion> zeroRots;
+        private Dictionary<Transform,float> curveWeightValue;
+        
+        private AnimationCurve curveWeight = AnimationCurve.Linear(0f, 0f, 1f, 1f);
+
+        private bool enableTestRotX = true;
+        private bool enableTestRotY = false;
+        private float testRotX = 0f;
+        private float testRotY = 0f;
+
+        private void OnEnable()
+        {
+            idleIcons = new Texture2D[6]
+            {
+                null,
+                tailIdleIcon,
+                ahogeIdleIcon,
+                kemomimiIdleIcon,
+                armIdleIcon,
+                armIdleIcon
+            };
+            controllIcons = new Texture2D[6]
+            {
+                null,
+                tailControllIcon,
+                ahogeControllIcon,
+                kemomimiControllIcon,
+                armControllIcon,
+                armControllIcon
+            };
+        }
+
+        private void Update()
+        {
+            if (defaultRots==null) return;
+            if (!expandRotSetting)
+            {
+                if(enableTestRotX) testRotX = Mathf.Sin(Time.fixedTime*2f);
+                if(enableTestRotY) testRotY = Mathf.Sin(Time.fixedTime);
+                RotTail(testRotX,testRotY);
+            }
+        }
+
+        private void OnGUI()
+        {
+            avatar = EditorGUILayout.ObjectField("", avatar, typeof(Animator), true) as Animator;
+            if (!avatar)
+            {
+                EditorGUILayout.LabelField("アバターをドラッグドロップしてください．");
+                return;
+            }
+            
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                foreach (Presets val in Enum.GetValues(typeof(Presets)))
+                {
+                    using (new EditorGUI.DisabledScope(val == preset))
+                    {
+                        if (GUILayout.Button(new GUIContent(val.ToString(),idleIcons[(int)val]),GUILayout.MinWidth(50),GUILayout.Height(50)))
+                        {
+                            ApplyPreset(val);
+                        }
+                    }
+                }
+            }
+
+            if (preset == null)
+            {
+                EditorGUILayout.LabelField("プリセットを選択してください．");
+                return;
+            }
+
+            expandRoots = EditorGUILayout.Foldout(expandRoots,"RootBones");
+            if (expandRoots)
+            {
+                for (int i = 0; i < tailRoots.Count; i++)
+                {
+                    if (tailRoots[i] == null)
+                    {
+                        tailRoots.RemoveAt(i);
+                        break;
+                    }
+                    tailRoots[i] = EditorGUILayout.ObjectField("", tailRoots[i], typeof(Transform), true) as Transform;
+                }
+                var newRoot = EditorGUILayout.ObjectField("", null, typeof(Transform), true) as Transform;
+                if (newRoot)
+                {
+                    if (avatar == null)
+                    {
+                        avatar = newRoot.GetComponentInParent<Animator>();
+                    }
+                    var rootparent = newRoot.parent;
+                    while (rootparent!=null)
+                    {
+                        if (rootparent == avatar.transform)
+                        {
+                            tailRoots.Add(newRoot);
+                        }
+                        rootparent = rootparent.parent;
+                    }
+                }
+            }
+            
+            expandIgnores = EditorGUILayout.Foldout(expandIgnores,"IgnoreBones");
+            if (expandIgnores)
+            {
+                for (int i = 0; i < tailIgnores.Count; i++)
+                {
+                    if (tailIgnores[i] == null)
+                    {
+                        tailIgnores.RemoveAt(i);
+                        break;
+                    }
+                    tailIgnores[i] = EditorGUILayout.ObjectField("", tailIgnores[i], typeof(Transform), true) as Transform;
+                }
+                var newIgnores = EditorGUILayout.ObjectField("", null, typeof(Transform), true) as Transform;
+                if (newIgnores)
+                {
+                    var rootparent = newIgnores.parent;
+                    while (rootparent!=null)
+                    {
+                        if (tailRoots.Contains(rootparent))
+                        {
+                            tailIgnores.Add(newIgnores);
+                            break;
+                        }
+                        rootparent = rootparent.parent;
+                    }
+                }
+            }
+
+            tailaxi = EditorGUILayout.Vector3Field("TailAxi",tailaxi);
+            if(tailRoots.Count==0)
+            {
+                EditorGUILayout.LabelField("ルートボーンを設定してください．");
+                return;
+            }
+
+            if (GUILayout.Button("Setup"))
+            {
+                ResetTail();
+                Setup();
+            }
+            if (defaultRots==null) return;
+            
+            EditorGUILayout.Space();
+            EditorGUILayout.Space();
+
+            using (new EditorGUILayout.VerticalScope())
+            {
+                expandRotSetting = EditorGUILayout.Foldout(expandRotSetting,"RotSetting");
+                if (expandRotSetting)
+                {
+                    using (var check = new EditorGUI.ChangeCheckScope())
+                    {
+                        using (new EditorGUILayout.VerticalScope())
+                        {
+                            tailaxi = EditorGUILayout.Vector3Field("Controlls", tailaxi);
+                            GUIStyle style = new GUIStyle();
+                            style.fontStyle = FontStyle.Bold;
+                            int bw = (int) (position.width * 0.33333f) - 5;
+                            using (new EditorGUILayout.HorizontalScope())
+                            {
+                                EditorGUI.BeginDisabledGroup(true);
+                                if (GUILayout.Button("", GUILayout.Width(50), GUILayout.Width(bw))){}
+                                EditorGUI.EndDisabledGroup();
+                                
+                                EditorGUI.BeginDisabledGroup(tailControll == TailControlls.Up);
+                                if (GUILayout.Button("Up", GUILayout.Width(50), GUILayout.Width(bw)))
+                                    tailControll = TailControlls.Up;
+                                EditorGUI.EndDisabledGroup();
+                                
+                                EditorGUI.BeginDisabledGroup(true);
+                                if (GUILayout.Button("", GUILayout.Width(50), GUILayout.Width(bw))){}
+                                EditorGUI.EndDisabledGroup();
+                            }
+
+                            using (new EditorGUILayout.HorizontalScope())
+                            {
+                                EditorGUI.BeginDisabledGroup(tailControll == TailControlls.Left);
+                                if (GUILayout.Button("Left", GUILayout.Width(50), GUILayout.Width(bw)))
+                                    tailControll = TailControlls.Left;
+                                EditorGUI.EndDisabledGroup();
+                                
+                                EditorGUI.BeginDisabledGroup(tailControll == TailControlls.Center);
+                                if (GUILayout.Button("Center", GUILayout.Width(50), GUILayout.Width(bw)))
+                                    tailControll = TailControlls.Center;
+                                EditorGUI.EndDisabledGroup();
+                                
+                                EditorGUI.BeginDisabledGroup(tailControll == TailControlls.Right);
+                                if (GUILayout.Button("Right", GUILayout.Width(50), GUILayout.Width(bw)))
+                                    tailControll = TailControlls.Right;
+                                EditorGUI.EndDisabledGroup();
+                            }
+
+                            using (new EditorGUILayout.HorizontalScope())
+                            {
+                                EditorGUI.BeginDisabledGroup(true);
+                                if (GUILayout.Button("", GUILayout.Width(50), GUILayout.Width(bw))){}
+                                EditorGUI.EndDisabledGroup();
+                                
+                                EditorGUI.BeginDisabledGroup(tailControll == TailControlls.Down);
+                                if (GUILayout.Button("Down", GUILayout.Width(50), GUILayout.Width(bw)))
+                                    tailControll = TailControlls.Down;
+                                EditorGUI.EndDisabledGroup();
+                                
+                                EditorGUI.BeginDisabledGroup(true);
+                                if (GUILayout.Button("", GUILayout.Width(50), GUILayout.Width(bw))){}
+                                EditorGUI.EndDisabledGroup();
+                            }
+                        }
+
+                        curveWeight = EditorGUILayout.CurveField(curveWeight);
+                        var x =
+                            EditorGUILayout.Slider("XAngle", tailRots[(int) tailControll].x, -90f, 90f);
+                        var y =
+                            EditorGUILayout.Slider("YAngle", tailRots[(int) tailControll].y, -90f, 90f);
+                        var z =
+                            EditorGUILayout.Slider("ZAngle", tailRots[(int) tailControll].z, -90f, 90f);
+                        isHumanoidAnimation = EditorGUILayout.Toggle("IsHumanoid", isHumanoidAnimation);
+                        if (check.changed)
+                        {
+                            tailRots[(int) tailControll] = new Vector3(x,y,z);
+                            RotTail(tailRots[(int) tailControll]);
+                        }
+                    }
+                }
+
+                EditorGUILayout.Space();
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    using (var check = new EditorGUI.ChangeCheckScope())
+                    {
+                        testRotX = EditorGUILayout.Slider("testRotX", testRotX, -1f, 1f);
+                        if (check.changed)
+                        {
+                            enableTestRotX = false;
+                        }
+                    }
+                    if (GUILayout.Button("Auto",GUILayout.Width(50)))
+                    {
+                        enableTestRotX = true;
+                    }
+                }
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    using (var check = new EditorGUI.ChangeCheckScope())
+                    {
+                        testRotY = EditorGUILayout.Slider("testRotY", testRotY, -1f, 1f);
+                        if (check.changed)
+                        {
+                            enableTestRotY = false;
+                        }
+                    }
+                    if (GUILayout.Button("Auto",GUILayout.Width(50)))
+                    {
+                        enableTestRotY = true;
+                    }
+                }
+                
+                EditorGUILayout.Space();
+
+                if (GUILayout.Button("Save RadialControll"))
+                {
+                    var path = EditorUtility.SaveFilePanel("Save", "Assets",  preset.ToString()+"Controll" + preset.ToString(),
+                        "controller");
+                    if (string.IsNullOrWhiteSpace(path)) return;
+                    SaveTailAnim(path);
+                }
+
+                EditorGUILayout.Space();
+                
+                // if (preset != Presets.LeftArm && preset != Presets.RightArm)
+                {
+                    if (GUILayout.Button("Save IdleMotion"))
+                    {
+                        var path = EditorUtility.SaveFilePanel("Save", "Assets", preset.ToString()+"Idle" + preset.ToString(),
+                            "controller");
+                        if (string.IsNullOrWhiteSpace(path)) return;
+                        SaveTailIdle(path);
+                    }
+                }
+            }
+        }
+
+        void Setup()
+        {
+            defaultRots = new Dictionary<Transform, Quaternion>();
+            zeroRots = new Dictionary<Transform, Quaternion>();
+            curveWeightValue = new Dictionary<Transform, float>();
+            for (int i = 0; i < tailRoots.Count; i++)
+            {
+                SetupTail(tailRoots[i]);
+            }
+        }
+
+        void ApplyPreset(Presets val)
+        {
+            preset = val;
+            if (preset == Presets.General)
+            {
+
+            }
+            else if (preset == Presets.Tail)
+            {
+                tailRoots = new List<Transform>();
+                tailIgnores = new List<Transform>();
+                tailaxi = new Vector3(0f,0f,-1f);
+                tailRots = new Vector3[5]
+                {
+                    new Vector3(0f, 0f, 0f),
+                    new Vector3(15f, 0f, 0f),
+                    new Vector3(-30f, 0f, 0f),
+                    new Vector3(0f, -20f, 0f),
+                    new Vector3(0f, 20f, 0f),
+                };
+                curveWeight = AnimationCurve.Linear(0, 0, 1, 1);
+                isHumanoidAnimation = false;
+            }
+            else if(preset == Presets.KemoMimi)
+            {
+                tailRoots = new List<Transform>();
+                tailIgnores = new List<Transform>();
+                tailaxi = Vector3.zero;
+                tailRots = new Vector3[5]
+                {
+                    new Vector3(0f, 0f, 0f),
+                    new Vector3(-60f, 0f, 0f),
+                    new Vector3(60f, 0f, 0f),
+                    new Vector3(0f, 0f, -35f),
+                    new Vector3(0f, 0f, 35f),
+                };
+                curveWeight = AnimationCurve.Linear(0, 0, 1, 1);
+                isHumanoidAnimation = false;
+            }
+            else if(preset == Presets.Ahoge)
+            {
+                tailRoots = new List<Transform>();
+                tailIgnores = new List<Transform>();
+                tailaxi = new Vector3(0f,1f,0f);
+                tailRots = new Vector3[5]
+                {
+                    new Vector3(0f, 0f, 0f),
+                    new Vector3(-40f, 0f, 0f),
+                    new Vector3(40f, 0f, 0f),
+                    new Vector3(0f, 0f, -30f),
+                    new Vector3(0f, 0f, 30f),
+                };
+                curveWeight = AnimationCurve.Linear(0, 0, 1, 1);
+                isHumanoidAnimation = false;
+            }
+            else if(preset == Presets.RightArm)
+            {
+                tailRoots = new List<Transform>();
+                tailIgnores = new List<Transform>();
+                var bones = avatar.GetComponent<Animator>().GetHumanBones();
+                SetFromToBone(bones[(int)HumanBodyBones.RightUpperArm],bones[(int)HumanBodyBones.RightHand]);
+                tailaxi = new Vector3(0f,0f,1f);
+                tailRots = new Vector3[5]
+                {
+                    new Vector3(0f, 0f, 0f),
+                    new Vector3(-20f,0f, 0f),
+                    new Vector3(20f, 0f, 0f),
+                    new Vector3(0f, -20f, 0f),
+                    new Vector3(0f, 20f, 0f),
+                };
+                curveWeight = AnimationCurve.Linear(0, 1, 1, 0);
+                isHumanoidAnimation = true;
+            }
+            else if(preset == Presets.LeftArm)
+            {
+                tailRoots = new List<Transform>();
+                tailIgnores = new List<Transform>();
+                var bones = avatar.GetComponent<Animator>().GetHumanBones();
+                SetFromToBone(bones[(int)HumanBodyBones.LeftUpperArm],bones[(int)HumanBodyBones.LeftHand]);
+                tailaxi = new Vector3(0f,0f,1f);
+                tailRots = new Vector3[5]
+                {
+                    new Vector3(0f, 0f, 0f),
+                    new Vector3(-20f,0f, 0f),
+                    new Vector3(20f, 0f, 0f),
+                    new Vector3(0f, -20f, 0f),
+                    new Vector3(0f, 20f, 0f),
+                };
+                curveWeight = AnimationCurve.Linear(0, 1, 1, 0);
+                isHumanoidAnimation = true;
+            }
+        }
+
+        int GetDescendantsCount(Transform p)
+        {
+            int m = 0;
+            foreach (Transform c in p)
+            {
+                var v = GetDescendantsCount(c) + 1;
+                m = Mathf.Max(m, v);
+            }
+
+            return m;
+        }
+
+        void SetupTail(Transform p,Transform root = null, int index = 0, int descendantsCount = 0)
+        {
+            if (root == null)
+            {
+                root = p;
+                descendantsCount = GetDescendantsCount(p);
+            }
+            if(!defaultRots.ContainsKey(p)) defaultRots.Add(p, p.localRotation);
+            foreach (Transform c in p)
+            {
+                var lookatobj  = p.position;
+                if (Vector3.Distance(tailaxi, Vector3.zero) > 0.001f)
+                {
+                    lookatobj += tailaxi;
+                }
+                
+                var r = Quaternion.FromToRotation(
+                    Vector3.Normalize(c.position - p.position),
+                    Vector3.Normalize(lookatobj - p.position));
+                p.rotation = r * p.rotation;
+                if(tailIgnores.Contains(c)) continue;
+                SetupTail(c,root,index+1,descendantsCount);
+            }
+
+            if (!zeroRots.ContainsKey(p))
+            {
+                zeroRots.Add(p, p.localRotation);
+                p.localRotation = zeroRots[p];
+            }
+            if(!curveWeightValue.ContainsKey(p)) curveWeightValue.Add(p,(float)index/(float)descendantsCount);
+        }
+
+        Vector3 GetTailRotValue(float[] weights)
+        {
+            Vector3 sum = Vector3.zero;
+            float n = 0;
+            for (int i = 0; i < Enum.GetNames(typeof(TailControlls)).Length; i++)
+            {
+                sum += tailRots[i] * weights[i];
+                n += weights[i];
+            }
+
+            return sum / n;
+        }
+
+        void RotTail(float x,float y)
+        {
+            float[] ws = new float[]
+            {
+                1f,
+                Mathf.Clamp01(y),
+                Mathf.Clamp01(-y),
+                Mathf.Clamp01(x),
+                Mathf.Clamp01(-x),
+            };
+            Vector3 w = GetTailRotValue(ws);
+            RotTail(w.x,w.y,w.z);
+        }
+
+        void RotTail(Vector3 value)
+        {
+            if (zeroRots == null) return;
+            foreach (var rot in zeroRots)
+            {
+                //rot.Key.rotation = rot.Value;
+                rot.Key.localRotation = rot.Value;
+                rot.Key.rotation = Quaternion.Euler(value) * rot.Key.rotation;
+            }
+        }
+        void RotTail(float xvalue,float yvalue,float zvalue)
+        {
+            RotTail(new Vector3(xvalue, yvalue, zvalue));
+        }
+
+        void ResetTail()
+        {
+            if(defaultRots==null) return;
+            foreach (var rot in defaultRots)
+            {
+                rot.Key.localRotation = rot.Value;
+            }
+        }
+
+        private void OnDestroy()
+        {
+            ResetTail();
+        }
+
+        private void SaveTailAnim(string path)
+        {
+            path = FileUtil.GetProjectRelativePath(path);
+            var dir = Path.GetDirectoryName(path);
+            var file = Path.GetFileName(path).Split('.')[0];
+            
+            var controller = new AnimatorControllerCreator(file,file);
+            
+            var idle = new AnimationClipCreator("Idle");
+            ResetTail();
+            RecordAnimation(idle);
+            
+            var tree = new BlendTree();
+            tree.name = "blend";
+            tree.blendParameter = file+"_X";
+            tree.blendParameterY = file+"_Y";
+            tree.blendType = BlendTreeType.SimpleDirectional2D;
+            
+            controller.AddDefaultState("Idle",null);
+            controller.AddState("Blend",tree);
+            controller.AddState("Reset",idle.Create());
+            controller.AddTransition("Idle","Blend",file,true,false,0f,0.25f);
+            controller.AddTransition("Blend","Reset",file,false,false,0f,0.25f);
+            controller.AddTransition("Reset","Idle");
+            if (preset == Presets.RightArm)
+            {
+#if VRC_SDK_VRCSDK3
+                controller.SetAnimationTracking("Blend", AnimatorControllerCreator.VRCTrackingMask.RightHand,true);
+                controller.SetAnimationTracking("Reset", AnimatorControllerCreator.VRCTrackingMask.RightHand,false);
+#endif
+                controller.LayerMask(AvatarMaskBodyPart.RightArm, true, false);
+            }
+            else if(preset == Presets.LeftArm)
+            {
+#if VRC_SDK_VRCSDK3
+                controller.SetAnimationTracking("Blend", AnimatorControllerCreator.VRCTrackingMask.LeftHand,true);
+                controller.SetAnimationTracking("Reset", AnimatorControllerCreator.VRCTrackingMask.LeftHand,false);
+#endif
+                controller.LayerMask(AvatarMaskBodyPart.LeftArm, true, false);
+            }
+
+            if (isHumanoidAnimation)
+            {
+                controller.SetWriteDefault("Idle",true);
+            }
+            
+            controller.AddParameter(tree.blendParameter,AnimatorControllerParameterType.Float);
+            controller.AddParameter(tree.blendParameterY,AnimatorControllerParameterType.Float);
+            var c = controller.CreateAsset(path);
+            
+            foreach (TailControlls controll in Enum.GetValues(typeof(TailControlls)))
+            {
+                RotTail(tailRots[(int)controll]);
+                var anim = new AnimationClipCreator(controll.ToString(),avatar.gameObject);
+                RecordAnimation(anim);
+                tree.AddChild(anim.CreateAsset(path,true),controllValues[(int)controll]);
+            }
+            idle.CreateAsset(path, true);
+
+#if VRC_SDK_VRCSDK3
+            var menu = new MenuCreater(file);
+            menu.AddAxis(file,controllIcons[(int) preset], file,file+"_X",file+"_Y","↑","→","↓","←",null,null,null,null);
+            var param = new ParametersCreater(file);
+            param.LoadParams(controller);
+            
+            var am = new AvatarModifyTool(avatar.GetComponent<VRCAvatarDescriptor>());
+            AvatarModifyData newAssets = ScriptableObject.CreateInstance<AvatarModifyData>();
+            {
+                if (isHumanoidAnimation)
+                {
+                    newAssets.locomotion_controller = c;
+                }
+                else
+                {
+                    newAssets.fx_controller = c;
+                }
+                newAssets.parameter = param.CreateAsset(path, true);
+                newAssets.menu = menu.CreateAsset(path,true);
+            }
+            am.ModifyAvatar(newAssets);
+#else
+#endif
+            AssetDatabase.Refresh();
+        }
+
+        void SaveTailIdle(string path)
+        {
+            path = FileUtil.GetProjectRelativePath(path);
+            var dir = Path.GetDirectoryName(path);
+            var file = Path.GetFileName(path).Split('.')[0];
+
+            string p = file + "_TailSpeed";
+            
+            var move = new AnimationClipCreator("idle",avatar.gameObject,false,true,true);
+            RotTail(
+                enableTestRotX ? -1f : testRotX,
+                enableTestRotY ? -1f : testRotY);
+            RecordAnimation(move,0.0f, -1f);
+            RotTail(
+                enableTestRotX ? 0f : testRotX,
+                enableTestRotY ? 0f : testRotY);
+            RecordAnimation(move,0.1f, 1f);
+            RotTail(
+                enableTestRotX ? 1f : testRotX,
+                enableTestRotY ? 1f : testRotY);
+            RecordAnimation(move,0.2f, -1f);
+            RotTail(
+                enableTestRotX ? 0f : testRotX,
+                enableTestRotY ? 0f : testRotY);
+            RecordAnimation(move,0.3f, 1f);
+            RotTail(
+                enableTestRotX ? -1f : testRotX,
+                enableTestRotY ? -1f : testRotY);
+            RecordAnimation(move,0.4f, -1f);
+            
+            var reset = new AnimationClipCreator("reset",avatar.gameObject);
+            ResetTail();
+            RecordAnimation(reset,0f);
+            
+            var controller = new AnimatorControllerCreator(file,file);
+            controller.AddDefaultState("Idle",null);
+            controller.AddState("Move", move.Create());
+            controller.AddState("Reset", reset.Create());
+            controller.SetStateSpeed("Move",p);
+            controller.AddTransition("Idle","Move",p,0.001f,true,false,0f,0.25f);
+            controller.AddTransition("Move","Reset",p,0.001f,false,false,0f,0.25f);
+            controller.AddTransition("Reset","Idle");
+
+            var c = controller.CreateAsset(path);
+            move.CreateAsset(path, true);
+            reset.CreateAsset(path, true);
+#if VRC_SDK_VRCSDK3
+            var menu = new MenuCreater(file);
+            menu.AddRadial(file,idleIcons[(int) preset],"",p);
+            var param = new ParametersCreater(file);
+            param.LoadParams(controller);
+            
+            var am = new AvatarModifyTool(avatar.GetComponent<VRCAvatarDescriptor>());
+            AvatarModifyData newAssets = ScriptableObject.CreateInstance<AvatarModifyData>();
+            {
+                if (isHumanoidAnimation)
+                {
+                    newAssets.locomotion_controller = c;
+                }
+                else
+                {
+                    newAssets.fx_controller = c;
+                }
+                newAssets.parameter = param.CreateAsset(path, true);
+                newAssets.menu = menu.CreateAsset(path,true);
+            }
+            am.ModifyAvatar(newAssets);
+#endif
+            AssetDatabase.Refresh();
+        }
+
+        void SetFromToBone(Transform from,Transform to)
+        {
+            if (from == null || to == null) return;
+            tailIgnores.Add(to);
+            var c = to;
+            var p = c.parent;
+            while (p != null)
+            {
+                foreach (Transform pc in p)
+                {
+                    if (pc != c)
+                    {
+                        tailIgnores.Add(pc);
+                    }
+                }
+                //tailRoots.Add(p);
+                c = p;
+                p = p.parent;
+                if (p == from) break;
+            }
+            tailRoots.Add(p);
+        }
+
+        void RecordAnimation(AnimationClipCreator anim,float time = 0f,float weight = 1f)
+        {
+            foreach (var rot in defaultRots)
+            {
+                if (isHumanoidAnimation)
+                {
+                    anim.AddKeyframe_Humanoid(avatar,rot.Key,0f, weight);
+                }
+                else
+                {
+                    anim.AddKeyframe_Transform(time,rot.Key,true,false,false, weight);
+                }
+            }
+        }
+    }
+}
