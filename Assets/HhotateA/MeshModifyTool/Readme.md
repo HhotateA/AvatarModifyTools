@@ -1,3 +1,5 @@
+download https://github.com/HhotateA/AvatarModifyTools/releases/tag/v1
+
 # にゃんにゃんメッシュエディター(MeshModifyTool)
 
 ![alt](./Manual/000.png)
