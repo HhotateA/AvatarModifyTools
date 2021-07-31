@@ -5,11 +5,9 @@ using System.Linq;
 using UnityEditor;
 using UnityEditor.Animations;
 using UnityEngine;
-using UnityEngine.UI;
 using Random = UnityEngine.Random;
 #if VRC_SDK_VRCSDK3
 using VRC.SDK3.Avatars.Components;
-using VRC.SDK3.Avatars.ScriptableObjects;
 using VRC.SDKBase;
 #endif
 
@@ -88,6 +86,33 @@ namespace HhotateA.AvatarModifyTools.Core
             public AnimatorCondition[] condition;
         }
 
+        public void AnyStateToDefault(string name,Motion motion, string param, int value)
+        {
+            if (asset.parameters.All(p=>p.name!=param))
+            {
+                AddParameter(param,AnimatorControllerParameterType.Int);
+            }
+            AnyStateToDefault(name, motion,
+                new AnimatorCondition[1]
+                {
+                    new AnimatorCondition()
+                    {
+                        mode = AnimatorConditionMode.Equals,
+                        parameter = param,
+                        threshold = value,
+                    }
+                },
+                new AnimatorCondition[1]
+                {
+                    new AnimatorCondition()
+                    {
+                        mode = AnimatorConditionMode.NotEqual,
+                        parameter = param,
+                        threshold = value,
+                    }
+                });
+        }
+
         /// <summary>
         /// AnyStateからDefaultStateにいたる遷移を追加する
         /// </summary>
@@ -95,7 +120,8 @@ namespace HhotateA.AvatarModifyTools.Core
         /// <param name="entryCondition"></param>
         /// <param name="exitCondition"></param>
         /// <returns></returns>
-        public AnimatorState AnyStateToDefault(Motion motion,
+        public AnimatorState AnyStateToDefault(string name,
+            Motion motion,
             AnimatorCondition[] entryCondition,
             AnimatorCondition[] exitCondition = null,
             List<MotionConditionPair> motions = null)
@@ -109,7 +135,7 @@ namespace HhotateA.AvatarModifyTools.Core
             
             for (int i = 0; i < motions.Count; i++)
             {
-                childStates.Add(GetStateMachine().AddState(motions[i].motion ? motions[i].motion.name : "State",RandomPosition()));
+                childStates.Add(GetStateMachine().AddState(name,RandomPosition()));
                 {
                     childStates[i].motion = motions[i].motion;
                     childStates[i].writeDefaultValues = false;
@@ -392,8 +418,14 @@ namespace HhotateA.AvatarModifyTools.Core
                 }
                 else
                 {
-                    if(!path.EndsWith(".controller")) path = Path.Combine(path, asset.name+".controller");
-                    path = AssetDatabase.GenerateUniqueAssetPath(path);
+                    if (path.EndsWith(".controller"))
+                    {
+                    }
+                    else
+                    {
+                        path = Path.Combine(path, asset.name+".controller");
+                        path = AssetDatabase.GenerateUniqueAssetPath(path);
+                    }
                     AssetDatabase.CreateAsset(asset,path);
                 }
 
@@ -589,7 +621,7 @@ namespace HhotateA.AvatarModifyTools.Core
 
         public void LayerMask(AvatarMaskBodyPart part,bool active,bool? mask = null)
         {
-            UnityEditor.Animations.AnimatorControllerLayer[] layers = asset.layers;
+            AnimatorControllerLayer[] layers = asset.layers;
             var avatarMask = layers[editLayer].avatarMask;
             if (avatarMask == null) avatarMask = new AvatarMask();
             avatarMask.name = part.ToString();
@@ -723,6 +755,23 @@ namespace HhotateA.AvatarModifyTools.Core
             EditStateMachineBehaviour<VRCAnimatorLocomotionControl>(stateName, (controll) =>
             {
                 controll.disableLocomotion = !active;
+            },false);
+        }
+        
+        public void ParameterDriver(string stateName,string param,float? value,bool add = false,bool local = false)
+        {
+            EditStateMachineBehaviour<VRCAvatarParameterDriver>(stateName, (controll) =>
+            {
+                controll.parameters.Add(new VRC_AvatarParameterDriver.Parameter()
+                {
+                    type = value==null ? VRC_AvatarParameterDriver.ChangeType.Random : 
+                        add ? VRC_AvatarParameterDriver.ChangeType.Add : VRC_AvatarParameterDriver.ChangeType.Set,
+                    value = value ?? 0f,
+                    valueMin = 0f,
+                    valueMax = value ?? 1f,
+                    name = param
+                });
+                controll.localOnly = local;
             },false);
         }
 

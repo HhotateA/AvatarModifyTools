@@ -93,3 +93,4 @@ VRChat用アバターの着せ替えなどを想定した，UnityのEditorで簡
 ## 更新履歴
 2021/05/29 v1.1 リリース開始
 2021/07/08 v1.2 TextureModifyToolのリリースとAvatarModifityToolのアップデート
+2021/07/31 v1.25

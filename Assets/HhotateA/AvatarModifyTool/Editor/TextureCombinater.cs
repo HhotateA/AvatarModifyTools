@@ -14,7 +14,6 @@ namespace HhotateA.AvatarModifyTools.Core
         public static Texture2D CombinateSaveTexture(Texture2D[] texs,string path = null,int tilling = 0)
         {
             var combinatedTexture = CombinateTextures(texs,tilling);
-            combinatedTexture.alphaIsTransparency = true;
             if (!string.IsNullOrWhiteSpace(path)) combinatedTexture = ConvertToPngAndSave(path, combinatedTexture);
             return combinatedTexture;
         }
@@ -90,19 +89,20 @@ namespace HhotateA.AvatarModifyTools.Core
             //Pngに変換
             byte[] bytes = tex.EncodeToPNG();
             //保存
-            using (var fs = new System.IO.FileStream(path, System.IO.FileMode.Create, System.IO.FileAccess.Write)) {
+            using (var fs = new System.IO.FileStream(Path.GetFullPath(path), System.IO.FileMode.Create, System.IO.FileAccess.Write)) {
                 fs.Write(bytes, 0, bytes.Length);
             }
-            path = FileUtil.GetProjectRelativePath(path);
             AssetDatabase.ImportAsset(path);
-            var i = TextureImporter.GetAtPath(path) as TextureImporter;
-            i.alphaIsTransparency = true;
-            i.streamingMipmaps = true;
+            var a = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+            Debug.Log(a);
+            var importer = (TextureImporter) TextureImporter.GetAtPath(path);
+            importer.alphaIsTransparency = true;
+            importer.streamingMipmaps = true;
             for (int texsize = 32; texsize <= tex.width; texsize = texsize * 2)
             {
-                i.maxTextureSize = texsize;
+                importer.maxTextureSize = texsize;
             }
-            i.SaveAndReimport();
+            importer.SaveAndReimport();
             return AssetDatabase.LoadAssetAtPath<Texture2D>(path);
         }
 
@@ -110,19 +110,18 @@ namespace HhotateA.AvatarModifyTools.Core
         {
             byte[] bytes = Texture2Bytes(tex);
             //File.WriteAllBytes(path, bytes);
-            using (var fs = new System.IO.FileStream(path, System.IO.FileMode.Create, System.IO.FileAccess.Write)) {
+            using (var fs = new System.IO.FileStream(Path.GetFullPath(path), System.IO.FileMode.Create, System.IO.FileAccess.Write)) {
                 fs.Write(bytes, 0, bytes.Length);
             }
-            path = FileUtil.GetProjectRelativePath(path);
             AssetDatabase.ImportAsset(path);
-            var i = TextureImporter.GetAtPath(path) as TextureImporter;
-            i.alphaIsTransparency = true;
-            i.streamingMipmaps = true;
+            var importer = (TextureImporter) TextureImporter.GetAtPath(path);
+            importer.alphaIsTransparency = true;
+            importer.streamingMipmaps = true;
             for (int texsize = 32; texsize <= tex.width; texsize = texsize * 2)
             {
-                i.maxTextureSize = texsize;
+                importer.maxTextureSize = texsize;
             }
-            i.SaveAndReimport();
+            importer.SaveAndReimport();
             return AssetDatabase.LoadAssetAtPath<Texture2D>(path);
         }
 

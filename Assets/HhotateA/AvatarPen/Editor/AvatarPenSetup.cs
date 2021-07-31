@@ -1,9 +1,6 @@
-﻿using HhotateA.AvatarModifyTools.Core;
-using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System;
+using HhotateA.AvatarModifyTools.Core;
 using UnityEditor;
-using UnityEditor.Animations;
 using UnityEngine;
 #if VRC_SDK_VRCSDK3
 using VRC.SDK3.Avatars.Components;
@@ -19,7 +16,7 @@ namespace HhotateA.AvatarModifyTools.AvatarPen
         {
             var wnd = GetWindow<AvatarPenSetup>();
             wnd.titleContent = new GUIContent("AvatarPenSetup");
-            wnd.maxSize = wnd.minSize = new Vector2(340, 200);
+            wnd.maxSize = wnd.minSize = new Vector2(340, 220);
         }
 
 #if VRC_SDK_VRCSDK3
@@ -27,6 +24,7 @@ namespace HhotateA.AvatarModifyTools.AvatarPen
 #endif
         private string msg = "OK";
         GUIStyle msgStyle = new GUIStyle(GUIStyle.none);
+        private bool isLeftHand = false;
 
         private void OnGUI()
         {
@@ -60,13 +58,18 @@ namespace HhotateA.AvatarModifyTools.AvatarPen
             }
             EditorGUILayout.EndHorizontal();
 
+            EditorGUILayout.Space();
+            isLeftHand = EditorGUILayout.Toggle("Left Hand", isLeftHand);
+            EditorGUILayout.Space();
+
             using (new EditorGUI.DisabledScope(avatar==null))
             {
                 if (GUILayout.Button("Setup"))
                 {
                     try
                     {
-                        var asset = AssetUtility.LoadAssetAtGuid<AvatarModifyData>(EnvironmentGUIDs.penModifyData);
+                        var asset = AssetUtility.LoadAssetAtGuid<AvatarModifyData>(
+                            isLeftHand ? EnvironmentGUIDs.penModifyData_Left : EnvironmentGUIDs.penModifyData_right);
                         var mod = new AvatarModifyTool(avatar);
                         mod.ModifyAvatar(asset);
                         msgStyle.normal = new GUIStyleState()
@@ -88,22 +91,21 @@ namespace HhotateA.AvatarModifyTools.AvatarPen
                 }
             }
             
-            EditorGUILayout.BeginHorizontal();
+            using(new EditorGUILayout.HorizontalScope())
             {
-                GUILayout.FlexibleSpace();
-                GUILayout.Label("Status: ",status);
-                GUILayout.Label(msg,msgStyle);
+                EditorGUILayout.Space();
+                EditorGUILayout.LabelField("Status: ",status);
+                EditorGUILayout.LabelField(msg,msgStyle);
             }
-            EditorGUILayout.EndHorizontal();
-            GUILayout.Space(10);
+            EditorGUILayout.Space();
             
-            GUILayout.Label("上ボタンを押すと，アバターのFX用AnimatorController，ExpressionParamrter，ExpressionMenuに改変を加えます．",instructions);
-            GUILayout.Space(10);
+            EditorGUILayout.LabelField("上ボタンを押すと，アバターのFX用AnimatorController，ExpressionParamrter，ExpressionMenuに改変を加えます．",instructions);
+            EditorGUILayout.Space();
             
-            GUILayout.Label("操作は元に戻せないので，必ずバックアップをとっていることを確認してください．",instructions);
-            GUILayout.Space(20);
+            EditorGUILayout.LabelField("操作は元に戻せないので，必ずバックアップをとっていることを確認してください．",instructions);
+            EditorGUILayout.Space();
             
-            GUILayout.Label("powered by @HhotateA_xR",signature);
+            EditorGUILayout.LabelField("powered by @HhotateA_xR",signature);
 #else
             EditorGUILayout.LabelField("Please import VRCSDK3.0 in your project.");
 #endif

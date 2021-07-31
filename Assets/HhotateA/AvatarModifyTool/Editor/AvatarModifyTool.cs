@@ -23,12 +23,18 @@ namespace HhotateA.AvatarModifyTools.Core
         
 #if VRC_SDK_VRCSDK3
         private VRCAvatarDescriptor avatar;
-        public AvatarModifyTool(VRCAvatarDescriptor a)
+        public AvatarModifyTool(VRCAvatarDescriptor a,string dir = "Assets/Export/")
         {
+            if(dir == "Assets/Export/") AssetDatabase.CreateFolder("Assets","Export");
             avatar = a;
+            exportDir = File.GetAttributes(dir)
+                .HasFlag(FileAttributes.Directory) ? dir : Path.GetDirectoryName(dir);
+            Debug.Log(exportDir);
         }
 
-        private Dictionary<VRC_AnimatorLayerControl.BlendableLayer, int> layerOffset;
+        private string exportDir = "Assets/";
+        private Dictionary<VRC_AnimatorLayerControl.BlendableLayer, int> layerOffset = new Dictionary<VRC_AnimatorLayerControl.BlendableLayer, int>();
+        private Dictionary<string, string> animRepathList = new Dictionary<string, string>();
 
         void ComputeLayersOffset(AvatarModifyData assets)
         {
@@ -50,6 +56,7 @@ namespace HhotateA.AvatarModifyTools.Core
             var index = Array.FindIndex(avatar.baseAnimationLayers,l => l.type == t);
             if (avatar.customizeAnimationLayers == false) return 0;
             if (avatar.baseAnimationLayers[index].isDefault == true) return 0;
+            if (!avatar.baseAnimationLayers[index].animatorController) return 0;
             AnimatorController a = (AnimatorController) avatar.baseAnimationLayers[index].animatorController;
             AnimatorController b =
                 type == VRC_AnimatorLayerControl.BlendableLayer.Additive ? assets.idle_controller :
@@ -77,38 +84,28 @@ namespace HhotateA.AvatarModifyTools.Core
 #else
         private MonoBehaviour avatar;
 #endif
-        public void ModifyAvatar(AvatarModifyData assets,string path = "Assets/")
+        public void ModifyAvatar(AvatarModifyData assets,bool keepOriginalAsset = true)
         {
             if (avatar != null)
             {
-#if VRC_SDK_VRCSDK3
-                ComputeLayersOffset(assets);
-                ModifyAvatarAnimatorController(VRCAvatarDescriptor.AnimLayerType.Base,assets.locomotion_controller,path);
-                ModifyAvatarAnimatorController(VRCAvatarDescriptor.AnimLayerType.Additive,assets.idle_controller,path);
-                ModifyAvatarAnimatorController(VRCAvatarDescriptor.AnimLayerType.Gesture,assets.gesture_controller,path);
-                ModifyAvatarAnimatorController(VRCAvatarDescriptor.AnimLayerType.Action,assets.action_controller,path);
-                ModifyAvatarAnimatorController(VRCAvatarDescriptor.AnimLayerType.FX,assets.fx_controller,path);
-                ModifyExpressionParameter(assets.parameter,path);
-                ModifyExpressionMenu(assets.menu, path);
-#endif
-                var animPath = new Dictionary<string,string>();
+                animRepathList = new Dictionary<string,string>();
                 if (assets.items != null)
                 {
                     foreach (var item in assets.items)
                     {
                         ModifyGameObject(item.prefab,out var from,out var to,item.target);
-                        animPath.Add(from,to);
+                        animRepathList.Add(from,to);
                     }
                 }
 #if VRC_SDK_VRCSDK3
-                if (animPath.Count>0)
-                {
-                    RePathAnimator(GetAvatarAnimatorController(VRCAvatarDescriptor.AnimLayerType.Base),animPath);
-                    RePathAnimator(GetAvatarAnimatorController(VRCAvatarDescriptor.AnimLayerType.Additive),animPath);
-                    RePathAnimator(GetAvatarAnimatorController(VRCAvatarDescriptor.AnimLayerType.Gesture),animPath);
-                    RePathAnimator(GetAvatarAnimatorController(VRCAvatarDescriptor.AnimLayerType.Action),animPath);
-                    RePathAnimator(GetAvatarAnimatorController(VRCAvatarDescriptor.AnimLayerType.FX),animPath);
-                }
+                ComputeLayersOffset(assets);
+                ModifyAvatarAnimatorController(VRCAvatarDescriptor.AnimLayerType.Base,assets.locomotion_controller);
+                ModifyAvatarAnimatorController(VRCAvatarDescriptor.AnimLayerType.Additive,assets.idle_controller);
+                ModifyAvatarAnimatorController(VRCAvatarDescriptor.AnimLayerType.Gesture,assets.gesture_controller);
+                ModifyAvatarAnimatorController(VRCAvatarDescriptor.AnimLayerType.Action,assets.action_controller);
+                ModifyAvatarAnimatorController(VRCAvatarDescriptor.AnimLayerType.FX,assets.fx_controller);
+                ModifyExpressionParameter(assets.parameter,keepOriginalAsset);
+                ModifyExpressionMenu(assets.menu,false,keepOriginalAsset);
 #endif
             }
             else
@@ -121,35 +118,34 @@ namespace HhotateA.AvatarModifyTools.Core
 
         void ModifyAvatarAnimatorController(
             VRCAvatarDescriptor.AnimLayerType type,
-            AnimatorController controller,
-            string path)
+            AnimatorController controller)
         {
             if (controller == null) return;
             if (!GetAvatarAnimatorControllerExists(type))
             {
                 if (type == VRCAvatarDescriptor.AnimLayerType.Base)
                 {
-                    SetAvatarAnimatorController(type, MakeCopy<AnimatorController>(AssetUtility.LoadAssetAtGuid<AnimatorController>(EnvironmentVariable.baseAnimator),path));
+                    SetAvatarAnimatorController(type, MakeCopy<AnimatorController>(AssetUtility.LoadAssetAtGuid<AnimatorController>(EnvironmentVariable.baseAnimator)));
                 }
                 else
                 if (type == VRCAvatarDescriptor.AnimLayerType.Additive)
                 {
-                    SetAvatarAnimatorController(type, MakeCopy<AnimatorController>(AssetUtility.LoadAssetAtGuid<AnimatorController>(EnvironmentVariable.idleAnimator),path));
+                    SetAvatarAnimatorController(type, MakeCopy<AnimatorController>(AssetUtility.LoadAssetAtGuid<AnimatorController>(EnvironmentVariable.idleAnimator)));
                 }
                 else
                 if (type == VRCAvatarDescriptor.AnimLayerType.Gesture)
                 {
-                    SetAvatarAnimatorController(type, MakeCopy<AnimatorController>(AssetUtility.LoadAssetAtGuid<AnimatorController>(EnvironmentVariable.gestureAnimator),path));
+                    SetAvatarAnimatorController(type, MakeCopy<AnimatorController>(AssetUtility.LoadAssetAtGuid<AnimatorController>(EnvironmentVariable.gestureAnimator)));
                 }
                 else
                 if (type == VRCAvatarDescriptor.AnimLayerType.Action)
                 {
-                    SetAvatarAnimatorController(type, MakeCopy<AnimatorController>(AssetUtility.LoadAssetAtGuid<AnimatorController>(EnvironmentVariable.actionAnimator),path));
+                    SetAvatarAnimatorController(type, MakeCopy<AnimatorController>(AssetUtility.LoadAssetAtGuid<AnimatorController>(EnvironmentVariable.actionAnimator)));
                 }
                 else
                 if (type == VRCAvatarDescriptor.AnimLayerType.FX)
                 {
-                    SetAvatarAnimatorController(type, MakeCopy<AnimatorController>(AssetUtility.LoadAssetAtGuid<AnimatorController>(EnvironmentVariable.fxAnimator),path));
+                    SetAvatarAnimatorController(type, MakeCopy<AnimatorController>(AssetUtility.LoadAssetAtGuid<AnimatorController>(EnvironmentVariable.fxAnimator)));
                 }
             }
             ModifyAnimatorController(
@@ -229,7 +225,7 @@ namespace HhotateA.AvatarModifyTools.Core
         }
 #endif
 
-        T SafeCopy<T>(T obj, string dir = "") where T : Object
+        T SafeCopy<T>(T obj) where T : Object
         {
             if (ExistAssetObject(obj))
             {
@@ -237,7 +233,7 @@ namespace HhotateA.AvatarModifyTools.Core
             }
             else
             {
-                return MakeCopy<T>(obj, dir);
+                return MakeCopy<T>(obj);
             }
         }
 
@@ -247,22 +243,32 @@ namespace HhotateA.AvatarModifyTools.Core
             return !String.IsNullOrWhiteSpace(path);
         }
 
-        T MakeCopy<T>(T origin,string dir = "") where T : Object
+        T MakeCopy<T>(T origin,bool cloneSubAssets = true) where T : Object
         {
             string sufix = origin is AnimatorController ? ".controller" : 
                 origin is AnimationClip ? ".anim" : ".asset";
             if (origin != null)
             {
                 var path = AssetDatabase.GetAssetPath(origin);
-                if(string.IsNullOrWhiteSpace(dir)) dir = "Assets";
-                string copyPath = AssetDatabase.GenerateUniqueAssetPath(Path.Combine(dir, origin.name + "_copy" + sufix));
-                if (!string.IsNullOrWhiteSpace(path))
+                string copyPath = AssetDatabase.GenerateUniqueAssetPath(Path.Combine(exportDir, origin.name + "_copy" + sufix));
+                if (!String.IsNullOrWhiteSpace(path))
                 {
-                    AssetDatabase.CopyAsset(path, copyPath);
+                    if (cloneSubAssets)
+                    {
+                        AssetDatabase.CopyAsset(path, copyPath);
+                        Debug.Log("Copy : " + origin.name + "from:" + path + " to:" + copyPath);
+                    }
+                    else
+                    {
+                        T clone = Object.Instantiate(origin);
+                        AssetDatabase.CreateAsset(clone,copyPath);
+                        Debug.Log("Instance : " + origin.name + " to " + copyPath);
+                    }
                 }
                 else
                 {
                     AssetDatabase.CreateAsset(origin,copyPath);
+                    Debug.Log("Create : " + origin.name + " to " + copyPath);
                 }
                 return (T) AssetDatabase.LoadAssetAtPath<T>(copyPath);
             }
@@ -624,6 +630,10 @@ namespace HhotateA.AvatarModifyTools.Core
             }
             else if(origin is AnimationClip)
             {
+                if (animRepathList.Count > 0)
+                {
+                    return RePathAnimation((AnimationClip) origin);
+                }
                 return origin;
             }
 
@@ -735,7 +745,7 @@ namespace HhotateA.AvatarModifyTools.Core
         /// </summary>
         /// <param name="parameters"></param>
         /// <param name="origin"></param>
-        void ModifyExpressionParameter(VRCExpressionParameters parameters,string path)
+        void ModifyExpressionParameter(VRCExpressionParameters parameters,bool keepOriginalAsset = true)
         {
             if(parameters==null) return;
             if (GetExpressionParameterExist())
@@ -750,9 +760,16 @@ namespace HhotateA.AvatarModifyTools.Core
             }
             else
             {
-                var current = MakeCopy<VRCExpressionParameters>(parameters,path);
-                SetExpressionParameter(current);
-                EditorUtility.SetDirty(current);
+                if (keepOriginalAsset)
+                {
+                    var current = MakeCopy<VRCExpressionParameters>(parameters,false);
+                    SetExpressionParameter(current);
+                    EditorUtility.SetDirty(current);
+                }
+                else
+                {
+                    SetExpressionParameter(parameters);
+                }
             }
         }
         
@@ -787,15 +804,31 @@ namespace HhotateA.AvatarModifyTools.Core
         /// </summary>
         /// <param name="menus"></param>
         /// <param name="origin"></param>
-        void ModifyExpressionMenu(VRCExpressionsMenu menus, string path)
+        void ModifyExpressionMenu(VRCExpressionsMenu menus, bool autoNextPage = true,bool keepOriginalAsset = true)
         {
             if (menus == null) return;
             if (GetExpressionMenuExist())
             {
-                var current = GetExpressionMenu();
-                if(menus == current) return;
+                var parentnmenu = GetExpressionMenu();
+                if(menus == parentnmenu) return;
+                var current = parentnmenu;
                 foreach (var control in menus.controls)
                 {
+                    if (current.controls.Count > 8 && autoNextPage) // 項目が上限に達していたら次ページに飛ぶ
+                    {
+                        var m = new MenuCreater("NextPage");
+                        m.AddControll(current.controls[7]);
+                        var submenu = m.CreateAsset(exportDir);
+                        current.controls[7] = new VRCExpressionsMenu.Control()
+                        {
+                            name = "NextPage",
+                            icon = AssetUtility.LoadAssetAtGuid<Texture2D>(EnvironmentVariable.arrowIcon),
+                            type = VRCExpressionsMenu.Control.ControlType.SubMenu,
+                            subMenu = submenu
+                        };
+                        current = submenu;
+                        EditorUtility.SetDirty(current);
+                    }
                     var newcontroller = new VRCExpressionsMenu.Control()
                     {
                         name = control.name,
@@ -810,14 +843,21 @@ namespace HhotateA.AvatarModifyTools.Core
                     };
                     current.controls.Add(newcontroller);
                 }
-                SetExpressionMenu(current);
-                EditorUtility.SetDirty(current);
+                SetExpressionMenu(parentnmenu);
+                EditorUtility.SetDirty(parentnmenu);
             }
             else
             {
-                var current = MakeCopy<VRCExpressionsMenu>(menus,path);
-                SetExpressionMenu(current);
-                EditorUtility.SetDirty(current);
+                if (keepOriginalAsset)
+                {
+                    var current = MakeCopy<VRCExpressionsMenu>(menus,false);
+                    SetExpressionMenu(current);
+                    EditorUtility.SetDirty(current);
+                }
+                else
+                {
+                    SetExpressionMenu(menus);
+                }
             }
         }
 #endif
@@ -902,49 +942,7 @@ namespace HhotateA.AvatarModifyTools.Core
             return path;
         }
 
-        void RePathAnimator(AnimatorController animator,Dictionary<string,string> animPath)
-        {
-            if (animator == null) return;
-            var path = Path.GetDirectoryName (AssetDatabase.GetAssetPath(animator));
-            foreach (var layer in animator.layers)
-            {
-                RepathStateMachine(layer.stateMachine,animPath,path);
-            }
-        }
-
-        void RepathStateMachine(AnimatorStateMachine machine,Dictionary<string,string> animPath,string path)
-        {
-            foreach (var state in machine.states)
-            {
-                RepathMotion(state.state.motion,animPath,path, 
-                    m=> state.state.motion = m);
-            }
-
-            foreach (var s in machine.stateMachines)
-            {
-                RepathStateMachine(s.stateMachine,animPath,path);
-            }
-        }
-
-        void RepathMotion(Motion motion,Dictionary<string,string> animPath, string path, Action<Motion> onReplace = null)
-        {
-            if (!motion) return;
-            if (motion is AnimationClip)
-            {
-                onReplace?.Invoke(RePathAnimation((AnimationClip)motion,animPath,path));
-            }
-            else
-            if(motion is BlendTree)
-            {
-                var tree = (BlendTree) motion;
-                foreach (var m in tree.children)
-                {
-                    RepathMotion(m.motion,animPath,path);
-                }
-            }
-        }
-
-        AnimationClip RePathAnimation(AnimationClip clip,Dictionary<string,string> animPath,string path)
+        AnimationClip RePathAnimation(AnimationClip clip)
         {
             bool hasPath = false;
             using(var o = new SerializedObject(clip))
@@ -954,7 +952,7 @@ namespace HhotateA.AvatarModifyTools.Core
                 {
                     if (i.name == "path" && i.propertyType == SerializedPropertyType.String)
                     {
-                        foreach (var ft in animPath)
+                        foreach (var ft in animRepathList)
                         {
                             if (i.stringValue.StartsWith(ft.Key))
                             {
@@ -968,7 +966,7 @@ namespace HhotateA.AvatarModifyTools.Core
 
             if (hasPath)
             {
-                clip = MakeCopy<AnimationClip>(clip, Path.Combine(path));
+                clip = MakeCopy<AnimationClip>(clip,false);
                 using(var o = new SerializedObject(clip))
                 {
                     var i = o.GetIterator();
@@ -976,7 +974,7 @@ namespace HhotateA.AvatarModifyTools.Core
                     {
                         if (i.name == "path" && i.propertyType == SerializedPropertyType.String)
                         {
-                            foreach (var ft in animPath)
+                            foreach (var ft in animRepathList)
                             {
                                 if (i.stringValue.StartsWith(ft.Key))
                                 {

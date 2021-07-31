@@ -1,6 +1,5 @@
-﻿using UnityEngine;
-using UnityEditor;
-using Object = UnityEngine.Object;
+﻿using UnityEditor;
+using UnityEngine;
 
 namespace HhotateA.AvatarModifyTools.Core
 {

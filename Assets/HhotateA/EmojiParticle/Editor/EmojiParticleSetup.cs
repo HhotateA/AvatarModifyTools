@@ -7,6 +7,8 @@ using UnityEditor;
 using UnityEditor.Animations;
 using UnityEngine;
 using UnityEditor.Callbacks;
+using UnityEditorInternal;
+using AnimatorControllerParameterType = UnityEngine.AnimatorControllerParameterType;
 #if VRC_SDK_VRCSDK3
 using VRC.SDK3.Avatars.Components;
 #endif
@@ -35,6 +37,29 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
                 saveddata = AssetDatabase.LoadAssetAtPath<EmojiSaveData>(AssetDatabase.GetAssetPath(saveddata));
             }
             wnd.data = saveddata;
+            wnd.emojiReorderableList = new ReorderableList(saveddata.Emojis,typeof(IconElement),true,false,true,true)
+            {
+                elementHeight = 60,
+                drawHeaderCallback = (r) => EditorGUI.LabelField(r,"Emojis","絵文字を追加してください"),
+                drawElementCallback = (r, i, a, f) =>
+                {
+                    r.height -= 4;
+                    r.y += 2;
+                    var d = saveddata.Emojis[i];
+                    var nameRect = r;
+                    var emojiRect = r;
+                    emojiRect.width = emojiRect.height;
+                    emojiRect.x = r.width - emojiRect.width;
+                    nameRect.height /= 3;
+                    nameRect.y += nameRect.height;
+                    nameRect.width = r.width - emojiRect.width - 30;
+                    nameRect.x += 0;
+                    d.Name = EditorGUI.TextField(nameRect,"", d.Name);
+                    d.Emoji = (Texture2D) EditorGUI.ObjectField(emojiRect,"",d.Emoji,typeof(Texture2D),true);
+                },
+                onRemoveCallback = l => saveddata.Emojis.RemoveAt(l.index),
+                onAddCallback = l => saveddata.Emojis.Add(new IconElement("",null))
+            };
         }
 
 #if VRC_SDK_VRCSDK3
@@ -42,8 +67,8 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
 #endif
         private string msg = "OK";
         GUIStyle msgStyle = new GUIStyle(GUIStyle.none);
-        private Vector2 _scrollPosition = Vector2.zero;
         private Target target;
+        ReorderableList emojiReorderableList;
 
         enum Target
         {
@@ -84,15 +109,19 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
 
             if (data == null)
             {
-                GUILayout.Label("EmojiParticleSetupTool",titleStyle);
+                EditorGUILayout.LabelField("EmojiParticleSetupTool",titleStyle);
+            }
+            else if(String.IsNullOrWhiteSpace(data.name))
+            {
+                EditorGUILayout.LabelField("EmojiParticleSetupTool",titleStyle);
             }
             else
             {
-                GUILayout.Label(data.name,titleStyle);
+                EditorGUILayout.LabelField(data.name,titleStyle);
             }
 
             
-            GUILayout.Label("シーン上のアバターをドラッグ＆ドロップ");
+            EditorGUILayout.LabelField("シーン上のアバターをドラッグ＆ドロップ");
 
             EditorGUILayout.BeginHorizontal();
             {
@@ -106,131 +135,65 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
                 target = (Target) EditorGUILayout.EnumPopup("Target", target);
             }
             EditorGUILayout.EndHorizontal();
-
-            _scrollPosition = EditorGUILayout.BeginScrollView(_scrollPosition);
-            for (int i = 0; i < emojis.Count; i++)
-            {
-                EditorGUILayout.BeginHorizontal();
-                emojis[i].Name = EditorGUILayout.TextField(emojis[i].Name);
-                
-                if (GUILayout.Button("↑"))
-                {
-                    if (i - 1 >= 0)
-                    {
-                        var currentIcon = emojis[i];
-                        emojis[i] = emojis[i - 1];
-                        emojis[i - 1] = currentIcon;
-                    }
-                    EditorUtility.SetDirty(data);
-                }
-                
-                if (GUILayout.Button("↓"))
-                {
-                    if (i + 1 < emojis.Count)
-                    {
-                        var currentIcon = emojis[i];
-                        emojis[i] = emojis[i + 1];
-                        emojis[i + 1] = currentIcon;
-                    }
-                    EditorUtility.SetDirty(data);
-                }
-                
-                if (GUILayout.Button("×"))
-                {
-                    emojis.RemoveAt(i);
-                    EditorUtility.SetDirty(data);
-                }
-                
-                var emoji = EditorGUILayout.ObjectField("", emojis[i].Emoji,typeof(Texture2D),true);
-                if (emoji != emojis[i].Emoji)
-                {
-                    emojis[i].Emoji = emoji as Texture2D;
-                    EditorUtility.SetDirty(data);
-                }
-                EditorGUILayout.EndHorizontal();
-            }
-            var newicon = (Texture) EditorGUILayout.ObjectField("", null,typeof(Texture),true);
-            if (newicon != null)
-            {
-                emojis.Add(new IconElement("",newicon));
-                EditorUtility.SetDirty(data);
-            }
-            EditorGUILayout.EndScrollView();
+            
+            emojiReorderableList.DoLayoutList();
 
             using (new EditorGUI.DisabledScope(avatar==null))
             {
                 if (GUILayout.Button("Setup"))
                 {
-                    try
+                    var asset = AssetUtility.LoadAssetAtGuid<AvatarModifyData>(EnvironmentGUIDs.emojiModifyData);
+                    
+                    if (String.IsNullOrWhiteSpace(AssetDatabase.GetAssetPath(data)))
                     {
-                        var asset = AssetUtility.LoadAssetAtGuid<AvatarModifyData>(EnvironmentGUIDs.emojiModifyData);
+                        // 未保存なら保存先を指定させる．
+                        var path = EditorUtility.SaveFilePanel("Save", "Assets", "EmojiSetupData", "asset");
+                        if (string.IsNullOrEmpty(path)) return;
                         
-                        if (String.IsNullOrWhiteSpace(AssetDatabase.GetAssetPath(data)))
+                        path = FileUtil.GetProjectRelativePath(path);
+                        // Assetが消されていた場合対策に新たなInstanceから保存する．
+                        var d = ScriptableObject.CreateInstance<EmojiSaveData>();
                         {
-                            // 未保存なら保存先を指定させる．
-                            var path = EditorUtility.SaveFilePanel("Save", "Assets", "IconSetupData", "asset");
-                            path = FileUtil.GetProjectRelativePath(path);
-        
-                            if (!string.IsNullOrEmpty(path)) {
-                                // Assetが消されていた場合対策に新たなInstanceから保存する．
-                                var d = ScriptableObject.CreateInstance<EmojiSaveData>();
-                                {
-                                    d.Emojis = data.Emojis;
-                                }
-                                data = d;
-                                AssetDatabase.CreateAsset(data,path);
-                                AssetDatabase.SaveAssets();
-                            }
-                            else
-                            {
-                                // 保存先を指定しないなら処理中断
-                                throw new System.Exception("EmojiParticleSetup : Please save setupdata");
-                            }
+                            d.Emojis = data.Emojis;
                         }
-
-                        var newAssets = Setup(asset);
-
-                        var mod = new AvatarModifyTool(avatar);
-                        mod.ModifyAvatar(newAssets);
-                        
-                        // ゴミ処理忘れずに
-                        DestroyImmediate(newAssets.items[0].prefab);
-                        
-                        msgStyle.normal = new GUIStyleState()
-                        {
-                            textColor = Color.green
-                        };
-                        msg = "Success!";
+                        data = d;
+                        AssetDatabase.CreateAsset(data,path);
+                        AssetDatabase.SaveAssets();
                     }
-                    catch (Exception e)
+
+                    var newAssets = Setup(asset);
+
+                    var mod = new AvatarModifyTool(avatar,AssetDatabase.GetAssetPath(data));
+                    mod.ModifyAvatar(newAssets);
+                    
+                    // ゴミ処理忘れずに
+                    DestroyImmediate(newAssets.items[0].prefab);
+                    
+                    msgStyle.normal = new GUIStyleState()
                     {
-                        msgStyle.normal = new GUIStyleState()
-                        {
-                            textColor = Color.red
-                        };
-                        msg = e.Message;
-                        Debug.LogError(e);
-                    }
+                        textColor = Color.green
+                    };
+                    msg = "Success!";
                     AssetDatabase.SaveAssets();
                 }
             }
             
-            EditorGUILayout.BeginHorizontal();
+            using(new EditorGUILayout.HorizontalScope())
             {
-                GUILayout.FlexibleSpace();
-                GUILayout.Label("Status: ",status);
-                GUILayout.Label(msg,msgStyle);
+                EditorGUILayout.Space();
+                EditorGUILayout.LabelField("Status: ",status);
+                EditorGUILayout.LabelField(msg,msgStyle);
             }
-            EditorGUILayout.EndHorizontal();
-            GUILayout.Space(10);
+            EditorGUILayout.Space();
             
-            GUILayout.Label("上ボタンを押すと，アバターのFX用AnimatorController，ExpressionParamrter，ExpressionMenuに改変を加えます．",instructions);
-            GUILayout.Space(10);
+            EditorGUILayout.LabelField("上ボタンを押すと，アバターのFX用AnimatorController，ExpressionParamrter，ExpressionMenuに改変を加えます．",instructions);
+            EditorGUILayout.Space();
             
-            GUILayout.Label("操作は元に戻せないので，必ずバックアップをとっていることを確認してください．",instructions);
-            GUILayout.Space(20);
+            EditorGUILayout.LabelField("操作は元に戻せないので，必ずバックアップをとっていることを確認してください．",instructions);
+            EditorGUILayout.Space();
+            EditorGUILayout.Space();
             
-            GUILayout.Label("powered by @HhotateA_xR",signature);
+            EditorGUILayout.LabelField("powered by @HhotateA_xR",signature);
 #else
             EditorGUILayout.LabelField("Please import VRCSDK3.0 in your project.");
 #endif
@@ -256,7 +219,6 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
             // 結合テクスチャの作成
             var textures = emojis.Select(icon=>icon.ToTexture2D()).ToArray();
             var combinatedTexture = TextureCombinater.CombinateSaveTexture(textures,Path.Combine(fileDir,fileName+"_tex"+".png"),tilling);
-            combinatedTexture.alphaIsTransparency = true;
             combinatedTexture.name = fileName+"_tex";
             // マテリアルの作成
             var combinatedMaterial = SaveParticleMaterial(combinatedTexture);
@@ -270,15 +232,12 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
                 // 0はデフォルトなので+1
                 iconMenus.AddButton(emojis[i].Name,emojis[i].ToTexture2D(),assets.parameter.parameters[0].name,i+1);
             }
-            var iconMenu = iconMenus.CreateAsset(settingsPath,true);
             // Modify用メニュー作成
-            var menu = Instantiate(assets.menu);
-            //menu.controls[0].icon = emojis[0].Emoji as Texture2D;
-            menu.controls[0].icon = TextureCombinater.ResizeSaveTexture(
+            var menu = new MenuCreater("mainMenu");
+            menu.AddSubMenu(iconMenus,"EmojiParticles",TextureCombinater.ResizeSaveTexture(
                 Path.Combine(fileDir,fileName+"_icon"+".png"),
                 combinatedTexture,
-                256,256);
-            menu.controls[0].subMenu = iconMenu;
+                256,256));
             
             // オリジナルアセットのパーティクルコンポーネント差し替え
             var prefab = Instantiate(assets.items[0].prefab);
@@ -369,10 +328,12 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
                 newAssets.action_controller = assets.action_controller;
                 newAssets.fx_controller = animator;
                 newAssets.parameter = assets.parameter;
-                newAssets.menu = menu;
-                newAssets.items = new Item[1];
-                newAssets.items[0].target = assets.items[0].target;
-                newAssets.items[0].prefab = prefab;
+                newAssets.menu = menu.CreateAsset(settingsPath,true);
+                newAssets.items = new Item[1]{new Item()
+                {
+                    target = assets.items[0].target,
+                    prefab = prefab,
+                }};
             }
 
             return newAssets;

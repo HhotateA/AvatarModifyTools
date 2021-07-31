@@ -1,12 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Dynamic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using UnityEditor;
 using UnityEditor.Animations;
 using UnityEngine;
-using System.Reflection;
 
 namespace HhotateA.AvatarModifyTools.Core
 {
@@ -347,8 +346,14 @@ namespace HhotateA.AvatarModifyTools.Core
                 }
                 else
                 {
-                    if(!path.EndsWith(".anim")) path = Path.Combine(path, asset.name+".anim");
-                    path = AssetDatabase.GenerateUniqueAssetPath(path);
+                    if (path.EndsWith(".anim"))
+                    {
+                    }
+                    else
+                    {
+                        path = Path.Combine(path, asset.name+".anim");
+                        path = AssetDatabase.GenerateUniqueAssetPath(path);
+                    }
                     AssetDatabase.CreateAsset(asset,path);
                 }
             }

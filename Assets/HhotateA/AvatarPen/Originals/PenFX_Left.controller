@@ -6,30 +6,30 @@ AnimatorController:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: PenFX
+  m_Name: PenFX_Left
   serializedVersion: 5
   m_AnimatorParameters:
-  - m_Name: GestureRight
+  - m_Name: GestureLeft
     m_Type: 3
     m_DefaultFloat: 0
     m_DefaultInt: 3
     m_DefaultBool: 0
-    m_Controller: {fileID: 0}
-  - m_Name: GestureRightWeight
+    m_Controller: {fileID: 9100000}
+  - m_Name: GestureLeftWeight
     m_Type: 1
     m_DefaultFloat: 0
     m_DefaultInt: 0
     m_DefaultBool: 0
-    m_Controller: {fileID: 0}
+    m_Controller: {fileID: 9100000}
   - m_Name: AvatarPen
     m_Type: 3
     m_DefaultFloat: 0
     m_DefaultInt: 1
     m_DefaultBool: 0
-    m_Controller: {fileID: 0}
+    m_Controller: {fileID: 9100000}
   m_AnimatorLayers:
   - serializedVersion: 5
-    m_Name: AvatarPen
+    m_Name: AvatarPen_Left
     m_StateMachine: {fileID: 1107011006169878664}
     m_Mask: {fileID: 0}
     m_Motions: []
@@ -3611,7 +3611,7 @@ AnimatorStateTransition:
     m_ConditionEvent: AvatarPen
     m_EventTreshold: 4
   - m_ConditionMode: 6
-    m_ConditionEvent: GestureRight
+    m_ConditionEvent: GestureLeft
     m_EventTreshold: 3
   m_DstStateMachine: {fileID: 0}
   m_DstState: {fileID: 1102787606183797380}
@@ -3949,7 +3949,7 @@ AnimatorStateTransition:
   m_Name: 
   m_Conditions:
   - m_ConditionMode: 7
-    m_ConditionEvent: GestureRight
+    m_ConditionEvent: GestureLeft
     m_EventTreshold: 3
   m_DstStateMachine: {fileID: 0}
   m_DstState: {fileID: 1102697162485491548}
@@ -4049,7 +4049,7 @@ AnimatorStateTransition:
     m_ConditionEvent: AvatarPen
     m_EventTreshold: 2
   - m_ConditionMode: 6
-    m_ConditionEvent: GestureRight
+    m_ConditionEvent: GestureLeft
     m_EventTreshold: 3
   m_DstStateMachine: {fileID: 0}
   m_DstState: {fileID: 1102715555720961536}
@@ -4124,7 +4124,7 @@ AnimatorStateTransition:
     m_ConditionEvent: AvatarPen
     m_EventTreshold: 3
   - m_ConditionMode: 6
-    m_ConditionEvent: GestureRight
+    m_ConditionEvent: GestureLeft
     m_EventTreshold: 3
   m_DstStateMachine: {fileID: 0}
   m_DstState: {fileID: 1102568324409644682}
@@ -4177,7 +4177,7 @@ AnimatorStateTransition:
     m_ConditionEvent: AvatarPen
     m_EventTreshold: 1
   - m_ConditionMode: 6
-    m_ConditionEvent: GestureRight
+    m_ConditionEvent: GestureLeft
     m_EventTreshold: 3
   m_DstStateMachine: {fileID: 0}
   m_DstState: {fileID: 1102963349403631524}
@@ -4621,7 +4621,7 @@ AnimatorStateTransition:
   m_Name: 
   m_Conditions:
   - m_ConditionMode: 7
-    m_ConditionEvent: GestureRight
+    m_ConditionEvent: GestureLeft
     m_EventTreshold: 3
   m_DstStateMachine: {fileID: 0}
   m_DstState: {fileID: 1102697162485491548}
@@ -4649,7 +4649,7 @@ AnimatorStateTransition:
     m_ConditionEvent: AvatarPen
     m_EventTreshold: 5
   - m_ConditionMode: 6
-    m_ConditionEvent: GestureRight
+    m_ConditionEvent: GestureLeft
     m_EventTreshold: 3
   m_DstStateMachine: {fileID: 0}
   m_DstState: {fileID: 1102068443505360216}
@@ -4674,7 +4674,7 @@ AnimatorStateTransition:
   m_Name: 
   m_Conditions:
   - m_ConditionMode: 7
-    m_ConditionEvent: GestureRight
+    m_ConditionEvent: GestureLeft
     m_EventTreshold: 3
   m_DstStateMachine: {fileID: 0}
   m_DstState: {fileID: 1102697162485491548}
@@ -4799,7 +4799,7 @@ AnimatorStateTransition:
   m_Name: 
   m_Conditions:
   - m_ConditionMode: 7
-    m_ConditionEvent: GestureRight
+    m_ConditionEvent: GestureLeft
     m_EventTreshold: 3
   m_DstStateMachine: {fileID: 0}
   m_DstState: {fileID: 1102697162485491548}
@@ -4824,7 +4824,7 @@ AnimatorStateTransition:
   m_Name: 
   m_Conditions:
   - m_ConditionMode: 7
-    m_ConditionEvent: GestureRight
+    m_ConditionEvent: GestureLeft
     m_EventTreshold: 3
   m_DstStateMachine: {fileID: 0}
   m_DstState: {fileID: 1102697162485491548}
@@ -5428,7 +5428,7 @@ AnimatorStateMachine:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: AvatarPen
+  m_Name: AvatarPen_Left
   m_ChildStates:
   - serializedVersion: 1
     m_State: {fileID: 1102108021807414296}

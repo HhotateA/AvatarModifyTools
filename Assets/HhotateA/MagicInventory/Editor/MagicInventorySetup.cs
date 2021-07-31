@@ -1,12 +1,10 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using HhotateA.AvatarModifyTools.Core;
 using UnityEditor;
-using UnityEngine;
 using UnityEditorInternal;
+using UnityEngine;
 using AnimatorControllerParameterType = UnityEngine.AnimatorControllerParameterType;
 
 namespace HhotateA.AvatarModifyTools.MagicInventory
@@ -82,38 +80,78 @@ namespace HhotateA.AvatarModifyTools.MagicInventory
             avatar = EditorGUILayout.ObjectField("", avatar, typeof(Animator), true) as Animator;
             menuReorderableList.DoLayoutList();
 
-            using (new EditorGUILayout.VerticalScope())
+            using (new EditorGUILayout.HorizontalScope())
             {
-                if (0 <= menuReorderableList.index && menuReorderableList.index < menuElements.Count)
+                using (new EditorGUILayout.VerticalScope())
                 {
-                    var index = menuReorderableList.index;
-                    foreach (var item in menuElements[index].onItems)
+                    if (0 <= menuReorderableList.index && menuReorderableList.index < menuElements.Count)
                     {
-                        using (new EditorGUILayout.HorizontalScope())
+                        var index = menuReorderableList.index;
+                        foreach (var item in menuElements[index].onItems)
                         {
-                            using (new EditorGUI.DisabledScope(true))
+                            using (new EditorGUILayout.HorizontalScope())
                             {
-                                item.root = (GameObject) EditorGUILayout.ObjectField("", item.root,
-                                    typeof(GameObject), true);
+                                using (new EditorGUI.DisabledScope(true))
+                                {
+                                    item.root = (GameObject) EditorGUILayout.ObjectField("", item.root,
+                                        typeof(GameObject), true);
+                                }
+
+                                item.duration = EditorGUILayout.FloatField("", item.duration);
+                                item.type = (FeedType) EditorGUILayout.EnumPopup("", item.type);
+
                             }
 
-                            item.duration = EditorGUILayout.FloatField("", item.duration);
-                            item.type = (FeedType) EditorGUILayout.EnumPopup("", item.type);
-
                         }
-
-                    }
-                    var newItem = (GameObject) EditorGUILayout.ObjectField("", null,
-                        typeof(GameObject), true);
-                    if (newItem)
-                    {
-                        var item = itemElements.FirstOrDefault(l => l.root == newItem);
-                        if (item == null)
+                        var newItem = (GameObject) EditorGUILayout.ObjectField("", null,
+                            typeof(GameObject), true);
+                        if (newItem)
                         {
-                            item = new ItemElement(newItem);
-                            itemElements.Add(item);
+                            var item = itemElements.FirstOrDefault(l => l.root == newItem);
+                            if (item == null)
+                            {
+                                item = new ItemElement(newItem);
+                                itemElements.Add(item);
+                            }
+                            menuElements[index].onItems.Add(item);
+                            menuElements[index].onItems = menuElements[index].onItems.Distinct().ToList();
                         }
-                        menuElements[index].onItems.Add(item);
+                    }
+                }
+                using (new EditorGUILayout.VerticalScope())
+                {
+                    if (0 <= menuReorderableList.index && menuReorderableList.index < menuElements.Count)
+                    {
+                        var index = menuReorderableList.index;
+                        foreach (var item in menuElements[index].offItems)
+                        {
+                            using (new EditorGUILayout.HorizontalScope())
+                            {
+                                using (new EditorGUI.DisabledScope(true))
+                                {
+                                    item.root = (GameObject) EditorGUILayout.ObjectField("", item.root,
+                                        typeof(GameObject), true);
+                                }
+
+                                item.duration = EditorGUILayout.FloatField("", item.duration);
+                                item.type = (FeedType) EditorGUILayout.EnumPopup("", item.type);
+
+                            }
+
+                        }
+                        var newItem = (GameObject) EditorGUILayout.ObjectField("", null,
+                            typeof(GameObject), true);
+                        if (newItem)
+                        {
+                            var item = itemElements.FirstOrDefault(l => l.root == newItem);
+                            if (item == null)
+                            {
+                                item = new ItemElement(newItem);
+                                itemElements.Add(item);
+                            }
+                            menuElements[index].offItems.Add(item);
+                            menuElements[index].offItems = menuElements[index].offItems.Distinct().ToList();
+                        }
                     }
                 }
             }
@@ -123,6 +161,43 @@ namespace HhotateA.AvatarModifyTools.MagicInventory
                 AnimatorControllerCreator acc = new AnimatorControllerCreator("TestAnimator");
                 
             }
+        }
+
+        void SaveAnim(string path)
+        {
+            path = FileUtil.GetProjectRelativePath(path);
+            string fileName = System.IO.Path.GetFileNameWithoutExtension (path);
+            string fileDir = System.IO.Path.GetDirectoryName (path);
+            var p = new ParametersCreater(fileName);
+            var c = new AnimatorControllerCreator(fileName,false);
+            var m = new MenuCreater(fileName);
+            if (menuElements.Any(e => e.layer == LayerGroup.A))
+            {
+                c.CreateLayer(fileName + "_A");
+                var layerMenus = menuElements.Where(e => e.layer == LayerGroup.A).ToList();
+                c.AddDefaultState("Idle");
+                int i = 1;
+                foreach (var layerMenu in layerMenus)
+                {
+                    c.AnyStateToDefault(layerMenu.name, null, fileName + "_A", i);
+                    layerMenu.layerValue = i;
+                    i++;
+                }
+            }
+
+            foreach (var menuElement in menuElements)
+            {
+                if (menuElement.isToggle)
+                {
+                    m.AddToggle(menuElement.name,menuElement.icon,fileName + "_Toggle",menuElement.layerValue);
+                }
+                else if(menuElement.layer == LayerGroup.A)
+                {
+                    m.AddToggle(menuElement.name,menuElement.icon,fileName + "_A",menuElement.layerValue);
+                }
+                
+            }
+
         }
 
         void SaveElement(AnimatorControllerCreator controll,ItemElement element,string dir)
@@ -320,7 +395,7 @@ namespace HhotateA.AvatarModifyTools.MagicInventory
         }
     }
 
-    [System.Serializable]
+    [Serializable]
     public class MenuElement
     {
         public string name;
@@ -329,14 +404,16 @@ namespace HhotateA.AvatarModifyTools.MagicInventory
         public List<ItemElement> offItems = new List<ItemElement>();
         public bool isToggle = true;
         public LayerGroup layer = LayerGroup.A;
+        public int layerValue = 0;
         public bool isSaved = true;
     }
 
-    [System.Serializable]
+    [Serializable]
     public class ItemElement
     {
         public GameObject root;
         public FeedType type;
+        public float delay = 0f;
         public float duration = 1f;
         public Shader animationShader;
         public string animationParam = "_AnimationTime";
@@ -353,16 +430,15 @@ namespace HhotateA.AvatarModifyTools.MagicInventory
             root = obj;
             param = root.name + root.GetInstanceID().ToString();
         }
-
     }
 
     public enum FeedType
     {
         None,
-        Shader,
-        Alpha,
-        Clip,
         Scale,
+        Shader,
+        Feed,
+        Draw,
     }
 
     public enum LayerGroup

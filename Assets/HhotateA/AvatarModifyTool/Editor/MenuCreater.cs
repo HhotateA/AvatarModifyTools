@@ -3,6 +3,7 @@ using System.IO;
 using UnityEditor;
 using UnityEngine;
 #if VRC_SDK_VRCSDK3
+using System;
 using VRC.SDK3.Avatars.ScriptableObjects;
 #endif
 
@@ -245,6 +246,11 @@ namespace HhotateA.AvatarModifyTools.Core
             return c;
         }
         
+        public VRCExpressionsMenu Create()
+        {
+            return asset;
+        }
+        
         /// <summary>
         /// ディレクトリにアセットを作成する
         /// </summary>
@@ -258,20 +264,45 @@ namespace HhotateA.AvatarModifyTools.Core
                     foreach (var menu in menus)
                     {
                         AssetDatabase.AddObjectToAsset(menu,path);
+                        SaveSubMenus(menu,path);
                     }
                 }
                 else
                 {
+                    if (path.EndsWith(".asset"))
+                    {
+                    }
+                    else
+                    {
+                        path = Path.Combine(path, asset.name+".asset");
+                        path = AssetDatabase.GenerateUniqueAssetPath(path);
+                    }
+                    AssetDatabase.CreateAsset(asset,path);
                     foreach (var menu in menus)
                     {
-                        AssetDatabase.CreateAsset(menu,
-                            AssetDatabase.GenerateUniqueAssetPath(
-                                Path.Combine(path,"_"+menu.name+".asset")));
+                        SaveSubMenus(menu,path);
                     }
                 }
             }
 
             return asset;
+        }
+
+        void SaveSubMenus(VRCExpressionsMenu menu,string path)
+        {
+            foreach (var controll in menu.controls)
+            {
+                if (controll.type == VRCExpressionsMenu.Control.ControlType.SubMenu &&
+                    controll.subMenu != null)
+                {
+                    if (String.IsNullOrWhiteSpace(AssetDatabase.GetAssetPath(controll.subMenu)))
+                    {
+                        AssetDatabase.AddObjectToAsset(controll.subMenu,path);
+                        SaveSubMenus(controll.subMenu,path);
+                    }
+                }
+            }
+            
         }
 #endif
     }

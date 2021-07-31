@@ -1,19 +1,13 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
-using UnityEditor;
+using System.IO;
 using System.Linq;
 using HhotateA.AvatarModifyTools.Core;
+using UnityEditor;
 using UnityEditor.Animations;
-using System.IO;
-using HhotateA.AvatarModifyTools.TextureModifyTool;
-using UnityEngine.Serialization;
+using UnityEngine;
 #if VRC_SDK_VRCSDK3
-using VRC.SDKBase;
-using UnityEditor.Animations;
 using VRC.SDK3.Avatars.Components;
-using VRC.SDK3.Avatars.ScriptableObjects;
 #endif
 
 namespace HhotateA.AvatarModifyTools.TailMover
@@ -28,7 +22,12 @@ namespace HhotateA.AvatarModifyTools.TailMover
             wnd.titleContent = new GUIContent("TailMoverSetup");
         }
 
+#if VRC_SDK_VRCSDK3
+        private VRCAvatarDescriptor avatar;
+        private Animator avatarAnim;
+#else
         private Animator avatar;
+#endif
 
         private bool isHumanoidAnimation = false;
         
@@ -128,7 +127,17 @@ namespace HhotateA.AvatarModifyTools.TailMover
 
         private void OnGUI()
         {
+#if VRC_SDK_VRCSDK3
+            var a = EditorGUILayout.ObjectField("", avatar, typeof(VRCAvatarDescriptor), true) as VRCAvatarDescriptor;
+            if (a && a != avatar)
+            {
+                avatarAnim = a.GetComponent<Animator>();
+                if (avatarAnim) avatar = a;
+            }
+            
+#else
             avatar = EditorGUILayout.ObjectField("", avatar, typeof(Animator), true) as Animator;
+#endif
             if (!avatar)
             {
                 EditorGUILayout.LabelField("アバターをドラッグドロップしてください．");
@@ -172,7 +181,11 @@ namespace HhotateA.AvatarModifyTools.TailMover
                 {
                     if (avatar == null)
                     {
+#if VRC_SDK_VRCSDK3
+                        avatar = newRoot.GetComponentInParent<VRCAvatarDescriptor>();
+#else
                         avatar = newRoot.GetComponentInParent<Animator>();
+#endif
                     }
                     var rootparent = newRoot.parent;
                     while (rootparent!=null)
@@ -240,7 +253,6 @@ namespace HhotateA.AvatarModifyTools.TailMover
                     {
                         using (new EditorGUILayout.VerticalScope())
                         {
-                            tailaxi = EditorGUILayout.Vector3Field("Controlls", tailaxi);
                             GUIStyle style = new GUIStyle();
                             style.fontStyle = FontStyle.Bold;
                             int bw = (int) (position.width * 0.33333f) - 5;
@@ -347,7 +359,7 @@ namespace HhotateA.AvatarModifyTools.TailMover
 
                 if (GUILayout.Button("Save RadialControll"))
                 {
-                    var path = EditorUtility.SaveFilePanel("Save", "Assets",  preset.ToString()+"Controll" + preset.ToString(),
+                    var path = EditorUtility.SaveFilePanel("Save", "Assets",  preset.ToString()+"Controll",
                         "controller");
                     if (string.IsNullOrWhiteSpace(path)) return;
                     SaveTailAnim(path);
@@ -359,7 +371,7 @@ namespace HhotateA.AvatarModifyTools.TailMover
                 {
                     if (GUILayout.Button("Save IdleMotion"))
                     {
-                        var path = EditorUtility.SaveFilePanel("Save", "Assets", preset.ToString()+"Idle" + preset.ToString(),
+                        var path = EditorUtility.SaveFilePanel("Save", "Assets", preset.ToString()+"Idle",
                             "controller");
                         if (string.IsNullOrWhiteSpace(path)) return;
                         SaveTailIdle(path);
@@ -446,8 +458,8 @@ namespace HhotateA.AvatarModifyTools.TailMover
                     new Vector3(0f, 0f, 0f),
                     new Vector3(-20f,0f, 0f),
                     new Vector3(20f, 0f, 0f),
-                    new Vector3(0f, -20f, 0f),
                     new Vector3(0f, 20f, 0f),
+                    new Vector3(0f, -20f, 0f),
                 };
                 curveWeight = AnimationCurve.Linear(0, 1, 1, 0);
                 isHumanoidAnimation = true;
@@ -464,8 +476,8 @@ namespace HhotateA.AvatarModifyTools.TailMover
                     new Vector3(0f, 0f, 0f),
                     new Vector3(-20f,0f, 0f),
                     new Vector3(20f, 0f, 0f),
-                    new Vector3(0f, -20f, 0f),
                     new Vector3(0f, 20f, 0f),
+                    new Vector3(0f, -20f, 0f),
                 };
                 curveWeight = AnimationCurve.Linear(0, 1, 1, 0);
                 isHumanoidAnimation = true;
@@ -635,10 +647,10 @@ namespace HhotateA.AvatarModifyTools.TailMover
             var menu = new MenuCreater(file);
             menu.AddAxis(file,controllIcons[(int) preset], file,file+"_X",file+"_Y","↑","→","↓","←",null,null,null,null);
             var param = new ParametersCreater(file);
-            param.LoadParams(controller);
+            param.LoadParams(controller,false);
             
-            var am = new AvatarModifyTool(avatar.GetComponent<VRCAvatarDescriptor>());
-            AvatarModifyData newAssets = ScriptableObject.CreateInstance<AvatarModifyData>();
+            var am = new AvatarModifyTool(avatar,dir);
+            AvatarModifyData newAssets = CreateInstance<AvatarModifyData>();
             {
                 if (isHumanoidAnimation)
                 {
@@ -651,7 +663,7 @@ namespace HhotateA.AvatarModifyTools.TailMover
                 newAssets.parameter = param.CreateAsset(path, true);
                 newAssets.menu = menu.CreateAsset(path,true);
             }
-            am.ModifyAvatar(newAssets);
+            am.ModifyAvatar(newAssets,false);
 #else
 #endif
             AssetDatabase.Refresh();
@@ -707,10 +719,10 @@ namespace HhotateA.AvatarModifyTools.TailMover
             var menu = new MenuCreater(file);
             menu.AddRadial(file,idleIcons[(int) preset],"",p);
             var param = new ParametersCreater(file);
-            param.LoadParams(controller);
+            param.LoadParams(controller,true);
             
-            var am = new AvatarModifyTool(avatar.GetComponent<VRCAvatarDescriptor>());
-            AvatarModifyData newAssets = ScriptableObject.CreateInstance<AvatarModifyData>();
+            var am = new AvatarModifyTool(avatar,dir);
+            AvatarModifyData newAssets = CreateInstance<AvatarModifyData>();
             {
                 if (isHumanoidAnimation)
                 {
@@ -723,7 +735,7 @@ namespace HhotateA.AvatarModifyTools.TailMover
                 newAssets.parameter = param.CreateAsset(path, true);
                 newAssets.menu = menu.CreateAsset(path,true);
             }
-            am.ModifyAvatar(newAssets);
+            am.ModifyAvatar(newAssets,false);
 #endif
             AssetDatabase.Refresh();
         }
@@ -757,7 +769,7 @@ namespace HhotateA.AvatarModifyTools.TailMover
             {
                 if (isHumanoidAnimation)
                 {
-                    anim.AddKeyframe_Humanoid(avatar,rot.Key,0f, weight);
+                    anim.AddKeyframe_Humanoid(avatarAnim,rot.Key,0f, weight);
                 }
                 else
                 {
