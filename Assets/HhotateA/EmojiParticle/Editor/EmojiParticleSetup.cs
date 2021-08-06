@@ -17,7 +17,7 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
 {
     public class EmojiParticleSetup : EditorWindow
     {
-        [MenuItem("Window/HhotateA/EmojiParticleSetup")]
+        [MenuItem("Window/HhotateA/絵文字パーティクルセットアップ(EmojiParticleSetup)",false,2)]
 
         public static void ShowWindow()
         {
@@ -144,7 +144,7 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
                 {
                     var asset = AssetUtility.LoadAssetAtGuid<AvatarModifyData>(EnvironmentGUIDs.emojiModifyData);
                     
-                    if (String.IsNullOrWhiteSpace(AssetDatabase.GetAssetPath(data)))
+                    // if (String.IsNullOrWhiteSpace(AssetDatabase.GetAssetPath(data)))
                     {
                         // 未保存なら保存先を指定させる．
                         var path = EditorUtility.SaveFilePanel("Save", "Assets", "EmojiSetupData", "asset");
@@ -318,7 +318,8 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
                             },false,0.01f,0f );
                 controller.AddTransition("Emoji_"+i,"Reset",new AnimatorCondition[]{},true,1f,0f );
             }
-            var animator = controller.CreateAsset(settingsPath, true);
+            controller.LayerMask(AvatarMaskBodyPart.Body,false,false);
+            controller.LayerTransformMask(avatar.gameObject,false);
 
             AvatarModifyData newAssets = CreateInstance<AvatarModifyData>();
             {
@@ -326,7 +327,7 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
                 newAssets.idle_controller = assets.idle_controller;
                 newAssets.gesture_controller = assets.gesture_controller;
                 newAssets.action_controller = assets.action_controller;
-                newAssets.fx_controller = animator;
+                newAssets.fx_controller = controller.CreateAsset(settingsPath, true);
                 newAssets.parameter = assets.parameter;
                 newAssets.menu = menu.CreateAsset(settingsPath,true);
                 newAssets.items = new Item[1]{new Item()

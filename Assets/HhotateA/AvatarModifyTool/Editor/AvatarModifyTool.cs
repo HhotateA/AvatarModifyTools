@@ -23,18 +23,22 @@ namespace HhotateA.AvatarModifyTools.Core
         
 #if VRC_SDK_VRCSDK3
         private VRCAvatarDescriptor avatar;
-        public AvatarModifyTool(VRCAvatarDescriptor a,string dir = "Assets/Export/")
+        public AvatarModifyTool(VRCAvatarDescriptor a,string dir = "Assets/Export")
         {
-            if(dir == "Assets/Export/") AssetDatabase.CreateFolder("Assets","Export");
+            if (dir == "Assets/Export")
+            {
+                if (!AssetDatabase.IsValidFolder(dir))
+                {
+                    AssetDatabase.CreateFolder("Assets","Export");
+                }
+            }
             avatar = a;
             exportDir = File.GetAttributes(dir)
                 .HasFlag(FileAttributes.Directory) ? dir : Path.GetDirectoryName(dir);
             Debug.Log(exportDir);
         }
 
-        private string exportDir = "Assets/";
         private Dictionary<VRC_AnimatorLayerControl.BlendableLayer, int> layerOffset = new Dictionary<VRC_AnimatorLayerControl.BlendableLayer, int>();
-        private Dictionary<string, string> animRepathList = new Dictionary<string, string>();
 
         void ComputeLayersOffset(AvatarModifyData assets)
         {
@@ -84,6 +88,8 @@ namespace HhotateA.AvatarModifyTools.Core
 #else
         private MonoBehaviour avatar;
 #endif
+        private string exportDir = "Assets/";
+        private Dictionary<string, string> animRepathList = new Dictionary<string, string>();
         public void ModifyAvatar(AvatarModifyData assets,bool keepOriginalAsset = true)
         {
             if (avatar != null)
@@ -106,6 +112,7 @@ namespace HhotateA.AvatarModifyTools.Core
                 ModifyAvatarAnimatorController(VRCAvatarDescriptor.AnimLayerType.FX,assets.fx_controller);
                 ModifyExpressionParameter(assets.parameter,keepOriginalAsset);
                 ModifyExpressionMenu(assets.menu,false,keepOriginalAsset);
+                AssetDatabase.SaveAssets();
 #endif
             }
             else
@@ -325,7 +332,7 @@ namespace HhotateA.AvatarModifyTools.Core
         {
             var cloneLayer = new AnimatorControllerLayer()
             {
-                avatarMask = originLayer.avatarMask,
+                avatarMask = CloneAvatarMask(originLayer.avatarMask),
                 blendingMode = originLayer.blendingMode,
                 defaultWeight = originLayer.defaultWeight,
                 iKPass = originLayer.iKPass,
@@ -336,7 +343,6 @@ namespace HhotateA.AvatarModifyTools.Core
                 stateMachine = CloneStateMachine(originLayer.stateMachine),
             };
             CloneTrasitions(cloneLayer.stateMachine, originLayer.stateMachine);
-            cloneLayer.avatarMask = CloneAvatarMask(originLayer.avatarMask);
             return cloneLayer;
         }
 
@@ -374,9 +380,39 @@ namespace HhotateA.AvatarModifyTools.Core
 
         AvatarMask CloneAvatarMask(AvatarMask origin)
         {
-            if (origin == null) return null;
-            var clone = new AvatarMask();
-            clone.transformCount = origin.transformCount;
+            if (origin)
+            {
+                if (AssetUtility.GetAssetGuid(origin) == EnvironmentVariable.nottingAvatarMask)
+                {
+                    var mask = new AvatarMask();
+                    foreach (AvatarMaskBodyPart p in Enum.GetValues(typeof(AvatarMaskBodyPart)))
+                    {
+                        if (p != AvatarMaskBodyPart.LastBodyPart)
+                        {
+                            mask.SetHumanoidBodyPartActive(p,false);
+                        }
+                    }
+
+                    var ts = Childs(avatar.transform);
+                    mask.transformCount = ts.Count;
+                    for (int i = 0; i < ts.Count; i++)
+                    {
+                        mask.SetTransformPath(i,AssetUtility.GetRelativePath(avatar.transform,ts[i]));
+                        mask.SetTransformActive(i,false);
+                    }
+
+                    var path = AssetDatabase.GenerateUniqueAssetPath(Path.Combine(exportDir,avatar.gameObject.name+"_NottingMask.mask"));
+                    AssetDatabase.CreateAsset(mask,path);
+                    return mask;
+                }
+            }
+            return origin;
+            /*if (origin == null) return null;
+            var clone = new AvatarMask()
+            {
+                name = origin.name,
+                transformCount = origin.transformCount
+            };
             for (int i = 0; i < origin.transformCount; i++)
             {
                 clone.SetTransformPath(i,
@@ -392,7 +428,21 @@ namespace HhotateA.AvatarModifyTools.Core
                         origin.GetHumanoidBodyPartActive(p));
                 }
             }
-            return clone;
+            return clone;*/
+        }
+
+        List<Transform> Childs(Transform p,bool root = false)
+        {
+            var l = new List<Transform>();
+            if (!root)
+            {
+                l.Add(p);
+            }
+            foreach (Transform c in p)
+            {
+                l.AddRange(Childs(c));
+            }
+            return l;
         }
         
         /// <summary>
@@ -676,7 +726,7 @@ namespace HhotateA.AvatarModifyTools.Core
         
         void SaveLayer(AnimatorControllerLayer l,string path)
         {
-            if(l.avatarMask) AssetDatabase.AddObjectToAsset(l.avatarMask,path);
+            // if(l.avatarMask) AssetDatabase.AddObjectToAsset(l.avatarMask,path);
             SaveStateMachine(l.stateMachine,path);
         }
 
@@ -686,7 +736,7 @@ namespace HhotateA.AvatarModifyTools.Core
             foreach (var s in machine.states)
             {
                 AssetDatabase.AddObjectToAsset(s.state,path);
-                if(s.state.motion) if(s.state.motion is BlendTree) AssetDatabase.AddObjectToAsset(s.state.motion,path);
+                SaveMotion(s.state.motion,path);
                 foreach (var t in s.state.transitions)
                 {
                     AssetDatabase.AddObjectToAsset(t,path);
@@ -716,6 +766,20 @@ namespace HhotateA.AvatarModifyTools.Core
                     AssetDatabase.AddObjectToAsset(b,path);
                 }
 #endif
+            }
+        }
+        
+        void SaveMotion(Motion motion,string path)
+        {
+            if (motion == null) return;
+            if (motion is BlendTree)
+            {
+                BlendTree tree = (BlendTree) motion;
+                AssetDatabase.AddObjectToAsset(tree,path);
+                foreach (var m in tree.children)
+                {
+                    SaveMotion(m.motion, path);
+                }
             }
         }
 
@@ -906,7 +970,7 @@ namespace HhotateA.AvatarModifyTools.Core
             else
             if(humanoid)
             { //ボーン差し替えでの設定
-                fromPath = GetRelativePath(avatar.transform, instance.transform);
+                fromPath = GetRelativePath(instance.transform);
                 if (humanoid.isHuman)
                 {
                     Transform bone = humanoid.GetBoneTransform(target);
@@ -920,26 +984,13 @@ namespace HhotateA.AvatarModifyTools.Core
                         instance.transform.localPosition = new Vector3(0f,0f,0f);
                     }
                 }
-                toPath = GetRelativePath(avatar.transform, instance.transform);
+                toPath = GetRelativePath(instance.transform);
             }
         }
         
-        string GetRelativePath(Transform root,Transform o)
+        string GetRelativePath(Transform o)
         {
-            if (o.gameObject == root.gameObject)
-            {
-                return "";
-            }
-            string path = o.gameObject.name;
-            Transform parent = o.transform.parent;
-            while (parent != null)
-            {
-                if(parent.gameObject == root.gameObject) break;
-                path = parent.name + "/" + path;
-                parent = parent.parent;
-            }
-
-            return path;
+            return AssetUtility.GetRelativePath(avatar.transform, o);
         }
 
         AnimationClip RePathAnimation(AnimationClip clip)
@@ -980,6 +1031,105 @@ namespace HhotateA.AvatarModifyTools.Core
                                 {
                                     i.stringValue = i.stringValue.Replace(ft.Key, ft.Value);
                                 }
+                            }
+                        }
+                    }
+                    o.ApplyModifiedProperties();
+                }
+            }
+            return clip;
+        }
+
+#if VRC_SDK_VRCSDK3
+        public void RepathAnimators(GameObject from,GameObject to)
+        {
+            var fromPath = GetRelativePath(from.transform);
+            var toPath = GetRelativePath(to.transform);
+            RepathAnimators(fromPath, toPath);
+        }
+        
+        public void RepathAnimators(string from,string to)
+        {
+            foreach (var playableLayer in avatar.baseAnimationLayers)
+            {
+                if (playableLayer.animatorController == null) continue;
+                AnimatorController ac = (AnimatorController) playableLayer.animatorController;
+                if (ac)
+                {
+                    foreach (var layer in ac.layers)
+                    {
+                        RePathStateMachine(layer.stateMachine, from, to);
+                    }
+                }
+            }
+        }
+#endif
+
+        void RePathStateMachine(AnimatorStateMachine machine, string from, string to)
+        {
+            foreach (var s in machine.states)
+            {
+                if (s.state.motion)
+                {
+                    RePathMotion(s.state.motion, from, to);
+                }
+            }
+            foreach (var m in machine.stateMachines)
+            {
+                RePathStateMachine(m.stateMachine,from,to);
+            }
+        }
+
+        void RePathMotion(Motion motion, string from, string to)
+        {
+            if (motion is BlendTree)
+            {
+                BlendTree tree = (BlendTree) motion;
+                foreach (var m in tree.children)
+                {
+                    RePathMotion(m.motion, from, to);
+                }
+            }
+            else 
+            if (motion is AnimationClip)
+            {
+                AnimationClip clip = (AnimationClip) motion;
+                RePathAnimation(clip, from, to);
+            }
+        }
+        
+        AnimationClip RePathAnimation(AnimationClip clip,string from,string to)
+        {
+            bool hasPath = false;
+            using(var o = new SerializedObject(clip))
+            {
+                var i = o.GetIterator();
+                while (i.Next(true))
+                {
+                    if (i.name == "path" && i.propertyType == SerializedPropertyType.String)
+                    {
+                        if (i.stringValue.StartsWith(from))
+                        {
+                            hasPath = true;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (hasPath)
+            {
+                clip = MakeCopy<AnimationClip>(clip,false);
+                using(var o = new SerializedObject(clip))
+                {
+                    var i = o.GetIterator();
+                    while (i.Next(true))
+                    {
+                        if (i.name == "path" && i.propertyType == SerializedPropertyType.String)
+                        {
+                            if (i.stringValue.StartsWith(from))
+                            {
+                                i.stringValue = i.stringValue.Replace(from, to);
                             }
                         }
                     }

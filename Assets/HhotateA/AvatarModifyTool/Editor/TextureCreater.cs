@@ -371,12 +371,15 @@ namespace HhotateA.AvatarModifyTools.Core
                     v.z * (zmax - zmin) - zmin)).ToArray();
 
             var uvs = new ComputeBuffer(mesh.uv.Length,Marshal.SizeOf(typeof(Vector2)));
+            var verts = new ComputeBuffer(mesh.vertices.Length,Marshal.SizeOf(typeof(Vector3)));
             var tris = new ComputeBuffer(mesh.triangles.Length,sizeof(int));
 
             uvs.SetData(mesh.uv);
+            verts.SetData(mesh.vertices);
             tris.SetData(mesh.triangles);
             
             compute.SetBuffer(kernel,"_UVs",uvs);
+            compute.SetBuffer(kernel,"_Vertices",uvs);
             compute.SetBuffer(kernel,"_Triangles",tris);
             
             compute.SetTexture(kernel, "_ResultTex", GetEditTexture());
@@ -385,8 +388,8 @@ namespace HhotateA.AvatarModifyTools.Core
             compute.SetInt("_Height", GetEditTexture().height);
             compute.SetVector("_FromPoint",from);
             compute.SetVector("_ToPoint",to);
-            var gradientBuffer = new ComputeBuffer(GetEditTexture().width, Marshal.SizeOf(typeof(Vector4)));
-            gradientBuffer.SetData(TextureCombinater.GetGradientBuffer(gradient,GetEditTexture().width));
+            var gradientBuffer = new ComputeBuffer(256, Marshal.SizeOf(typeof(Vector4)));
+            gradientBuffer.SetData(TextureCombinater.GetGradientBuffer(gradient,256));
             compute.SetBuffer(kernel, "_Gradient", gradientBuffer);
             compute.SetInt("_AreaExpansion", areaExpansion);
             for (int i = 0; i < index.Count; i++)
@@ -398,6 +401,7 @@ namespace HhotateA.AvatarModifyTools.Core
                 }
             }
             uvs.Release();
+            verts.Release();
             tris.Release();
             gradientBuffer.Release();
         }

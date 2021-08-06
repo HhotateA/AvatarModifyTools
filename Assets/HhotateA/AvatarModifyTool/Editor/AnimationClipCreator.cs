@@ -302,20 +302,7 @@ namespace HhotateA.AvatarModifyTools.Core
 
         string GetRelativePath(GameObject o)
         {
-            if (o.gameObject == root)
-            {
-                return "";
-            }
-            string path = o.gameObject.name;
-            Transform parent = o.transform.parent;
-            while (parent != null)
-            {
-                if(parent.gameObject == root) break;
-                path = parent.name + "/" + path;
-                parent = parent.parent;
-            }
-
-            return path;
+            return AssetUtility.GetRelativePath(root.transform, o.transform);
         }
         
         public AnimationClip Create()
@@ -357,7 +344,7 @@ namespace HhotateA.AvatarModifyTools.Core
                     AssetDatabase.CreateAsset(asset,path);
                 }
             }
-            
+            AssetDatabase.SaveAssets();
             return asset;
         }
     }

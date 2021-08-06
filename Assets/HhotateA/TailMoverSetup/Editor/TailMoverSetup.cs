@@ -14,7 +14,7 @@ namespace HhotateA.AvatarModifyTools.TailMover
 {
     public class TailMoverSetup : EditorWindow
     {
-        [MenuItem("Window/HhotateA/TailMoverSetup")]
+        [MenuItem("Window/HhotateA/なでもふセットアップ(TailMoverSetup)",false,3)]
         public static void ShowWindow()
         {
             var wnd = GetWindow<TailMoverSetup>();
@@ -625,9 +625,28 @@ namespace HhotateA.AvatarModifyTools.TailMover
                 controller.LayerMask(AvatarMaskBodyPart.LeftArm, true, false);
             }
 
-            if (isHumanoidAnimation)
+            if (preset == Presets.RightArm)
             {
                 controller.SetWriteDefault("Idle",true);
+                controller.LayerMask(AvatarMaskBodyPart.RightArm, true, false);
+                controller.LayerTransformMask(avatar.gameObject,false);
+            }
+            else if(preset == Presets.LeftArm)
+            {
+                controller.SetWriteDefault("Idle",true);
+                controller.LayerMask(AvatarMaskBodyPart.LeftArm, true, false);
+                controller.LayerTransformMask(avatar.gameObject,false);
+            }
+            else if(!isHumanoidAnimation)
+            {
+                controller.LayerMask(AvatarMaskBodyPart.Body,false,false);
+                controller.LayerTransformMask(avatar.gameObject,
+                    zeroRots.Select(r => r.Key.gameObject).ToList(), true);
+            }
+            else
+            {
+                controller.SetWriteDefault("Idle",true);
+                controller.LayerTransformMask(avatar.gameObject,false);
             }
             
             controller.AddParameter(tree.blendParameter,AnimatorControllerParameterType.Float);
@@ -711,6 +730,30 @@ namespace HhotateA.AvatarModifyTools.TailMover
             controller.AddTransition("Idle","Move",p,0.001f,true,false,0f,0.25f);
             controller.AddTransition("Move","Reset",p,0.001f,false,false,0f,0.25f);
             controller.AddTransition("Reset","Idle");
+            
+            if (preset == Presets.RightArm)
+            {
+                controller.SetWriteDefault("Idle",true);
+                controller.LayerMask(AvatarMaskBodyPart.RightArm, true, false);
+                controller.LayerTransformMask(avatar.gameObject,false);
+            }
+            else if(preset == Presets.LeftArm)
+            {
+                controller.SetWriteDefault("Idle",true);
+                controller.LayerMask(AvatarMaskBodyPart.LeftArm, true, false);
+                controller.LayerTransformMask(avatar.gameObject,false);
+            }
+            else if(!isHumanoidAnimation)
+            {
+                controller.LayerMask(AvatarMaskBodyPart.Body,false,false);
+                controller.LayerTransformMask(avatar.gameObject,
+                    zeroRots.Select(r => r.Key.gameObject).ToList(), true);
+            }
+            else
+            {
+                controller.SetWriteDefault("Idle",true);
+                controller.LayerTransformMask(avatar.gameObject,false);
+            }
 
             var c = controller.CreateAsset(path);
             move.CreateAsset(path, true);
@@ -769,7 +812,11 @@ namespace HhotateA.AvatarModifyTools.TailMover
             {
                 if (isHumanoidAnimation)
                 {
+#if VRC_SDK_VRCSDK3
                     anim.AddKeyframe_Humanoid(avatarAnim,rot.Key,0f, weight);
+#else
+                    anim.AddKeyframe_Humanoid(avatar,rot.Key,0f, weight);
+#endif
                 }
                 else
                 {

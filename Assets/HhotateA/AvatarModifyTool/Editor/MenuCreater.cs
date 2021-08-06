@@ -107,6 +107,11 @@ namespace HhotateA.AvatarModifyTools.Core
         {
             AddControll(ToggleControl(name,icon,param,val));
         }
+        
+        public void AddToggle(string name,Texture2D icon,string param)
+        {
+            AddControll(ToggleControl(name,icon,param,1));
+        }
 
         public void AddAxis(
             string name, Texture2D icon,
@@ -284,7 +289,7 @@ namespace HhotateA.AvatarModifyTools.Core
                     }
                 }
             }
-
+            AssetDatabase.SaveAssets();
             return asset;
         }
 

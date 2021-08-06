@@ -74,6 +74,51 @@ namespace HhotateA.AvatarModifyTools.Core
         {
             asset.AddParameter(name,type);
         }
+        public void AddParameter(string name,bool value)
+        {
+            if (asset.parameters.All(p=>p.name!=name))
+            {
+                asset.AddParameter(name,AnimatorControllerParameterType.Bool);
+                var ps = asset.parameters;
+                for (int i = 0; i < ps.Length; i++)
+                {
+                    if (ps[i].name == name)
+                    {
+                        ps[i].defaultBool = value;
+                    }
+                }
+            }
+        }
+        public void AddParameter(string name,int value)
+        {
+            if (asset.parameters.All(p=>p.name!=name))
+            {
+                asset.AddParameter(name,AnimatorControllerParameterType.Int);
+                var ps = asset.parameters;
+                for (int i = 0; i < ps.Length; i++)
+                {
+                    if (ps[i].name == name)
+                    {
+                        ps[i].defaultInt = value;
+                    }
+                }
+            }
+        }
+        public void AddParameter(string name,float value)
+        {
+            if (asset.parameters.All(p=>p.name!=name))
+            {
+                asset.AddParameter(name,AnimatorControllerParameterType.Float);
+                var ps = asset.parameters;
+                for (int i = 0; i < ps.Length; i++)
+                {
+                    if (ps[i].name == name)
+                    {
+                        ps[i].defaultFloat = value;
+                    }
+                }
+            }
+        }
 
         public AnimatorControllerParameter[] GetParameter()
         {
@@ -286,13 +331,14 @@ namespace HhotateA.AvatarModifyTools.Core
             string from, string to,
             string param,
             int value,
+            bool equal = true,
             bool hasExitTime = false,
             float exitTime = 0f,
             float duration = 0f)
         {
             var conditions = new AnimatorCondition()
             {
-                mode = AnimatorConditionMode.Equals,
+                mode = equal ? AnimatorConditionMode.Equals : AnimatorConditionMode.NotEqual,
                 parameter = param,
                 threshold = value
             };
@@ -346,7 +392,7 @@ namespace HhotateA.AvatarModifyTools.Core
             
             if (asset.parameters.All(p=>p.name!=param))
             {
-                AddParameter(param,AnimatorControllerParameterType.Float);
+                AddParameter(param,AnimatorControllerParameterType.Int);
             }
 
             AddTransition(from, to, new AnimatorCondition[1] {conditions}, hasExitTime, exitTime, duration);
@@ -434,15 +480,20 @@ namespace HhotateA.AvatarModifyTools.Core
                     SaveLayer(l, path);
                 }
 
-                AssetDatabase.Refresh();
             }
-
+            AssetDatabase.SaveAssets();
             return asset;
         }
 
         void SaveLayer(AnimatorControllerLayer l, string path)
         {
-            if(l.avatarMask) AssetDatabase.AddObjectToAsset(l.avatarMask,path);
+            if (l.avatarMask)
+            {
+                if (AssetUtility.GetAssetGuid(l.avatarMask) != EnvironmentVariable.nottingAvatarMask)
+                {
+                    AssetDatabase.AddObjectToAsset(l.avatarMask,path);
+                }
+            }
             SaveStateMachine(l.stateMachine,path);
         }
 
@@ -452,7 +503,7 @@ namespace HhotateA.AvatarModifyTools.Core
             foreach (var s in machine.states)
             {
                 AssetDatabase.AddObjectToAsset(s.state,path);
-                if(s.state.motion) if(s.state.motion is BlendTree) AssetDatabase.AddObjectToAsset(s.state.motion,path);
+                SaveMotion(s.state.motion,path);
                 foreach (var t in s.state.transitions)
                 {
                     AssetDatabase.AddObjectToAsset(t,path);
@@ -482,6 +533,20 @@ namespace HhotateA.AvatarModifyTools.Core
                     AssetDatabase.AddObjectToAsset(b,path);
                 }
 #endif
+            }
+        }
+
+        void SaveMotion(Motion motion,string path)
+        {
+            if (motion == null) return;
+            if (motion is BlendTree)
+            {
+                BlendTree tree = (BlendTree) motion;
+                AssetDatabase.AddObjectToAsset(tree,path);
+                foreach (var m in tree.children)
+                {
+                    SaveMotion(m.motion, path);
+                }
             }
         }
 
@@ -619,25 +684,100 @@ namespace HhotateA.AvatarModifyTools.Core
             return new Vector3( x, y, z);
         }
 
-        public void LayerMask(AvatarMaskBodyPart part,bool active,bool? mask = null)
+        public void LayerMask(AvatarMaskBodyPart part,bool active,bool? other = null)
         {
             AnimatorControllerLayer[] layers = asset.layers;
             var avatarMask = layers[editLayer].avatarMask;
-            if (avatarMask == null) avatarMask = new AvatarMask();
-            avatarMask.name = part.ToString();
-            if (mask != null)
+            if (avatarMask == null)
+            {
+                avatarMask = new AvatarMask();
+                avatarMask.name = part.ToString() + "_Mask";
+            }
+            if (other != null)
             {
                 foreach (AvatarMaskBodyPart p in Enum.GetValues(typeof(AvatarMaskBodyPart)))
                 {
                     if (p != AvatarMaskBodyPart.LastBodyPart)
                     {
-                        avatarMask.SetHumanoidBodyPartActive(p,mask ?? false);
+                        avatarMask.SetHumanoidBodyPartActive(p,other ?? false);
                     }
                 }
             }
             avatarMask.SetHumanoidBodyPartActive(part,active);
             layers[editLayer].avatarMask = avatarMask;
             asset.layers = layers;
+        }
+        
+        public void LayerTransformMask(GameObject root,List<GameObject> objs,bool active)
+        {
+            if(objs==null) objs = new List<GameObject>();
+            AnimatorControllerLayer[] layers = asset.layers;
+            var avatarMask = layers[editLayer].avatarMask;
+            if (avatarMask == null)
+            {
+                avatarMask = new AvatarMask();
+                avatarMask.name = root.name + "_Mask";
+            }
+            
+            var ts = Childs(root.transform);
+            avatarMask.transformCount = ts.Count;
+            for (int i = 0; i < ts.Count; i++)
+            {
+                avatarMask.SetTransformPath(i,GetRelativePath(root,ts[i].gameObject));
+                avatarMask.SetTransformActive(i,
+                    objs.Contains(ts[i].gameObject) ? active : !active);
+            }
+            
+            layers[editLayer].avatarMask = avatarMask;
+            asset.layers = layers;
+        }
+        
+        public void LayerTransformMask(GameObject root,bool active)
+        {
+            LayerTransformMask(root, new List<GameObject>(), !active);
+        }
+        
+        public void ObjectOnlyLayerMask()
+        {
+            AnimatorControllerLayer[] layers = asset.layers;
+            layers[editLayer].avatarMask = AssetUtility.LoadAssetAtGuid<AvatarMask>(EnvironmentVariable.nottingAvatarMask);
+            asset.layers = layers;
+        }
+        
+        List<Transform> Childs(Transform p,bool root = false)
+        {
+            var l = new List<Transform>();
+            if (!root)
+            {
+                l.Add(p);
+            }
+            foreach (Transform c in p)
+            {
+                l.AddRange(Childs(c));
+            }
+            return l;
+        }
+        
+        public string GetRelativePath(GameObject root,GameObject obj)
+        {
+            string path;
+            if (obj == root)
+            {
+                path = "";
+            }
+            else
+            {
+                path = obj.gameObject.name;
+                Transform parent = obj.transform.parent;
+                while (parent != null)
+                {
+                    if(parent.gameObject == root) break;
+                    path = parent.name + "/" + path;
+                    parent = parent.parent;
+                }
+            }
+
+            return path;
         }
         
         public void EditStateMachineBehaviour <T>(string stateName,Action<T> edit,bool asNew = false) where T : StateMachineBehaviour 

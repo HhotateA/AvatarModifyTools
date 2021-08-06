@@ -62,7 +62,7 @@ namespace HhotateA.AvatarModifyTools.Core
                 savedParameters.Add(new AnimatorControllerParameter()
                 {
                     name = param,
-                    type = AnimatorControllerParameterType.Float,
+                    type = AnimatorControllerParameterType.Int,
                     defaultInt = defaultValue,
                 });
             }
@@ -71,7 +71,7 @@ namespace HhotateA.AvatarModifyTools.Core
                 parameters.Add(new AnimatorControllerParameter()
                 {
                     name = param,
-                    type = AnimatorControllerParameterType.Float,
+                    type = AnimatorControllerParameterType.Int,
                     defaultInt = defaultValue,
                 });
             }
@@ -90,7 +90,7 @@ namespace HhotateA.AvatarModifyTools.Core
                 savedParameters.Add(new AnimatorControllerParameter()
                 {
                     name = param,
-                    type = AnimatorControllerParameterType.Float,
+                    type = AnimatorControllerParameterType.Bool,
                     defaultBool = defaultValue,
                 });
             }
@@ -99,7 +99,7 @@ namespace HhotateA.AvatarModifyTools.Core
                 parameters.Add(new AnimatorControllerParameter()
                 {
                     name = param,
-                    type = AnimatorControllerParameterType.Float,
+                    type = AnimatorControllerParameterType.Bool,
                     defaultBool = defaultValue,
                 });
             }
@@ -109,6 +109,7 @@ namespace HhotateA.AvatarModifyTools.Core
         {
             foreach (var p in origin.GetParameter())
             {
+                Debug.Log(p.name+":"+p.type);
                 if (p.type == AnimatorControllerParameterType.Float)
                 {
                     AddParam(p.name,p.defaultFloat,saved);
@@ -186,7 +187,7 @@ namespace HhotateA.AvatarModifyTools.Core
                     AssetDatabase.CreateAsset(asset,path);
                 }
             }
-
+            AssetDatabase.SaveAssets();
             return asset;
         }
 #endif

@@ -1,4 +1,4 @@
-﻿Shader "Unlit/DrawIn"
+﻿Shader "HhotateA/MagicDresser/Draw"
 {
     Properties
     {

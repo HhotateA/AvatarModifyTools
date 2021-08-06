@@ -32,18 +32,21 @@
               <e p="MenuCreater.cs" t="Include" />
               <e p="MeshCreater.cs" t="Include" />
               <e p="ParametersCreater.cs" t="Include" />
+              <e p="SetupVRChatLayers.cs" t="Include" />
               <e p="TextureCombinater.cs" t="Include" />
               <e p="TextureCompute.compute" t="Include" />
               <e p="TextureCreater.cs" t="Include" />
               <e p="TexturePainter.shader" t="Include" />
               <e p="TexturePreview.shader" t="Include" />
               <e p="TexturePreviewer.cs" t="Include" />
-              <e p="UIUtility.cs" t="Include" />
             </e>
           </e>
           <e p="AvatarPen" t="Include">
             <e p="Editor" t="Include">
               <e p="AvatarPenSetup.cs" t="Include" />
+            </e>
+            <e p="Originals" t="Include">
+              <e p="EnvironmentGUIDs.cs" t="Include" />
             </e>
           </e>
           <e p="EmojiParticle" t="Include">
@@ -51,10 +54,30 @@
               <e p="EmojiParticleSetup.cs" t="Include" />
               <e p="EmojiSaveData.cs" t="Include" />
             </e>
+            <e p="Originals" t="Include">
+              <e p="EnvironmentGUIDs.cs" t="Include" />
+            </e>
+          </e>
+          <e p="ItemPickup" t="Include">
+            <e p="Editor" t="Include">
+              <e p="ItemPickupSetup.cs" t="Include" />
+            </e>
+            <e p="Icons" t="Include">
+              <e p="EnvironmentGUIDs.cs" t="Include" />
+            </e>
           </e>
           <e p="MagicInventory" t="Include">
             <e p="Editor" t="Include">
-              <e p="MagicInventorySetup.cs" t="Include" />
+              <e p="MagicDresserSaveData.cs" t="Include" />
+              <e p="MagicDresserSetup.cs" t="Include" />
+            </e>
+            <e p="Shader" t="Include">
+              <e p="Disolve.shader" t="Include" />
+              <e p="Draw.shader" t="Include" />
+              <e p="EnvironmentGUIDs.cs" t="Include" />
+              <e p="Geom.shader" t="Include" />
+              <e p="geometry.shader" t="Include" />
+              <e p="geometry2.shader" t="Include" />
             </e>
           </e>
           <e p="MeshModifyTool" t="Include">
@@ -64,6 +87,7 @@
             </e>
             <e p="Material" t="Include">
               <e p="Decryption.shader" t="Include" />
+              <e p="EnvironmentGUIDs.cs" t="Include" />
               <e p="Keys.cginc" t="Include" />
               <e p="WireFrame.shader" t="Include" />
             </e>
@@ -72,11 +96,17 @@
             <e p="Editor" t="Include">
               <e p="TailMoverSetup.cs" t="Include" />
             </e>
+            <e p="Icons" t="Include">
+              <e p="EnvironmentGUIDs.cs" t="Include" />
+            </e>
           </e>
           <e p="TextureModifyTool" t="Include">
             <e p="Editor" t="Include">
               <e p="LayersSaveData.cs" t="Include" />
               <e p="TextureModifyTool.cs" t="Include" />
+            </e>
+            <e p="Material" t="Include">
+              <e p="EnvironmentGUIDs.cs" t="Include" />
             </e>
           </e>
         </e>
@@ -90,6 +120,8 @@
             </e>
             <e p="Shader" t="Include">
               <e p="README.txt" t="Include" />
+              <e p="README_en.txt" t="Include" />
+              <e p="README_ja.txt" t="Include" />
               <e p="Tess" t="Include">
                 <e p="Toon_DoubleShadeWithFeather_Clipping_Tess.shader" t="Include" />
                 <e p="Toon_DoubleShadeWithFeather_Clipping_Tess_StencilMask.shader" t="Include" />
@@ -151,6 +183,7 @@
               </e>
               <e p="Toon_DoubleShadeWithFeather.shader" t="Include" />
               <e p="Toon_DoubleShadeWithFeather_Clipping.shader" t="Include" />
+              <e p="Toon_DoubleShadeWithFeather_Clipping_OnlyColor.shader" t="Include" />
               <e p="Toon_DoubleShadeWithFeather_Clipping_StencilMask.shader" t="Include" />
               <e p="Toon_DoubleShadeWithFeather_Clipping_StencilOut.shader" t="Include" />
               <e p="Toon_DoubleShadeWithFeather_Mobile.shader" t="Include" />
@@ -160,6 +193,7 @@
               <e p="Toon_DoubleShadeWithFeather_Mobile_StencilOut.shader" t="Include" />
               <e p="Toon_DoubleShadeWithFeather_Mobile_TransClipping.shader" t="Include" />
               <e p="Toon_DoubleShadeWithFeather_Mobile_TransClipping_StencilMask.shader" t="Include" />
+              <e p="Toon_DoubleShadeWithFeather_Mobile_TransClipping_StencilOut.shader" t="Include" />
               <e p="Toon_DoubleShadeWithFeather_StencilMask.shader" t="Include" />
               <e p="Toon_DoubleShadeWithFeather_StencilOut.shader" t="Include" />
               <e p="Toon_DoubleShadeWithFeather_TransClipping.shader" t="Include" />
@@ -186,6 +220,7 @@
               <e p="Toon_ShadingGradeMap_TransClipping_StencilOut.shader" t="Include" />
               <e p="ToonColor_DoubleShadeWithFeather.shader" t="Include" />
               <e p="ToonColor_DoubleShadeWithFeather_Clipping.shader" t="Include" />
+              <e p="ToonColor_DoubleShadeWithFeather_Clipping_OnlyColor.shader" t="Include" />
               <e p="ToonColor_DoubleShadeWithFeather_Clipping_StencilMask.shader" t="Include" />
               <e p="ToonColor_DoubleShadeWithFeather_Clipping_StencilOut.shader" t="Include" />
               <e p="ToonColor_DoubleShadeWithFeather_StencilMask.shader" t="Include" />
@@ -226,43 +261,6 @@
               <e p="LyumaAv3Menu.cs" t="Include" />
               <e p="LyumaAv3Runtime.cs" t="Include" />
             </e>
-          </e>
-        </e>
-        <e p="Snail" t="Include">
-          <e p="Marker" t="Include">
-            <e p="ExampleMaterials" t="Include">
-              <e p="Marker.shader" t="Include" />
-            </e>
-            <e p="Marker3.0" t="Include">
-              <e p="AnimationGenerator" t="Include">
-                <e p="Editor" t="Include">
-                  <e p="SnailMarker3AnimationCreatorEditor.cs" t="Include" />
-                </e>
-                <e p="SnailMarker3AnimationCreator.cs" t="Include" />
-              </e>
-            </e>
-          </e>
-        </e>
-        <e p="Sunao Shader" t="Include">
-          <e p="Editor" t="Include">
-            <e p="SunaoShaderGUI.cs" t="Include" />
-          </e>
-          <e p="README.txt" t="Include" />
-          <e p="Shader" t="Include">
-            <e p="Cginc" t="Include">
-              <e p="SunaoShader_Core.cginc" t="Include" />
-              <e p="SunaoShader_Frag.cginc" t="Include" />
-              <e p="SunaoShader_Function.cginc" t="Include" />
-              <e p="SunaoShader_OL.cginc" t="Include" />
-              <e p="SunaoShader_SC.cginc" t="Include" />
-              <e p="SunaoShader_Vert.cginc" t="Include" />
-            </e>
-            <e p="Sunao_Shader_Cutout.shader" t="Include" />
-            <e p="Sunao_Shader_Cutout_SO.shader" t="Include" />
-            <e p="Sunao_Shader_Opaque.shader" t="Include" />
-            <e p="Sunao_Shader_Opaque_SO.shader" t="Include" />
-            <e p="Sunao_Shader_Transparent.shader" t="Include" />
-            <e p="Sunao_Shader_Transparent_SO.shader" t="Include" />
           </e>
         </e>
         <e p="VRC_DrawEfect" t="Include">
@@ -351,6 +349,7 @@
                   <e p="VRCSdkControlPanelSettings.cs" t="Include" />
                 </e>
                 <e p="EnvConfig.cs" t="Include" />
+                <e p="FixAnimatorControllers.cs" t="Include" />
                 <e p="HDRColorFixerUtility.cs" t="Include" />
                 <e p="SDK3Compatibility" t="Include">
                   <e p="VRCSdk3Analysis.cs" t="Include" />
@@ -379,6 +378,7 @@
                 <e p="AudioManagerSettings.cs" t="Include" />
                 <e p="CommunityLabsConstants.cs" t="Include" />
                 <e p="ContentUploadedDialog.cs" t="Include" />
+                <e p="GameViewMethods.cs" t="Include" />
                 <e p="MaterialFallback" t="Include">
                   <e p="FallbackMaterialCache.cs" t="Include" />
                 </e>
