@@ -26,6 +26,9 @@ namespace HhotateA.AvatarModifyTools.AvatarPen
         GUIStyle msgStyle = new GUIStyle(GUIStyle.none);
         private bool isLeftHand = false;
 
+        private bool writeDefault = false;
+        private bool notRecommended = false;
+
         private void OnGUI()
         {
 #if VRC_SDK_VRCSDK3
@@ -61,6 +64,13 @@ namespace HhotateA.AvatarModifyTools.AvatarPen
             EditorGUILayout.Space();
             isLeftHand = EditorGUILayout.Toggle("Left Hand", isLeftHand);
             EditorGUILayout.Space();
+            notRecommended = EditorGUILayout.Foldout(notRecommended,"VRChat Not Recommended");
+            if (notRecommended)
+            {
+                writeDefault = EditorGUILayout.Toggle("Write Default", writeDefault); 
+            }
+            EditorGUILayout.Space();
+            EditorGUILayout.Space();
 
             using (new EditorGUI.DisabledScope(avatar==null))
             {
@@ -71,6 +81,10 @@ namespace HhotateA.AvatarModifyTools.AvatarPen
                         var asset = AssetUtility.LoadAssetAtGuid<AvatarModifyData>(
                             isLeftHand ? EnvironmentGUIDs.penModifyData_Left : EnvironmentGUIDs.penModifyData_right);
                         var mod = new AvatarModifyTool(avatar);
+                        if (writeDefault)
+                        {
+                            mod.WriteDefaultOverride = true;
+                        }
                         mod.ModifyAvatar(asset);
                         msgStyle.normal = new GUIStyleState()
                         {

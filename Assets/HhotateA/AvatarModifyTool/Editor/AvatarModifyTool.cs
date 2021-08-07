@@ -88,6 +88,7 @@ namespace HhotateA.AvatarModifyTools.Core
 #else
         private MonoBehaviour avatar;
 #endif
+        public bool? WriteDefaultOverride { get; set; } = null;
         private string exportDir = "Assets/";
         private Dictionary<string, string> animRepathList = new Dictionary<string, string>();
         public void ModifyAvatar(AvatarModifyData assets,bool keepOriginalAsset = true)
@@ -643,7 +644,7 @@ namespace HhotateA.AvatarModifyTools.Core
                 tag = origin.tag,
                 timeParameter = origin.timeParameter,
                 timeParameterActive = origin.timeParameterActive,
-                writeDefaultValues = origin.writeDefaultValues
+                writeDefaultValues = WriteDefaultOverride ?? origin.writeDefaultValues
             };
             return clone;
         }

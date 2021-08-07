@@ -150,6 +150,11 @@ namespace HhotateA.AvatarModifyTools.Core
             
             if (objectReferenceKeyframes.ContainsKey(target))
             {
+                // 時間重複したキーフレーム防止策
+                while (objectReferenceKeyframes[target].Any(f => Mathf.Abs(f.time - time)<1f/60f))
+                {
+                    frame.time += 1f / 60f;
+                }
                 objectReferenceKeyframes[target].Add(frame);
             }
             else
@@ -250,6 +255,11 @@ namespace HhotateA.AvatarModifyTools.Core
         {
             if (keyframesList.ContainsKey(target))
             {
+                // 時間重複したキーフレーム防止策
+                while (keyframesList[target].Any(f => Mathf.Abs(f.time - frame.time) < 1f / 60f))
+                {
+                    frame.time += 1f / 60f;
+                }
                 keyframesList[target].Add(frame);
             }
             else

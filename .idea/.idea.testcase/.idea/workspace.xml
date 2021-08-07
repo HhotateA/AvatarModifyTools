@@ -24,10 +24,8 @@
   <component name="ChangeListManager">
     <list default="true" id="6566c45e-085d-4aef-91a3-386a30df6839" name="デフォルト変更リスト" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/.idea.testcase/.idea/contentModel.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.testcase/.idea/contentModel.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/.idea.testcase/.idea/indexLayout.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.testcase/.idea/indexLayout.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/.idea.testcase/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.testcase/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Packages/manifest.json" beforeDir="false" afterPath="$PROJECT_DIR$/Packages/manifest.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/b.unity" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/b.unity" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -46,7 +44,6 @@
     <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/5D7640E5-0DB1-40A8-98E7-D57A3BB8CDB7/d2/64e03fae/Motion.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/HhotateA/AvatarModifyTool/Editor/EnvironmentVariable.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/HhotateA/AvatarModifyTool/Editor/MeshCreater.cs" root0="FORCE_HIGHLIGHTING" />
-    <setting file="file://$PROJECT_DIR$/Assets/HhotateA/MagicInventory/Shader/EnvironmentGUIDs.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/5AC29B9D-5193-4DD3-9A8D-CE946B9985A7/e3/f6fce1c9/Mesh.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/../testcase3/Assets/HhotateA/TextureModifyTool/Editor/TexturePainter.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/../testcase3/Assets/HhotateA/TextureModifyTool/Editor/TextureModifyTool.cs" root0="SKIP_HIGHLIGHTING" />
@@ -66,6 +63,7 @@
     <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/5D4D1F79-3362-4AE4-A275-08112585C930/4f/34acd019/VRCAvatarDescriptor.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/5AC29B9D-5193-4DD3-9A8D-CE946B9985A7/86/53921bd9/Transform.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/C75B8615-2BF2-49A1-B14C-FD41F05546EB/54/d7b4187f/ImageConversion.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/3D9F46AC-475F-4FA9-A3B7-1BACF80244A8/04/84a62680/EditorGUILayout.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/5AC29B9D-5193-4DD3-9A8D-CE946B9985A7/00/99f30576/CustomRenderTexture.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/5D4D1F79-3362-4AE4-A275-08112585C930/83/9d85b51b/VRCExpressionParameters.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/706402A2-2450-49D8-89FE-6CC92A86DC69/df/cea91a6b/TextureImporter.cs" root0="SKIP_HIGHLIGHTING" />
@@ -78,13 +76,10 @@
     <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/5D7640E5-0DB1-40A8-98E7-D57A3BB8CDB7/c6/7a4c2a7d/AnimatorControllerParameter.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/5AC29B9D-5193-4DD3-9A8D-CE946B9985A7/88/33504e81/Component.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/HhotateA/AvatarModifyTool/Editor/AvatarMonitor.cs" root0="FORCE_HIGHLIGHTING" />
-    <setting file="file://$PROJECT_DIR$/Assets/HhotateA/ItemPickup/Icons/EnvironmentGUIDs.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/706402A2-2450-49D8-89FE-6CC92A86DC69/df/8e90aded/AnimatorCondition.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/242531B3-D7D7-4252-86FA-13A3E999EEA8/ca/80fd500f/EventType.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/5AC29B9D-5193-4DD3-9A8D-CE946B9985A7/e9/72925d47/Material.cs" root0="SKIP_HIGHLIGHTING" />
-    <setting file="file://$PROJECT_DIR$/Assets/HhotateA/TextureModifyTool/Material/EnvironmentGUIDs.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/5AC29B9D-5193-4DD3-9A8D-CE946B9985A7/57/1bf501ad/WeightedMode.cs" root0="SKIP_HIGHLIGHTING" />
-    <setting file="file://$PROJECT_DIR$/Assets/HhotateA/EmojiParticle/Originals/EnvironmentGUIDs.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/HhotateA/EmojiParticle/Editor/EmojiParticleSetup.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/242531B3-D7D7-4252-86FA-13A3E999EEA8/b3/1112f970/GUILayout.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/706402A2-2450-49D8-89FE-6CC92A86DC69/a4/d6e68cab/OnOpenAssetAttribute.cs" root0="SKIP_HIGHLIGHTING" />
@@ -94,26 +89,12 @@
     <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/5AC29B9D-5193-4DD3-9A8D-CE946B9985A7/9c/6426858b/Object.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/5AC29B9D-5193-4DD3-9A8D-CE946B9985A7/4b/a85eb3d7/MeshFilter.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/HhotateA/MagicInventory/Editor/MagicDresserSetup.cs" root0="FORCE_HIGHLIGHTING" />
-    <setting file="file://$PROJECT_DIR$/Assets/HhotateA/AvatarPen/Originals/EnvironmentGUIDs.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/HhotateA/MagicInventory/Editor/MagicDresserSaveData.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/5AC29B9D-5193-4DD3-9A8D-CE946B9985A7/51/b337196e/SkinnedMeshRenderer.cs" root0="SKIP_HIGHLIGHTING" />
   </component>
   <component name="IdeDocumentHistory">
     <option name="CHANGED_PATHS">
       <list>
-        <option value="$PROJECT_DIR$/Assets/HhotateA/AvatarModifyTool/Editor/UIUtile.cs" />
-        <option value="$PROJECT_DIR$/Assets/HhotateA/MagicInventory/Editor/MagicInventory.cs" />
-        <option value="$PROJECT_DIR$/Assets/New Animation.anim" />
-        <option value="$PROJECT_DIR$/Assets/aaa 3.anim" />
-        <option value="$PROJECT_DIR$/Assets/HhotateA/EmojiParticle/Editor/EnvironmentGUIDs.cs" />
-        <option value="$PROJECT_DIR$/Assets/HhotateA/MeshModifyTool/Editor/EnvironmentGUIDs.cs" />
-        <option value="$PROJECT_DIR$/Assets/HhotateA/AvatarPen/Editor/EnvironmentGUIDs.cs" />
-        <option value="$PROJECT_DIR$/Assets/HhotateA/EmojiParticle/Originals/EnvironmentGUIDs.cs" />
-        <option value="$PROJECT_DIR$/Assets/HhotateA/AvatarModifyTool/Editor/UIUtility.cs" />
-        <option value="$PROJECT_DIR$/Assets/HhotateA/TextureModifyTool/Material/EnvironmentGUIDs.cs" />
-        <option value="$PROJECT_DIR$/Assets/HhotateA/MeshModifyTool/Material/EnvironmentGUIDs.cs" />
-        <option value="$PROJECT_DIR$/Assets/HhotateA/TailMoverSetup/Editor/EnvironmentGUIDs.cs" />
-        <option value="$PROJECT_DIR$/Assets/HhotateA/AvatarPen/Originals/EnvironmentGUIDs.cs" />
         <option value="$PROJECT_DIR$/Assets/HhotateA/AvatarModifyTool/Editor/TextureCombinater.cs" />
         <option value="$PROJECT_DIR$/Assets/HhotateA/AvatarModifyTool/Editor/AvatarModifyData.cs" />
         <option value="$PROJECT_DIR$/Assets/HhotateA/TextureModifyTool/Readme.md" />
@@ -125,9 +106,7 @@
         <option value="$PROJECT_DIR$/README.md" />
         <option value="$PROJECT_DIR$/Assets/HhotateA/EmojiParticle/Editor/EmojiSaveData.cs" />
         <option value="$PROJECT_DIR$/Assets/HhotateA/TailMoverSetup/Readme.md" />
-        <option value="$PROJECT_DIR$/Assets/HhotateA/AvatarModifyTool/Editor/MenuCreater.cs" />
         <option value="$PROJECT_DIR$/Assets/HhotateA/MagicInventory/Editor/MagicInventorySetup.cs" />
-        <option value="$PROJECT_DIR$/Assets/HhotateA/AvatarModifyTool/Editor/ParametersCreater.cs" />
         <option value="$PROJECT_DIR$/Assets/HhotateA/MagicInventory/Shader/DrawIn.shader" />
         <option value="$PROJECT_DIR$/Assets/HhotateA/AvatarModifyTool/Editor/SetupVRChatLayers.cs" />
         <option value="$PROJECT_DIR$/Assets/HhotateA/TextureModifyTool/Editor/TextureModifyTool.cs" />
@@ -143,15 +122,30 @@
         <option value="$PROJECT_DIR$/Assets/HhotateA/MagicInventory/Shader/disolve2.shader" />
         <option value="$PROJECT_DIR$/Assets/HhotateA/MagicInventory/Shader/Disolve.shader" />
         <option value="$PROJECT_DIR$/Assets/HhotateA/MagicInventory/Shader/Disolve2.shader" />
-        <option value="$PROJECT_DIR$/Assets/HhotateA/MagicInventory/Editor/MagicDresserSaveData.cs" />
-        <option value="$PROJECT_DIR$/Assets/HhotateA/MagicInventory/Editor/MagicDresserSetup.cs" />
         <option value="$PROJECT_DIR$/Assets/HhotateA/ItemPickup/Editor/ItemPickup.cs" />
         <option value="$PROJECT_DIR$/Assets/HhotateA/AvatarModifyTool/Editor/EnvironmentVariable.cs" />
+        <option value="$PROJECT_DIR$/Assets/HhotateA/ItemPickup/Icons/EnvironmentGUIDs.cs" />
+        <option value="$PROJECT_DIR$/Assets/HhotateA/AvatarModifyTool/Editor/AvatarModifyTool.cs" />
         <option value="$PROJECT_DIR$/Assets/HhotateA/AvatarModifyTool/Editor/AnimationClipCreator.cs" />
         <option value="$PROJECT_DIR$/Assets/HhotateA/AvatarModifyTool/Editor/AnimatorControllerCreator.cs" />
-        <option value="$PROJECT_DIR$/Assets/HhotateA/AvatarModifyTool/Editor/AvatarModifyTool.cs" />
+        <option value="$PROJECT_DIR$/Assets/HhotateA/AvatarModifyTool/Editor/MenuCreater.cs" />
+        <option value="$PROJECT_DIR$/Assets/HhotateA/AvatarModifyTool/Editor/ParametersCreater.cs" />
         <option value="$PROJECT_DIR$/Assets/HhotateA/ItemPickup/Editor/ItemPickupSetup.cs" />
-        <option value="$PROJECT_DIR$/Assets/HhotateA/ItemPickup/Icons/EnvironmentGUIDs.cs" />
+        <option value="$PROJECT_DIR$/Assets/HhotateA/MagicInventory/Shaders/geometry2.shader" />
+        <option value="$PROJECT_DIR$/Assets/HhotateA/MagicInventory/Shaders/geometry3.shader" />
+        <option value="$PROJECT_DIR$/Assets/VRC_DrawEfect/random/Flat Lit Toon Random.shader" />
+        <option value="$PROJECT_DIR$/Assets/HhotateA/MagicInventory/Shaders/Cizerystalize.shader" />
+        <option value="$PROJECT_DIR$/Assets/HhotateA/MagicInventory/Shaders/Geom.shader" />
+        <option value="$PROJECT_DIR$/Assets/HhotateA/MagicInventory/Shaders/Mosaic.shader" />
+        <option value="$PROJECT_DIR$/Assets/HhotateA/MagicInventory/Shaders/Polygon.shader" />
+        <option value="$PROJECT_DIR$/Assets/HhotateA/MagicInventory/Shaders/Draw.shader" />
+        <option value="$PROJECT_DIR$/Assets/HhotateA/MagicInventory/Shaders/Explosion.shader" />
+        <option value="$PROJECT_DIR$/Assets/HhotateA/MagicInventory/Shaders/Crystallize.shader" />
+        <option value="$PROJECT_DIR$/Assets/HhotateA/MagicInventory/Shaders/Disolve.shader" />
+        <option value="$PROJECT_DIR$/Assets/HhotateA/MagicInventory/Shaders/Feed.shader" />
+        <option value="$PROJECT_DIR$/Assets/HhotateA/MagicInventory/Editor/EnvironmentGUIDs.cs" />
+        <option value="$PROJECT_DIR$/Assets/HhotateA/MagicInventory/Editor/MagicDresserSaveData.cs" />
+        <option value="$PROJECT_DIR$/Assets/HhotateA/MagicInventory/Editor/MagicDresserSetup.cs" />
       </list>
     </option>
   </component>
@@ -247,7 +241,7 @@
       <workItem from="1626148890775" duration="48090000" />
       <workItem from="1626338556761" duration="191015000" />
       <workItem from="1626851309408" duration="149020000" />
-      <workItem from="1627517519534" duration="260263000" />
+      <workItem from="1627517519534" duration="304656000" />
     </task>
     <servers />
   </component>
@@ -306,12 +300,13 @@
       <screen x="0" y="0" width="3840" height="2120" />
     </state>
     <state x="945" y="507" width="1767" height="1567" key="dock-window-2/0.0.3840.2120/3840.-416.1440.2520/-1920.0.1920.1040/0.-2160.3840.2120@0.0.3840.2120" timestamp="1628201634623" />
-    <state x="1747" y="737" width="672" height="678" key="search.everywhere.popup" timestamp="1627649731494">
+    <state x="1747" y="737" width="672" height="678" key="search.everywhere.popup" timestamp="1628256177605">
       <screen x="0" y="0" width="3840" height="2120" />
     </state>
     <state x="1747" y="737" width="672" height="678" key="search.everywhere.popup/-1920.20.1920.1040/5280.1080.1920.1040/0.0.3840.2120/3840.-415.1440.2520@0.0.3840.2120" timestamp="1623150090920" />
     <state x="1747" y="737" width="672" height="678" key="search.everywhere.popup/0.0.3840.2120/-1920.0.1920.1040/0.-2160.3840.2120/3840.-416.1440.2520@0.0.3840.2120" timestamp="1627212349705" />
     <state x="1747" y="737" width="672" height="678" key="search.everywhere.popup/0.0.3840.2120/0.-2160.3840.2120/-1920.0.1920.1040/3840.-416.1440.2520@0.0.3840.2120" timestamp="1627649731494" />
     <state x="1747" y="737" width="672" height="678" key="search.everywhere.popup/0.0.3840.2120/0.-2160.3840.2120/-1929.1080.1920.1040/-1920.0.1920.1040/3840.-416.1440.2520@0.0.3840.2120" timestamp="1625222918845" />
+    <state x="1747" y="737" width="672" height="678" key="search.everywhere.popup/0.0.3840.2120/3840.-416.1440.2520/-1920.0.1920.1040/0.-2160.3840.2120@0.0.3840.2120" timestamp="1628256177605" />
   </component>
 </project>

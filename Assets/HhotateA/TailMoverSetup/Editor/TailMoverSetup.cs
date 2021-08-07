@@ -91,6 +91,9 @@ namespace HhotateA.AvatarModifyTools.TailMover
         private bool enableTestRotY = false;
         private float testRotX = 0f;
         private float testRotY = 0f;
+        
+        private bool writeDefault = false;
+        private bool notRecommended = false;
 
         private void OnEnable()
         {
@@ -355,6 +358,13 @@ namespace HhotateA.AvatarModifyTools.TailMover
                     }
                 }
                 
+                EditorGUILayout.Space();
+                notRecommended = EditorGUILayout.Foldout(notRecommended,"VRChat Not Recommended");
+                if (notRecommended)
+                {
+                    writeDefault = EditorGUILayout.Toggle("Write Default", writeDefault); 
+                }
+                EditorGUILayout.Space();
                 EditorGUILayout.Space();
 
                 if (GUILayout.Button("Save RadialControll"))
@@ -682,6 +692,10 @@ namespace HhotateA.AvatarModifyTools.TailMover
                 newAssets.parameter = param.CreateAsset(path, true);
                 newAssets.menu = menu.CreateAsset(path,true);
             }
+            if (writeDefault)
+            {
+                am.WriteDefaultOverride = true;
+            }
             am.ModifyAvatar(newAssets,false);
 #else
 #endif
@@ -777,6 +791,10 @@ namespace HhotateA.AvatarModifyTools.TailMover
                 }
                 newAssets.parameter = param.CreateAsset(path, true);
                 newAssets.menu = menu.CreateAsset(path,true);
+            }
+            if (writeDefault)
+            {
+                am.WriteDefaultOverride = true;
             }
             am.ModifyAvatar(newAssets,false);
 #endif

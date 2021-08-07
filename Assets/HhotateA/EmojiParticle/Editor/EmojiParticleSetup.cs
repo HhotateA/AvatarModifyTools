@@ -70,6 +70,9 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
         private Target target;
         ReorderableList emojiReorderableList;
 
+        private bool writeDefault = false;
+        private bool notRecommended = false;
+
         enum Target
         {
             Hip,
@@ -92,7 +95,7 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
             titleStyle.alignment = TextAnchor.MiddleCenter;
             titleStyle.fontSize = 15;
             titleStyle.fontStyle = FontStyle.Bold;
-            
+
             GUIStyle instructions = new GUIStyle(GUI.skin.label);
             instructions.fontSize = 10;
             instructions.wordWrap = true;
@@ -120,7 +123,6 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
                 EditorGUILayout.LabelField(data.name,titleStyle);
             }
 
-            
             EditorGUILayout.LabelField("シーン上のアバターをドラッグ＆ドロップ");
 
             EditorGUILayout.BeginHorizontal();
@@ -137,6 +139,15 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
             EditorGUILayout.EndHorizontal();
             
             emojiReorderableList.DoLayoutList();
+            
+            EditorGUILayout.Space();
+            notRecommended = EditorGUILayout.Foldout(notRecommended,"VRChat Not Recommended");
+            if (notRecommended)
+            {
+                writeDefault = EditorGUILayout.Toggle("Write Default", writeDefault); 
+            }
+            EditorGUILayout.Space();
+            EditorGUILayout.Space();
 
             using (new EditorGUI.DisabledScope(avatar==null))
             {
@@ -164,6 +175,10 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
                     var newAssets = Setup(asset);
 
                     var mod = new AvatarModifyTool(avatar,AssetDatabase.GetAssetPath(data));
+                    if (writeDefault)
+                    {
+                        mod.WriteDefaultOverride = true;
+                    }
                     mod.ModifyAvatar(newAssets);
                     
                     // ゴミ処理忘れずに

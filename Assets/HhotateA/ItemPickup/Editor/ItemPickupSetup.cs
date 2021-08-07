@@ -37,6 +37,8 @@ namespace HhotateA.AvatarModifyTools.ItemPickup
 
         private bool constraintMode = true;
         private bool deleateObject = true;
+        private bool writeDefault = false;
+        private bool notRecommended = false;
 
         private void OnEnable()
         {
@@ -110,6 +112,12 @@ namespace HhotateA.AvatarModifyTools.ItemPickup
                 }
             }
 
+            EditorGUILayout.Space();
+            notRecommended = EditorGUILayout.Foldout(notRecommended,"VRChat Not Recommended");
+            if (notRecommended)
+            {
+                writeDefault = EditorGUILayout.Toggle("Write Default", writeDefault); 
+            }
             EditorGUILayout.Space();
             EditorGUILayout.Space();
 
@@ -349,6 +357,10 @@ namespace HhotateA.AvatarModifyTools.ItemPickup
                 assets.fx_controller = c.Create();
                 assets.parameter = p.CreateAsset(path, true);
                 assets.menu = mp.CreateAsset(path, true);
+            }
+            if (writeDefault)
+            {
+                am.WriteDefaultOverride = true;
             }
             am.ModifyAvatar(assets,false);
 #endif
