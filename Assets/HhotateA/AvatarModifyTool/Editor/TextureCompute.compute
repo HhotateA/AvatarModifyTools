@@ -1,4 +1,13 @@
-﻿#pragma kernel DrawUV
+﻿/*
+AvatarModifyTools
+https://github.com/HhotateA/AvatarModifyTools
+
+Copyright (c) 2021 @HhotateA_xR
+
+This software is released under the MIT License.
+http://opensource.org/licenses/mit-license.php
+*/
+#pragma kernel DrawUV
 #pragma kernel ClearColorGradient
 #pragma kernel DrawPoint
 #pragma kernel DrawLine

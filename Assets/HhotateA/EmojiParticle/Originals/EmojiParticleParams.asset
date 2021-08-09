@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: EmojiParticleParams
   m_EditorClassIdentifier: 
   parameters:
-  - name: EmojiParticle
+  - name: 
     valueType: 0
     saved: 0
     defaultValue: 0

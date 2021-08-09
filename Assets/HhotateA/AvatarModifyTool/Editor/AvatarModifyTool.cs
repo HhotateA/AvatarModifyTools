@@ -1,4 +1,13 @@
-﻿using System;
+﻿/*
+AvatarModifyTools
+https://github.com/HhotateA/AvatarModifyTools
+
+Copyright (c) 2021 @HhotateA_xR
+
+This software is released under the MIT License.
+http://opensource.org/licenses/mit-license.php
+*/
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
@@ -85,14 +94,12 @@ namespace HhotateA.AvatarModifyTools.Core
             return i;
         }
         
-#else
-        private MonoBehaviour avatar;
-#endif
         public bool? WriteDefaultOverride { get; set; } = null;
         private string exportDir = "Assets/";
         private Dictionary<string, string> animRepathList = new Dictionary<string, string>();
-        public void ModifyAvatar(AvatarModifyData assets,bool keepOriginalAsset = true)
+        public void ModifyAvatar(AvatarModifyData assets,bool keepOriginalAsset = true,bool keepOldAsset = false)
         {
+            if(!keepOldAsset) RevertAvatar(assets);
             if (avatar != null)
             {
                 animRepathList = new Dictionary<string,string>();
@@ -104,7 +111,6 @@ namespace HhotateA.AvatarModifyTools.Core
                         animRepathList.Add(from,to);
                     }
                 }
-#if VRC_SDK_VRCSDK3
                 ComputeLayersOffset(assets);
                 ModifyAvatarAnimatorController(VRCAvatarDescriptor.AnimLayerType.Base,assets.locomotion_controller);
                 ModifyAvatarAnimatorController(VRCAvatarDescriptor.AnimLayerType.Additive,assets.idle_controller);
@@ -114,7 +120,6 @@ namespace HhotateA.AvatarModifyTools.Core
                 ModifyExpressionParameter(assets.parameter,keepOriginalAsset);
                 ModifyExpressionMenu(assets.menu,false,keepOriginalAsset);
                 AssetDatabase.SaveAssets();
-#endif
             }
             else
             {
@@ -122,7 +127,32 @@ namespace HhotateA.AvatarModifyTools.Core
             }
         }
 
-#if VRC_SDK_VRCSDK3
+        public void RevertAvatar(AvatarModifyData assets)
+        {
+            if (avatar != null)
+            {
+                animRepathList = new Dictionary<string,string>();
+                if (assets.items != null)
+                {
+                    foreach (var item in assets.items)
+                    {
+                        RevertGameObject(item.prefab,item.target);
+                    }
+                }
+                RevertAnimator(VRCAvatarDescriptor.AnimLayerType.Base,assets.locomotion_controller);
+                RevertAnimator(VRCAvatarDescriptor.AnimLayerType.Additive,assets.idle_controller);
+                RevertAnimator(VRCAvatarDescriptor.AnimLayerType.Gesture,assets.gesture_controller);
+                RevertAnimator(VRCAvatarDescriptor.AnimLayerType.Action,assets.action_controller);
+                RevertAnimator(VRCAvatarDescriptor.AnimLayerType.FX,assets.fx_controller);
+                RevertExpressionParameter(assets.parameter);
+                RevertExpressionMenu(assets.menu);
+                AssetDatabase.SaveAssets();
+            }
+            else
+            {
+                throw new NullReferenceException("VRCAvatarDescriptor : avatar not found");
+            }
+        }
 
         void ModifyAvatarAnimatorController(
             VRCAvatarDescriptor.AnimLayerType type,
@@ -231,7 +261,6 @@ namespace HhotateA.AvatarModifyTools.Core
 
             return false;
         }
-#endif
 
         T SafeCopy<T>(T obj) where T : Object
         {
@@ -408,28 +437,6 @@ namespace HhotateA.AvatarModifyTools.Core
                 }
             }
             return origin;
-            /*if (origin == null) return null;
-            var clone = new AvatarMask()
-            {
-                name = origin.name,
-                transformCount = origin.transformCount
-            };
-            for (int i = 0; i < origin.transformCount; i++)
-            {
-                clone.SetTransformPath(i,
-                    origin.GetTransformPath(i));
-                clone.SetTransformActive(i,
-                    origin.GetTransformActive(i));
-            }
-            foreach (AvatarMaskBodyPart p in Enum.GetValues(typeof(AvatarMaskBodyPart)))
-            {
-                if (p != AvatarMaskBodyPart.LastBodyPart)
-                {
-                    clone.SetHumanoidBodyPartActive(p,
-                        origin.GetHumanoidBodyPartActive(p));
-                }
-            }
-            return clone;*/
         }
 
         List<Transform> Childs(Transform p,bool root = false)
@@ -696,7 +703,6 @@ namespace HhotateA.AvatarModifyTools.Core
             var behaviours = new List<StateMachineBehaviour>();
             foreach (var behaviour in origin.behaviours)
             {
-#if VRC_SDK_VRCSDK3
                 if (behaviour.GetType() == typeof(VRCAnimatorLayerControl))
                 {
                     VRCAnimatorLayerControl o = behaviour as VRCAnimatorLayerControl;
@@ -714,10 +720,6 @@ namespace HhotateA.AvatarModifyTools.Core
                     var c = ScriptableObject.Instantiate(behaviour);
                     behaviours.Add(c);
                 }
-#else
-                var c = ScriptableObject.Instantiate(behaviour);
-                behaviours.Add(c);
-#endif
             }
 
             clone.behaviours = behaviours.ToArray();
@@ -742,12 +744,10 @@ namespace HhotateA.AvatarModifyTools.Core
                 {
                     AssetDatabase.AddObjectToAsset(t,path);
                 }
-#if VRC_SDK_VRCSDK3
                 foreach (var b in s.state.behaviours)
                 {
                     AssetDatabase.AddObjectToAsset(b,path);
                 }
-#endif
             }
 
             foreach (var t in machine.entryTransitions)
@@ -761,12 +761,10 @@ namespace HhotateA.AvatarModifyTools.Core
             foreach (var m in machine.stateMachines)
             {
                 SaveStateMachine(m.stateMachine,path);
-#if VRC_SDK_VRCSDK3
                 foreach (var b in m.stateMachine.behaviours)
                 {
                     AssetDatabase.AddObjectToAsset(b,path);
                 }
-#endif
             }
         }
         
@@ -804,7 +802,6 @@ namespace HhotateA.AvatarModifyTools.Core
             }
         }
 
-#if VRC_SDK_VRCSDK3
         /// <summary>
         /// ExpressionParametersの安全な結合
         /// </summary>
@@ -925,7 +922,134 @@ namespace HhotateA.AvatarModifyTools.Core
                 }
             }
         }
-#endif
+
+        void RevertAnimator(
+            VRCAvatarDescriptor.AnimLayerType type,
+            AnimatorController controller)
+        {
+            if(controller == null) return;
+            if(GetAvatarAnimatorControllerExists(type))
+            {
+                var current = GetAvatarAnimatorController(type);
+                if (controller == current) return;
+                var newLayers = new List<AnimatorControllerLayer>();
+                foreach (var layer in current.layers)
+                {
+                    if (controller.layers.Any(l =>
+                        (l.name == layer.name)))
+                    {
+                        
+                    }
+                    else
+                    {
+                        newLayers.Add(layer);
+                    }
+                }
+                current.layers = newLayers.ToArray();
+                EditorUtility.SetDirty(current);
+            }
+        }
+        
+        public void RevertAnimator(
+            VRCAvatarDescriptor.AnimLayerType type,
+            string layerWord)
+        {
+            if(String.IsNullOrWhiteSpace(layerWord)) return;
+            if(GetAvatarAnimatorControllerExists(type))
+            {
+                var current = GetAvatarAnimatorController(type);
+                var newLayers = new List<AnimatorControllerLayer>();
+                foreach (var layer in current.layers)
+                {
+                    if (layer.name.StartsWith(layerWord))
+                    {
+                        
+                    }
+                    else
+                    {
+                        newLayers.Add(layer);
+                    }
+                }
+                current.layers = newLayers.ToArray();
+                EditorUtility.SetDirty(current);
+            }
+        }
+        
+        void RevertExpressionParameter(VRCExpressionParameters parameters)
+        {
+            if(parameters == null) return;
+            if (GetExpressionParameterExist())
+            {
+                var current = GetExpressionParameter();
+                if (parameters == current)
+                {
+                    SetExpressionParameter(null);
+                }
+
+                var newParams = new List<VRCExpressionParameters.Parameter>();
+                foreach (var parameter in parameters.parameters)
+                {
+                    if (parameters.parameters.Any(p => (
+                        p.name == parameter.name &&
+                        p.valueType == parameter.valueType)))
+                    {
+                    }
+                    else
+                    {
+                        newParams.Add(parameter);
+                    }
+                }
+                current.parameters = newParams.ToArray();
+                EditorUtility.SetDirty(current);
+            }
+        }
+
+        void RevertExpressionMenu(VRCExpressionsMenu menus)
+        {
+            if (menus == null) return;
+            if (GetExpressionMenuExist())
+            {
+                var parentnmenu = GetExpressionMenu();
+                if (parentnmenu == menus)
+                {
+                    SetExpressionMenu(null);
+                }
+                RevertMenu(menus, parentnmenu);
+                EditorUtility.SetDirty(parentnmenu);
+            }
+        }
+
+        void RevertMenu(VRCExpressionsMenu menus, VRCExpressionsMenu parentnmenu)
+        {
+            if (menus == null) return;
+            if (parentnmenu == null) return;
+            var newControll = new List<VRCExpressionsMenu.Control>();
+            foreach (var controll in parentnmenu.controls)
+            {
+                if (menus.controls.Any(c => (
+                    c.name == controll.name &&
+                    c.icon == controll.icon &&
+                    c.type == controll.type &&
+                    c.parameter.name == controll.parameter.name)))
+                {
+                }
+                else
+                if (controll.name == "NextPage" &&
+                    controll.icon == AssetUtility.LoadAssetAtGuid<Texture2D>(EnvironmentVariable.arrowIcon) &&
+                    controll.type == VRCExpressionsMenu.Control.ControlType.SubMenu)
+                {
+                    if(controll.subMenu) RevertMenu(menus,controll.subMenu);
+                }
+                else
+                {
+                    newControll.Add(controll);
+                }
+            }
+            
+            parentnmenu.controls = newControll.ToList();
+            EditorUtility.SetDirty(parentnmenu);
+        }
+        
         /// <summary>
         /// prefabをボーン下にインスタンスする
         /// </summary>
@@ -936,11 +1060,6 @@ namespace HhotateA.AvatarModifyTools.Core
         {
             fromPath = "";
             toPath = "";
-            // 重複防止で同名オブジェクトを削除する
-            foreach (Transform child  in avatar.transform)
-            {
-                if(child.name == prefab.name) GameObject.DestroyImmediate(child.gameObject);
-            }
             // オブジェクトのインスタンシエイト
             var instance = GameObject.Instantiate(prefab, avatar.transform);
             instance.name = prefab.name;
@@ -977,15 +1096,40 @@ namespace HhotateA.AvatarModifyTools.Core
                     Transform bone = humanoid.GetBoneTransform(target);
                     if (bone)
                     {
-                        foreach (Transform child  in bone)
-                        {
-                            if(child.name == prefab.name) GameObject.DestroyImmediate(child.gameObject);
-                        }
                         instance.transform.SetParent(bone);
                         instance.transform.localPosition = new Vector3(0f,0f,0f);
                     }
                 }
                 toPath = GetRelativePath(instance.transform);
+            }
+        }
+        
+        void RevertGameObject(GameObject prefab, HumanBodyBones target = HumanBodyBones.Hips)
+        {
+            // オブジェクトのインスタンシエイト
+            var humanoid = avatar.GetComponent<Animator>();
+            var constraint = prefab.GetComponent<ParentConstraint>();
+            if (constraint)
+            { // コンストレイントでの設定
+                foreach (Transform child  in avatar.transform)
+                {
+                    if(child.name == prefab.name) GameObject.DestroyImmediate(child.gameObject);
+                }
+            }
+            else
+            if(humanoid)
+            { //ボーン差し替えでの設定
+                if (humanoid.isHuman)
+                {
+                    Transform bone = humanoid.GetBoneTransform(target);
+                    if (bone)
+                    {
+                        foreach (Transform child  in bone)
+                        {
+                            if(child.name == prefab.name) GameObject.DestroyImmediate(child.gameObject);
+                        }
+                    }
+                }
             }
         }
         
@@ -1040,8 +1184,7 @@ namespace HhotateA.AvatarModifyTools.Core
             }
             return clip;
         }
-
-#if VRC_SDK_VRCSDK3
+        
         public void RepathAnimators(GameObject from,GameObject to)
         {
             var fromPath = GetRelativePath(from.transform);
@@ -1064,7 +1207,6 @@ namespace HhotateA.AvatarModifyTools.Core
                 }
             }
         }
-#endif
 
         void RePathStateMachine(AnimatorStateMachine machine, string from, string to)
         {
@@ -1139,5 +1281,6 @@ namespace HhotateA.AvatarModifyTools.Core
             }
             return clip;
         }
+#endif
     }
 }

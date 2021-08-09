@@ -1,4 +1,13 @@
-﻿using HhotateA.AvatarModifyTools.Core;
+﻿/*
+AvatarModifyTools
+https://github.com/HhotateA/AvatarModifyTools
+
+Copyright (c) 2021 @HhotateA_xR
+
+This software is released under the MIT License.
+http://opensource.org/licenses/mit-license.php
+*/
+using HhotateA.AvatarModifyTools.Core;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -105,51 +114,29 @@ namespace HhotateA.AvatarModifyTools.TextureModifyTool
         
         private void OnGUI()
         {
+            if (meshCreater == null)
+            {
+                AssetUtility.TitleStyle("にゃんにゃんテクスチャエディター");
+                avatar = EditorGUILayout.ObjectField("", avatar, typeof(GameObject), true) as GameObject;
+                if (GUILayout.Button("Setup"))
+                {
+                    Setup();
+                }
+                        
+                EditorGUILayout.Space();
+                EditorGUILayout.Space();
+
+                loadUVMap = EditorGUILayout.Toggle("Load UVMap", loadUVMap);
+                
+                AssetUtility.Signature();
+                return;
+            }
+            
             using (new EditorGUILayout.HorizontalScope())
             {
                 using (new EditorGUILayout.VerticalScope(GUILayout.Width(380)))
                 {
-                    EditorGUILayout.Space();
-                    avatar = EditorGUILayout.ObjectField("", avatar, typeof(GameObject), true) as GameObject;
-                    if (GUILayout.Button("Setup"))
-                    {
-                        Release();
-                        var rends = avatar.GetComponentsInChildren<Renderer>();
-                        var mcs = rends.Select(r => new MeshCreater(r)).ToArray();
-                        meshCreater = new MeshCreater(avatar.transform, mcs);
-                        meshCreater.CombineMesh();
-                        avatarMonitor = new AvatarMonitor(avatar.transform);
-                        currentMaterials = meshCreater.GetMaterials().Where(m=>m!=null).Where(m=>m.mainTexture!=null).ToArray();
-                        textureCreators = currentMaterials.Select(m => new TextureCreator(m.mainTexture)).ToArray();
-                        GenerateEditMesh();
-                        editMaterials = currentMaterials.Select(m => new Material(m)).ToArray();
-                        if (loadUVMap)
-                        {
-                            for (int i = 0; i < textureCreators.Length; i++)
-                            {
-                                textureCreators[i].ReadUVMap(meshCreater.CreateSubMesh(i));
-                                textureCreators[i].AddLayer();
-                                textureCreators[i].SetLayerActive(0, true);
-                                textureCreators[i].SetLayerActive(1, false);
-                                textureCreators[i].SetLayerActive(2, true);
-                                textureCreators[i].ChangeEditLayer(2);
-                                ReplaceMaterials(currentMaterials[i], editMaterials[i]);
-                            }
-                        }
-                    }
-                    
-                    EditorGUILayout.Space();
-                    EditorGUILayout.Space();
-
-                    if (meshCreater == null)
-                    {
-                        loadUVMap = EditorGUILayout.Toggle("Load UVMap", loadUVMap);
-                        EditorGUILayout.Space();
-                        return;
-                    }
-                    
                     rendsScroll = EditorGUILayout.BeginScrollView(rendsScroll);
-                    
                     using (new EditorGUILayout.VerticalScope())
                     {
                         for (int i = 0; i < meshCreater.GetMaterials().Length; i++)
@@ -160,18 +147,7 @@ namespace HhotateA.AvatarModifyTools.TextureModifyTool
                             //if (GUILayout.Button(new GUIContent(meshCreater.GetMaterials()[i].name,meshCreater.GetMaterials()[i].mainTexture),GUILayout.Height(75),GUILayout.Width(300)))
                             if (GUILayout.Button(meshCreater.GetMaterials()[i].name))
                             {
-                                editIndex = i;
-                                editMeshCollider.sharedMesh = meshCreater.CreateSubMesh(i);
-                                texturePreviewer = new TexturePreviewer(textureCreator);
-                                layerReorderableList = new ReorderableList(textureCreator.LayerDatas, typeof(LayerData),true,false,true,true)
-                                {
-                                    elementHeight = 60,
-                                    drawElementCallback = LayersDisplay,
-                                    onReorderCallback = l => textureCreator.LayersUpdate(),
-                                    onRemoveCallback = l => textureCreator.DeleateLayer(l.index),
-                                    onAddCallback = l => textureCreator.AddLayer(),
-                                    onSelectCallback = l => textureCreator.ChangeEditLayer(l.index)
-                                };
+                                SelectRend(i);
                             }
 
                         }
@@ -572,6 +548,48 @@ namespace HhotateA.AvatarModifyTools.TextureModifyTool
                 }
             }
             editMaterials[editIndex].mainTexture = textureCreator?.GetTexture();
+        }
+        
+        void Setup()
+        {
+            var rends = avatar.GetComponentsInChildren<Renderer>();
+            var mcs = rends.Select(r => new MeshCreater(r)).ToArray();
+            meshCreater = new MeshCreater(avatar.transform, mcs);
+            meshCreater.CombineMesh();
+            avatarMonitor = new AvatarMonitor(avatar.transform);
+            currentMaterials = meshCreater.GetMaterials().Where(m=>m!=null).Where(m=>m.mainTexture!=null).ToArray();
+            textureCreators = currentMaterials.Select(m => new TextureCreator(m.mainTexture)).ToArray();
+            GenerateEditMesh();
+            editMaterials = currentMaterials.Select(m => new Material(m)).ToArray();
+            if (loadUVMap)
+            {
+                for (int i = 0; i < textureCreators.Length; i++)
+                {
+                    textureCreators[i].ReadUVMap(meshCreater.CreateSubMesh(i));
+                    textureCreators[i].AddLayer();
+                    textureCreators[i].SetLayerActive(0, true);
+                    textureCreators[i].SetLayerActive(1, false);
+                    textureCreators[i].SetLayerActive(2, true);
+                    textureCreators[i].ChangeEditLayer(2);
+                    ReplaceMaterials(currentMaterials[i], editMaterials[i]);
+                }
+            }
+        }
+
+        void SelectRend(int i)
+        {
+            editIndex = i;
+            editMeshCollider.sharedMesh = meshCreater.CreateSubMesh(i);
+            texturePreviewer = new TexturePreviewer(textureCreator);
+            layerReorderableList = new ReorderableList(textureCreator.LayerDatas, typeof(LayerData),true,false,true,true)
+            {
+                elementHeight = 60,
+                drawElementCallback = LayersDisplay,
+                onReorderCallback = l => textureCreator.LayersUpdate(),
+                onRemoveCallback = l => textureCreator.DeleateLayer(l.index),
+                onAddCallback = l => textureCreator.AddLayer(),
+                onSelectCallback = l => textureCreator.ChangeEditLayer(l.index)
+            };
         }
 
         void GenerateEditMesh()

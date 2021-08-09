@@ -1,4 +1,13 @@
-﻿using HhotateA.AvatarModifyTools.Core;
+﻿/*
+AvatarModifyTools
+https://github.com/HhotateA/AvatarModifyTools
+
+Copyright (c) 2021 @HhotateA_xR
+
+This software is released under the MIT License.
+http://opensource.org/licenses/mit-license.php
+*/
+using HhotateA.AvatarModifyTools.Core;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -195,16 +204,17 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
                 // ウィンドウ左側
                 using (new EditorGUILayout.VerticalScope())
                 {
-                    avatar = EditorGUILayout.ObjectField("", avatar, typeof(GameObject), true) as GameObject;
-                    if (GUILayout.Button("Setup"))
+                    if (rends == null)
                     {
-                        Setup(avatar);
+                        AssetUtility.TitleStyle("にゃんにゃんメッシュエディター");
+                        avatar = EditorGUILayout.ObjectField("", avatar, typeof(GameObject), true) as GameObject;
+                        if (GUILayout.Button("Setup"))
+                        {
+                            Setup(avatar);
+                        }
+                        AssetUtility.Signature();
+                        return;
                     }
-
-                    if (rends == null) return;
-                    
-                    EditorGUILayout.Space();
-
                     rendsScroll = EditorGUILayout.BeginScrollView(rendsScroll);
                     using (new EditorGUILayout.VerticalScope( GUI.skin.box ))
                     {

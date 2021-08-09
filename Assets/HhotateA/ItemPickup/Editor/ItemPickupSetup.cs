@@ -1,12 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿/*
+AvatarModifyTools
+https://github.com/HhotateA/AvatarModifyTools
+
+Copyright (c) 2021 @HhotateA_xR
+
+This software is released under the MIT License.
+http://opensource.org/licenses/mit-license.php
+*/
 using HhotateA.AvatarModifyTools.Core;
 using UnityEditor;
 using UnityEditor.Animations;
-using UnityEditorInternal;
 using UnityEngine;
-using UnityEditor.Callbacks;
 using UnityEngine.Animations;
 #if VRC_SDK_VRCSDK3
 using VRC.SDK3.Avatars.Components;
@@ -39,6 +43,7 @@ namespace HhotateA.AvatarModifyTools.ItemPickup
         private bool deleateObject = true;
         private bool writeDefault = false;
         private bool notRecommended = false;
+        private bool keepOldAsser = false;
 
         private void OnEnable()
         {
@@ -48,6 +53,7 @@ namespace HhotateA.AvatarModifyTools.ItemPickup
 
         private void OnGUI()
         {
+            AssetUtility.TitleStyle("アバターアイテムセットアップ");
 #if VRC_SDK_VRCSDK3
             var newAvatar = (VRCAvatarDescriptor) EditorGUILayout.ObjectField("Avatar", avatar, typeof(VRCAvatarDescriptor), true);
 #else
@@ -117,6 +123,7 @@ namespace HhotateA.AvatarModifyTools.ItemPickup
             if (notRecommended)
             {
                 writeDefault = EditorGUILayout.Toggle("Write Default", writeDefault); 
+                keepOldAsser = EditorGUILayout.Toggle("Keep Old Asset", keepOldAsser);
             }
             EditorGUILayout.Space();
             EditorGUILayout.Space();
@@ -141,6 +148,8 @@ namespace HhotateA.AvatarModifyTools.ItemPickup
                     }
                 }
             }
+            
+            AssetUtility.Signature();
         }
 
         void ConstraintSetup(string path)

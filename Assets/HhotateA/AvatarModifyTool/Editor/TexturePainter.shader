@@ -1,4 +1,13 @@
-﻿Shader "HhotateA/TexturePainter"
+﻿/*
+AvatarModifyTools
+https://github.com/HhotateA/AvatarModifyTools
+
+Copyright (c) 2021 @HhotateA_xR
+
+This software is released under the MIT License.
+http://opensource.org/licenses/mit-license.php
+*/
+Shader "HhotateA/TexturePainter"
 {
     Properties
     {
@@ -265,13 +274,21 @@
                 else if(mode == 6) // bloom
                 {
                     float4 sumcolor = (float4)0.0;
-                    for(int index=0;index<41;index++) {
+#ifdef RichBloom
+                    [unroll] for(int index=0;index<41;index++) {
                         float2 offsetUV = uv + float2(settings.x*linecolumn[index].x,settings.y*linecolumn[index].y) * settings.z;
                         float4 sc = tex2D(tex,offsetUV)*color;
                         float sv = pow(saturate(linecolumn[index].z/31.0) , 1.0-saturate(getGray(sc)/settings.w));
                         sumcolor += sc * sv;
                     }
                     sumcolor = sumcolor*31.0/331.0;
+#else
+                    sumcolor += tex2D(tex,uv+float2(-settings.x,-settings.y) * settings.z)*color;
+                    sumcolor += tex2D(tex,uv+float2(-settings.x, settings.y) * settings.z)*color;
+                    sumcolor += tex2D(tex,uv+float2( settings.x,-settings.y) * settings.z)*color;
+                    sumcolor += tex2D(tex,uv+float2( settings.x, settings.y) * settings.z)*color;
+                    sumcolor *= 0.25;
+#endif
                     col.rgb = lerp(
                         lerp(col.rgb,sumcolor.rgb,sumcolor.a),
                         sumcolor.rgb,

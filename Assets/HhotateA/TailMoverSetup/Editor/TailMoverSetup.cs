@@ -1,4 +1,13 @@
-﻿using System;
+﻿/*
+AvatarModifyTools
+https://github.com/HhotateA/AvatarModifyTools
+
+Copyright (c) 2021 @HhotateA_xR
+
+This software is released under the MIT License.
+http://opensource.org/licenses/mit-license.php
+*/
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -94,6 +103,7 @@ namespace HhotateA.AvatarModifyTools.TailMover
         
         private bool writeDefault = false;
         private bool notRecommended = false;
+        private bool keepOldAsset = false;
 
         private void OnEnable()
         {
@@ -130,6 +140,7 @@ namespace HhotateA.AvatarModifyTools.TailMover
 
         private void OnGUI()
         {
+            AssetUtility.TitleStyle("なでもふセットアップ");
 #if VRC_SDK_VRCSDK3
             var a = EditorGUILayout.ObjectField("", avatar, typeof(VRCAvatarDescriptor), true) as VRCAvatarDescriptor;
             if (a && a != avatar)
@@ -363,6 +374,7 @@ namespace HhotateA.AvatarModifyTools.TailMover
                 if (notRecommended)
                 {
                     writeDefault = EditorGUILayout.Toggle("Write Default", writeDefault); 
+                    keepOldAsset = EditorGUILayout.Toggle("Keep Old Asset", keepOldAsset); 
                 }
                 EditorGUILayout.Space();
                 EditorGUILayout.Space();
@@ -388,6 +400,8 @@ namespace HhotateA.AvatarModifyTools.TailMover
                     }
                 }
             }
+            
+            AssetUtility.Signature();
         }
 
         void Setup()
@@ -696,7 +710,7 @@ namespace HhotateA.AvatarModifyTools.TailMover
             {
                 am.WriteDefaultOverride = true;
             }
-            am.ModifyAvatar(newAssets,false);
+            am.ModifyAvatar(newAssets,false,keepOldAsset);
 #else
 #endif
             AssetDatabase.Refresh();
@@ -796,7 +810,7 @@ namespace HhotateA.AvatarModifyTools.TailMover
             {
                 am.WriteDefaultOverride = true;
             }
-            am.ModifyAvatar(newAssets,false);
+            am.ModifyAvatar(newAssets,false,keepOldAsset);
 #endif
             AssetDatabase.Refresh();
         }

@@ -1,10 +1,14 @@
-﻿using HhotateA.AvatarModifyTools.Core;
-using System.Collections.Generic;
+﻿/*
+AvatarModifyTools
+https://github.com/HhotateA/AvatarModifyTools
+
+Copyright (c) 2021 @HhotateA_xR
+
+This software is released under the MIT License.
+http://opensource.org/licenses/mit-license.php
+*/
+using HhotateA.AvatarModifyTools.Core;
 using UnityEngine;
-using System;
-using UnityEditor;
-using System.Linq;
-using System.Runtime.InteropServices;
 
 namespace HhotateA.AvatarModifyTools.MeshModifyTool
 {

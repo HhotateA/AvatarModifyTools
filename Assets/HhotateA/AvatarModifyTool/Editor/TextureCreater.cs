@@ -1,4 +1,13 @@
-﻿using System.Collections.Generic;
+﻿/*
+AvatarModifyTools
+https://github.com/HhotateA/AvatarModifyTools
+
+Copyright (c) 2021 @HhotateA_xR
+
+This software is released under the MIT License.
+http://opensource.org/licenses/mit-license.php
+*/
+using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -148,7 +157,7 @@ namespace HhotateA.AvatarModifyTools.Core
         {
             if(targetTexture) targetTexture.Release();
             targetTexture = new CustomRenderTexture(width,height);
-            targetMaterial = new Material(Shader.Find("HhotateA/TexturePainter"));
+            targetMaterial = new Material(AssetUtility.LoadAssetAtGuid<Shader>(EnvironmentVariable.texturePainterShader));
             targetTexture.initializationSource = CustomRenderTextureInitializationSource.Material;
             targetTexture.initializationMode = CustomRenderTextureUpdateMode.OnDemand;
             targetTexture.updateMode = CustomRenderTextureUpdateMode.OnDemand;

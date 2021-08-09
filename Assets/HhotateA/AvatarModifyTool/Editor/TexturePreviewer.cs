@@ -1,4 +1,13 @@
-﻿using UnityEngine;
+﻿/*
+AvatarModifyTools
+https://github.com/HhotateA/AvatarModifyTools
+
+Copyright (c) 2021 @HhotateA_xR
+
+This software is released under the MIT License.
+http://opensource.org/licenses/mit-license.php
+*/
+using UnityEngine;
 using UnityEditor;
 using System;
 
@@ -17,7 +26,7 @@ namespace HhotateA.AvatarModifyTools.Core
         {
             textureCreater = tc;
             previewTexture = new CustomRenderTexture(textureCreater.GetTexture().width,textureCreater.GetTexture().height);
-            previewMaterial = new Material(Shader.Find("HhotateA/TexturePreview"));
+            previewMaterial = new Material(AssetUtility.LoadAssetAtGuid<Shader>(EnvironmentVariable.texturePreviewShader));
             previewMaterial.SetTexture("_MainTex",textureCreater.GetTexture());
             previewTexture.initializationSource = CustomRenderTextureInitializationSource.Material;
             previewTexture.initializationMode = CustomRenderTextureUpdateMode.OnDemand;

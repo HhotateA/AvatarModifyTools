@@ -1,4 +1,13 @@
-﻿using HhotateA.AvatarModifyTools.Core;
+﻿/*
+AvatarModifyTools
+https://github.com/HhotateA/AvatarModifyTools
+
+Copyright (c) 2021 @HhotateA_xR
+
+This software is released under the MIT License.
+http://opensource.org/licenses/mit-license.php
+*/
+using HhotateA.AvatarModifyTools.Core;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -32,12 +41,8 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
             {
                 saveddata = CreateInstance<EmojiSaveData>();
             }
-            else
-            {
-                saveddata = AssetDatabase.LoadAssetAtPath<EmojiSaveData>(AssetDatabase.GetAssetPath(saveddata));
-            }
             wnd.data = saveddata;
-            wnd.emojiReorderableList = new ReorderableList(saveddata.Emojis,typeof(IconElement),true,false,true,true)
+            wnd.emojiReorderableList = new ReorderableList(saveddata.emojis,typeof(IconElement),true,false,true,true)
             {
                 elementHeight = 60,
                 drawHeaderCallback = (r) => EditorGUI.LabelField(r,"Emojis","絵文字を追加してください"),
@@ -45,7 +50,7 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
                 {
                     r.height -= 4;
                     r.y += 2;
-                    var d = saveddata.Emojis[i];
+                    var d = saveddata.emojis[i];
                     var nameRect = r;
                     var emojiRect = r;
                     emojiRect.width = emojiRect.height;
@@ -54,24 +59,23 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
                     nameRect.y += nameRect.height;
                     nameRect.width = r.width - emojiRect.width - 30;
                     nameRect.x += 0;
-                    d.Name = EditorGUI.TextField(nameRect,"", d.Name);
-                    d.Emoji = (Texture2D) EditorGUI.ObjectField(emojiRect,"",d.Emoji,typeof(Texture2D),true);
+                    d.name = EditorGUI.TextField(nameRect,"", d.name);
+                    d.emoji = (Texture2D) EditorGUI.ObjectField(emojiRect,"",d.emoji,typeof(Texture2D),true);
                 },
-                onRemoveCallback = l => saveddata.Emojis.RemoveAt(l.index),
-                onAddCallback = l => saveddata.Emojis.Add(new IconElement("",null))
+                onRemoveCallback = l => saveddata.emojis.RemoveAt(l.index),
+                onAddCallback = l => saveddata.emojis.Add(new IconElement("",null))
             };
         }
 
 #if VRC_SDK_VRCSDK3
         private VRCAvatarDescriptor avatar;
 #endif
-        private string msg = "OK";
-        GUIStyle msgStyle = new GUIStyle(GUIStyle.none);
         private Target target;
         ReorderableList emojiReorderableList;
 
         private bool writeDefault = false;
         private bool notRecommended = false;
+        private bool keepOldAsset = false;
 
         enum Target
         {
@@ -82,61 +86,19 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
         }
         
         private EmojiSaveData data;
-        private List<IconElement> emojis
-        {
-            get { return data.Emojis; }
-            set { data.Emojis = value; }
-        }
 
         private void OnGUI()
         {
+            AssetUtility.TitleStyle("絵文字パーティクルセットアップ");
 #if VRC_SDK_VRCSDK3
-            GUIStyle titleStyle = new GUIStyle(GUIStyle.none);
-            titleStyle.alignment = TextAnchor.MiddleCenter;
-            titleStyle.fontSize = 15;
-            titleStyle.fontStyle = FontStyle.Bold;
-
-            GUIStyle instructions = new GUIStyle(GUI.skin.label);
-            instructions.fontSize = 10;
-            instructions.wordWrap = true;
+            avatar = (VRCAvatarDescriptor) EditorGUILayout.ObjectField("Avatar", avatar,
+                typeof(VRCAvatarDescriptor), true);
             
-            GUIStyle signature = new GUIStyle(GUI.skin.label);
-            signature.alignment = TextAnchor.LowerRight;
-            signature.fontSize = 10;
+            EditorGUILayout.Space();
             
-            GUIStyle status = new GUIStyle(GUIStyle.none);
-            status.alignment = TextAnchor.MiddleRight;
-            status.fontSize = 9;
-            msgStyle.alignment = TextAnchor.MiddleRight;
-            msgStyle.fontSize = 9;
-
-            if (data == null)
-            {
-                EditorGUILayout.LabelField("EmojiParticleSetupTool",titleStyle);
-            }
-            else if(String.IsNullOrWhiteSpace(data.name))
-            {
-                EditorGUILayout.LabelField("EmojiParticleSetupTool",titleStyle);
-            }
-            else
-            {
-                EditorGUILayout.LabelField(data.name,titleStyle);
-            }
-
-            EditorGUILayout.LabelField("シーン上のアバターをドラッグ＆ドロップ");
-
-            EditorGUILayout.BeginHorizontal();
-            {
-                avatar = (VRCAvatarDescriptor) EditorGUILayout.ObjectField("Avatar", avatar,
-                    typeof(VRCAvatarDescriptor), true);
-            }
-            EditorGUILayout.EndHorizontal();
+            target = (Target) EditorGUILayout.EnumPopup("Target", target);
             
-            EditorGUILayout.BeginHorizontal();
-            {
-                target = (Target) EditorGUILayout.EnumPopup("Target", target);
-            }
-            EditorGUILayout.EndHorizontal();
+            EditorGUILayout.Space();
             
             emojiReorderableList.DoLayoutList();
             
@@ -145,70 +107,56 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
             if (notRecommended)
             {
                 writeDefault = EditorGUILayout.Toggle("Write Default", writeDefault); 
+                keepOldAsset = EditorGUILayout.Toggle("Keep Old Asset", keepOldAsset); 
             }
             EditorGUILayout.Space();
             EditorGUILayout.Space();
 
             using (new EditorGUI.DisabledScope(avatar==null))
             {
-                if (GUILayout.Button("Setup"))
+                using (new EditorGUILayout.HorizontalScope())
                 {
-                    var asset = AssetUtility.LoadAssetAtGuid<AvatarModifyData>(EnvironmentGUIDs.emojiModifyData);
-                    
-                    // if (String.IsNullOrWhiteSpace(AssetDatabase.GetAssetPath(data)))
+                    if (GUILayout.Button("Setup"))
                     {
-                        // 未保存なら保存先を指定させる．
+                        var asset = AssetUtility.LoadAssetAtGuid<AvatarModifyData>(EnvironmentGUIDs.emojiModifyData);
+                        asset = Instantiate(asset);
                         var path = EditorUtility.SaveFilePanel("Save", "Assets", "EmojiSetupData", "asset");
                         if (string.IsNullOrEmpty(path)) return;
-                        
+
                         path = FileUtil.GetProjectRelativePath(path);
-                        // Assetが消されていた場合対策に新たなInstanceから保存する．
-                        var d = ScriptableObject.CreateInstance<EmojiSaveData>();
+
+                        data = Instantiate(data);
+                        AssetDatabase.CreateAsset(data, path);
+
+                        var newAssets = Setup(asset);
+                        data.assets = newAssets;
+                        AssetDatabase.AddObjectToAsset(newAssets,path);
+
+                        var mod = new AvatarModifyTool(avatar, AssetDatabase.GetAssetPath(data));
+                        if (writeDefault)
                         {
-                            d.Emojis = data.Emojis;
+                            mod.WriteDefaultOverride = true;
                         }
-                        data = d;
-                        AssetDatabase.CreateAsset(data,path);
+
+                        mod.ModifyAvatar(newAssets,true,keepOldAsset);
+
+                        // ゴミ処理忘れずに
+                        DestroyImmediate(newAssets.items[0].prefab);
                         AssetDatabase.SaveAssets();
                     }
 
-                    var newAssets = Setup(asset);
-
-                    var mod = new AvatarModifyTool(avatar,AssetDatabase.GetAssetPath(data));
-                    if (writeDefault)
+                    if (keepOldAsset && data.assets)
                     {
-                        mod.WriteDefaultOverride = true;
+                        if (GUILayout.Button("Revert"))
+                        {
+                            var mod = new AvatarModifyTool(avatar);
+                            mod.RevertAvatar(data.assets);
+                        }
                     }
-                    mod.ModifyAvatar(newAssets);
-                    
-                    // ゴミ処理忘れずに
-                    DestroyImmediate(newAssets.items[0].prefab);
-                    
-                    msgStyle.normal = new GUIStyleState()
-                    {
-                        textColor = Color.green
-                    };
-                    msg = "Success!";
-                    AssetDatabase.SaveAssets();
                 }
             }
             
-            using(new EditorGUILayout.HorizontalScope())
-            {
-                EditorGUILayout.Space();
-                EditorGUILayout.LabelField("Status: ",status);
-                EditorGUILayout.LabelField(msg,msgStyle);
-            }
-            EditorGUILayout.Space();
-            
-            EditorGUILayout.LabelField("上ボタンを押すと，アバターのFX用AnimatorController，ExpressionParamrter，ExpressionMenuに改変を加えます．",instructions);
-            EditorGUILayout.Space();
-            
-            EditorGUILayout.LabelField("操作は元に戻せないので，必ずバックアップをとっていることを確認してください．",instructions);
-            EditorGUILayout.Space();
-            EditorGUILayout.Space();
-            
-            EditorGUILayout.LabelField("powered by @HhotateA_xR",signature);
+            AssetUtility.Signature();
 #else
             EditorGUILayout.LabelField("Please import VRCSDK3.0 in your project.");
 #endif
@@ -229,10 +177,10 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
             AssetDatabase.Refresh();
 
             int tilling = 1;
-            while (emojis.Count > tilling * tilling) tilling++;
+            while (data.emojis.Count > tilling * tilling) tilling++;
     
             // 結合テクスチャの作成
-            var textures = emojis.Select(icon=>icon.ToTexture2D()).ToArray();
+            var textures = data.emojis.Select(icon=>icon.ToTexture2D()).ToArray();
             var combinatedTexture = TextureCombinater.CombinateSaveTexture(textures,Path.Combine(fileDir,fileName+"_tex"+".png"),tilling);
             combinatedTexture.name = fileName+"_tex";
             // マテリアルの作成
@@ -242,10 +190,10 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
             
             // メニューの作成
             var iconMenus = new MenuCreater(fileName+"_icons",true);
-            for (int i = 0; i < emojis.Count; i++)
+            for (int i = 0; i < data.emojis.Count; i++)
             {
                 // 0はデフォルトなので+1
-                iconMenus.AddButton(emojis[i].Name,emojis[i].ToTexture2D(),assets.parameter.parameters[0].name,i+1);
+                iconMenus.AddButton(data.emojis[i].name,data.emojis[i].ToTexture2D(),assets.parameter.parameters[0].name,i+1);
             }
             // Modify用メニュー作成
             var menu = new MenuCreater("mainMenu");
@@ -302,7 +250,7 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
             controller.SetDefaultState("Idle");
             controller.AddTransition("Reset","Idle",new AnimatorCondition[]{},true,1f,0f );
             var anims = new List<AnimationClipCreator>();
-            for (int i = 0; i < emojis.Count; i++)
+            for (int i = 0; i < data.emojis.Count; i++)
             {
                 var anim = new AnimationClipCreator("Emoji_Anim"+i,avatar.gameObject);
                 var v = (float) i / (float) (tilling * tilling);
