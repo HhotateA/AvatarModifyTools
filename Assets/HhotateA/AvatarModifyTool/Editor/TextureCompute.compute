@@ -1,4 +1,13 @@
-﻿#pragma kernel DrawUV
+﻿/*
+AvatarModifyTools
+https://github.com/HhotateA/AvatarModifyTools
+
+Copyright (c) 2021 @HhotateA_xR
+
+This software is released under the MIT License.
+http://opensource.org/licenses/mit-license.php
+*/
+#pragma kernel DrawUV
 #pragma kernel ClearColorGradient
 #pragma kernel DrawPoint
 #pragma kernel DrawLine
@@ -173,6 +182,33 @@ float sign (float2 p1, float2 p2, float2 p3)
 {
     return (p1.x - p3.x) * (p2.y - p3.y) - (p2.x - p3.x) * (p1.y - p3.y);
 }
+
+float3 UV2Position(float2 uv,uint id)
+{
+    float3 uv0 = float3(_UVs[_Triangles[id.x*3+0]],0.0);
+    float3 uv1 = float3(_UVs[_Triangles[id.x*3+1]],0.0);
+    float3 uv2 = float3(_UVs[_Triangles[id.x*3+2]],0.0);
+    float3 pos0 = _Vertices[_Triangles[id.x*3+0]];
+    float3 pos1 = _Vertices[_Triangles[id.x*3+1]];
+    float3 pos2 = _Vertices[_Triangles[id.x*3+2]];
+    float3 normal = float3(0,0,1);
+    float axi0_0 = dot(uv0,normalize(uv0-uv1));
+    float axi0_1 = dot(uv2,normalize(uv0-uv1));
+    float axi0_x = dot(uv,normalize(uv0-uv1));
+    float val_0 = saturate((axi0_x-axi0_0)/(axi0_1-axi0_0));
+    float axi1_0 = dot(uv1,normalize(uv1-uv2));
+    float axi1_1 = dot(uv0,normalize(uv1-uv2));
+    float axi1_x = dot(uv,normalize(uv1-uv2));
+    float val_1 = saturate((axi1_x-axi1_0)/(axi1_1-axi1_0));
+    float axi2_0 = dot(uv2,normalize(uv2-uv0));
+    float axi2_1 = dot(uv1,normalize(uv2-uv0));
+    float axi2_x = dot(uv,normalize(uv2-uv0));
+    float val_2 = saturate((axi2_x-axi1_0)/(axi1_1-axi1_0));
+    float sum = val_0 + val_1 + val_2;
+    return pos0 * (val_0/sum) +
+           pos1 * (val_1/sum) +
+           pos2 * (val_2/sum);
+}
 ENDCG
 
 // 参考:https://qiita.com/gatosyocora/items/9025d0eadc6b80012e28
@@ -277,18 +313,10 @@ void TriangleFillGradient (int3 id : SV_DispatchThreadID)
     float c0 = sign(uv,uv0,uv1);
     float c1 = sign(uv,uv1,uv2);
     float c2 = sign(uv,uv2,uv0);
-    float4 col = _Color*GetGradient(uv,_FromPoint,_ToPoint);  
     if(sign(c0)==sign(c1) && sign(c0)==sign(c2))
     {
-        _ResultTex[id.xy+int2(-_AreaExpansion,-_AreaExpansion)] = col;
-        _ResultTex[id.xy+int2(-_AreaExpansion, 0)] = col;
-        _ResultTex[id.xy+int2(-_AreaExpansion, _AreaExpansion)] = col;
-        _ResultTex[id.xy+int2( 0,-_AreaExpansion)] = col;
-        _ResultTex[id.xy+int2( 0, 0)] = col;
-        _ResultTex[id.xy+int2( 0, _AreaExpansion)] = col;
-        _ResultTex[id.xy+int2( _AreaExpansion,-_AreaExpansion)] = col;
-        _ResultTex[id.xy+int2( _AreaExpansion, 0)] = col;
-        _ResultTex[id.xy+int2( _AreaExpansion, _AreaExpansion)] = col;
+        float3 pos = UV2Position(uv,_TriangleID);
+        _ResultTex[id.xy] = _Color*_Gradient[256*saturate(pos.y)];
     }
 }
 

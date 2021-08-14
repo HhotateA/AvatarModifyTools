@@ -1,4 +1,13 @@
-﻿using HhotateA.AvatarModifyTools.Core;
+﻿/*
+AvatarModifyTools
+https://github.com/HhotateA/AvatarModifyTools
+
+Copyright (c) 2021 @HhotateA_xR
+
+This software is released under the MIT License.
+http://opensource.org/licenses/mit-license.php
+*/
+using HhotateA.AvatarModifyTools.Core;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -11,7 +20,7 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
 {
     public class MeshModifyTool : EditorWindow
     {
-        [MenuItem("Window/HhotateA/にゃんにゃんメッシュエディター(MeshModifyTool)")]
+        [MenuItem("Window/HhotateA/にゃんにゃんメッシュエディター(MeshModifyTool)",false,-10)]
         public static void ShowWindow()
         {
             var wnd = GetWindow<MeshModifyTool>();
@@ -174,6 +183,7 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
         private int casheCount = -1;
         
         // 最終選択頂点のデータ
+        Vector2 rowScroll = Vector2.zero;
         private bool displayRawData => activeExperimentalBeta;
         Vector3 rawPosition = Vector3.zero;
         Vector3 rawNormal = Vector3.up;
@@ -183,7 +193,6 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
         KeyValuePair<int,float>[] rawWeights = new KeyValuePair<int,float>[4];
 
         private int[] rawIDs = Enumerable.Range(0, 3).ToArray();
-
 
         /// <summary>
         /// 表示部，実装は置かないこと
@@ -195,17 +204,19 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
                 // ウィンドウ左側
                 using (new EditorGUILayout.VerticalScope())
                 {
-                    avatar = EditorGUILayout.ObjectField("", avatar, typeof(GameObject), true) as GameObject;
-                    if (GUILayout.Button("Setup"))
+                    if (rends == null)
                     {
-                        Setup(avatar);
+                        AssetUtility.TitleStyle("にゃんにゃんメッシュエディター");
+                        AssetUtility.DetailStyle("Unityだけでアバターのメッシュ改変ができるツールです．",EnvironmentGUIDs.readme);
+                        avatar = EditorGUILayout.ObjectField("", avatar, typeof(GameObject), true) as GameObject;
+                        if (GUILayout.Button("Setup"))
+                        {
+                            Setup(avatar);
+                        }
+                        AssetUtility.Signature();
+                        return;
                     }
-
-                    if (rends == null) return;
-                    
-                    EditorGUILayout.Space();
-
-                    rendsScroll = EditorGUILayout.BeginScrollView(rendsScroll);
+                    rendsScroll = EditorGUILayout.BeginScrollView(rendsScroll, false, false, GUIStyle.none, GUI.skin.verticalScrollbar, GUI.skin.scrollView);
                     using (new EditorGUILayout.VerticalScope( GUI.skin.box ))
                     {
                         for(int i=0;i<rends.Length;i++)
@@ -235,8 +246,11 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
                             SelectMeshCreater(-1);
                         }
                     }
-                    
-                    EditorGUILayout.Space();
+
+                    using (new EditorGUILayout.VerticalScope(GUILayout.ExpandHeight(true)))
+                    {
+                        EditorGUILayout.LabelField(" ");
+                    }
 
                     activeExperimentalAlpha = EditorGUILayout.Toggle("ActiveExperimental", activeExperimentalAlpha);
                     if (activeExperimentalAlpha)
@@ -442,8 +456,8 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
                             }
                         }
                     }
-                    EditorGUILayout.Space();
                     
+                    EditorGUILayout.Space();
 
                     using (new EditorGUILayout.HorizontalScope())
                     {
@@ -470,6 +484,7 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
                             }
                         }
                     }
+                    EditorGUILayout.Space();
 
                     using (new EditorGUILayout.HorizontalScope())
                     {
@@ -631,7 +646,7 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
                 {
                     if (avatarMonitor != null)
                     {
-                        var avatarMonitorWidth = displayRawData ? 1100 : 300;
+                        var avatarMonitorWidth = displayRawData ? 750 : 300;
                         avatarMonitor.Display( (int) position.width-avatarMonitorWidth, (int) position.height-10,rotateButton,moveButton);
                         if (editIndex != -1)
                         {
@@ -644,6 +659,7 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
                 {
                     using (new EditorGUILayout.VerticalScope())
                     {
+                        rowScroll =  EditorGUILayout.BeginScrollView(rowScroll, false, false, GUIStyle.none, GUI.skin.verticalScrollbar, GUI.skin.scrollView);
                         using (new EditorGUILayout.VerticalScope(GUI.skin.box))
                         {
                             rawPosition = EditorGUILayout.Vector3Field("Position", rawPosition);
@@ -679,7 +695,7 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
                             {
                                 for (int i = 0; i < rawIDs.Length; i++)
                                 {
-                                    rawIDs[i] = EditorGUILayout.IntField("", rawIDs[i]);
+                                    rawIDs[i] = EditorGUILayout.IntField("", rawIDs[i],GUILayout.Width(135));
                                 }
                             }
 
@@ -709,7 +725,7 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
                                 }
                             }
                             uvViewer?.UVTextureSize(new Vector2(uvTexelSize.x,uvTexelSize.y),new Vector2(uvTexelSize.z,uvTexelSize.w));
-                            uvViewer?.Display(700,700);
+                            uvViewer?.Display(400,400);
                             if (GUILayout.Button("Divided 4"))
                             {
                                 editMeshCreater.TransformUV(new Vector2(0.5f,0.5f),new Vector2(0f,0f));
@@ -720,6 +736,7 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
                                 activeMaterial.SetTextureScale("_MainTex",new Vector2(2f,2f));
                             }
                         }
+                        EditorGUILayout.EndScrollView();
                     }
                 }
             }

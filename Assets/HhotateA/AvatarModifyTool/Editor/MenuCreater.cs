@@ -1,4 +1,13 @@
-﻿using System.Collections.Generic;
+﻿/*
+AvatarModifyTools
+https://github.com/HhotateA/AvatarModifyTools
+
+Copyright (c) 2021 @HhotateA_xR
+
+This software is released under the MIT License.
+http://opensource.org/licenses/mit-license.php
+*/
+using System.Collections.Generic;
 using System.IO;
 using UnityEditor;
 using UnityEngine;
@@ -107,6 +116,11 @@ namespace HhotateA.AvatarModifyTools.Core
         {
             AddControll(ToggleControl(name,icon,param,val));
         }
+        
+        public void AddToggle(string name,Texture2D icon,string param)
+        {
+            AddControll(ToggleControl(name,icon,param,1));
+        }
 
         public void AddAxis(
             string name, Texture2D icon,
@@ -139,7 +153,8 @@ namespace HhotateA.AvatarModifyTools.Core
 
         public void AddRadial(
             string name, Texture2D icon,
-            string param, string radialParam)
+            string radialParam,
+            string param = "", float value = 1f)
         {
             var c = new VRCExpressionsMenu.Control()
             {
@@ -151,6 +166,7 @@ namespace HhotateA.AvatarModifyTools.Core
             if (!string.IsNullOrWhiteSpace(param))
             {
                 c.parameter = new VRCExpressionsMenu.Control.Parameter(){name = param};
+                c.value = value;
             }
             
             c.subParameters = new VRCExpressionsMenu.Control.Parameter[1]
@@ -284,7 +300,7 @@ namespace HhotateA.AvatarModifyTools.Core
                     }
                 }
             }
-
+            AssetDatabase.SaveAssets();
             return asset;
         }
 

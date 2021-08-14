@@ -1,4 +1,13 @@
-﻿using System;
+﻿/*
+AvatarModifyTools
+https://github.com/HhotateA/AvatarModifyTools
+
+Copyright (c) 2021 @HhotateA_xR
+
+This software is released under the MIT License.
+http://opensource.org/licenses/mit-license.php
+*/
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -2019,8 +2028,18 @@ namespace HhotateA.AvatarModifyTools.Core
             
             return origin;
         }
+
+        public void DuplicateSubMesh(int submeshID)
+        {
+            if (submeshID < 0 || triangles.Count < submeshID) return;
+            AddSubMesh(
+                triangles[submeshID].ToList(),
+                materials[submeshID],
+                bones[submeshID],
+                GetTriangleOffset(submeshID));
+        }
         
-        public Mesh CreateSubMesh(int submeshID = -1)
+        public Mesh CreateSubMesh(int submeshID,bool skinning = false)
         {
             if (submeshID < 0 || triangles.Count < submeshID) return null;
             if (meshTransforms[submeshID]!=null)
@@ -2040,7 +2059,7 @@ namespace HhotateA.AvatarModifyTools.Core
             combinedMesh.subMeshCount = 1;
             combinedMesh.SetTriangles(triangles[submeshID].ToArray(),0);
 
-            /*if (false)
+            if (skinning)
             {
                 combinedMesh.bindposes = bindPoses.ToArray();
                 combinedMesh.boneWeights = boneWeights.ToArray();
@@ -2050,7 +2069,7 @@ namespace HhotateA.AvatarModifyTools.Core
                 {
                     blendShape.Apply(ref combinedMesh);
                 }
-            }*/
+            }
 
             combinedMesh.SetNormals(normals);
             combinedMesh.SetTangents(tangents);
@@ -2479,10 +2498,17 @@ namespace HhotateA.AvatarModifyTools.Core
         /// </summary>
         /// <param name="path"></param>
         /// <returns></returns>
-        public Mesh Save(string path)
+        public Mesh Save(string path,bool subAsset = false)
         {
             var combinedMesh = Create(false);
-            AssetDatabase.CreateAsset(combinedMesh,path);
+            if (subAsset)
+            {
+                AssetDatabase.AddObjectToAsset(combinedMesh,path);
+            }
+            else
+            {
+                AssetDatabase.CreateAsset(combinedMesh,path);
+            }
             return combinedMesh;
         }
     }

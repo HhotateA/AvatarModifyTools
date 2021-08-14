@@ -1,4 +1,13 @@
-﻿using HhotateA.AvatarModifyTools.Core;
+﻿/*
+AvatarModifyTools
+https://github.com/HhotateA/AvatarModifyTools
+
+Copyright (c) 2021 @HhotateA_xR
+
+This software is released under the MIT License.
+http://opensource.org/licenses/mit-license.php
+*/
+using HhotateA.AvatarModifyTools.Core;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -7,7 +16,8 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
     [CreateAssetMenu(menuName = "HhotateA/EmojiSaveData")]
     public class EmojiSaveData : ScriptableObject
     {
-        public List<IconElement> Emojis = new List<IconElement>();
+        public List<IconElement> emojis = new List<IconElement>();
+        public AvatarModifyData assets;
     }
     
     [System.Serializable]
@@ -15,21 +25,21 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
     {
         public IconElement(string name, Texture emoji)
         {
-            Name = name;
-            Emoji = emoji;
+            this.name = name;
+            this.emoji = emoji;
         }
 
-        [SerializeField] public string Name;
-        [SerializeField] public Texture Emoji;
+        [SerializeField] public string name;
+        [SerializeField] public Texture emoji;
 
         public Texture2D ToTexture2D()
         {
-            return Emoji as Texture2D;
+            return emoji as Texture2D;
         }
         
         public Texture ToTexture()
         {
-            return Emoji as Texture;
+            return emoji as Texture;
         }
     }
 }

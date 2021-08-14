@@ -1,4 +1,13 @@
-﻿using System;
+﻿/*
+AvatarModifyTools
+https://github.com/HhotateA/AvatarModifyTools
+
+Copyright (c) 2021 @HhotateA_xR
+
+This software is released under the MIT License.
+http://opensource.org/licenses/mit-license.php
+*/
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -150,6 +159,11 @@ namespace HhotateA.AvatarModifyTools.Core
             
             if (objectReferenceKeyframes.ContainsKey(target))
             {
+                // 時間重複したキーフレーム防止策
+                while (objectReferenceKeyframes[target].Any(f => Mathf.Abs(f.time - time)<1f/60f))
+                {
+                    frame.time += 1f / 60f;
+                }
                 objectReferenceKeyframes[target].Add(frame);
             }
             else
@@ -250,6 +264,11 @@ namespace HhotateA.AvatarModifyTools.Core
         {
             if (keyframesList.ContainsKey(target))
             {
+                // 時間重複したキーフレーム防止策
+                while (keyframesList[target].Any(f => Mathf.Abs(f.time - frame.time) < 1f / 60f))
+                {
+                    frame.time += 1f / 60f;
+                }
                 keyframesList[target].Add(frame);
             }
             else
@@ -302,20 +321,7 @@ namespace HhotateA.AvatarModifyTools.Core
 
         string GetRelativePath(GameObject o)
         {
-            if (o.gameObject == root)
-            {
-                return "";
-            }
-            string path = o.gameObject.name;
-            Transform parent = o.transform.parent;
-            while (parent != null)
-            {
-                if(parent.gameObject == root) break;
-                path = parent.name + "/" + path;
-                parent = parent.parent;
-            }
-
-            return path;
+            return AssetUtility.GetRelativePath(root.transform, o.transform);
         }
         
         public AnimationClip Create()
@@ -357,7 +363,7 @@ namespace HhotateA.AvatarModifyTools.Core
                     AssetDatabase.CreateAsset(asset,path);
                 }
             }
-            
+            AssetDatabase.SaveAssets();
             return asset;
         }
     }

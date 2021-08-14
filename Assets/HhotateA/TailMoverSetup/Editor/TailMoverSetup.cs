@@ -1,4 +1,13 @@
-﻿using System;
+﻿/*
+AvatarModifyTools
+https://github.com/HhotateA/AvatarModifyTools
+
+Copyright (c) 2021 @HhotateA_xR
+
+This software is released under the MIT License.
+http://opensource.org/licenses/mit-license.php
+*/
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -14,7 +23,7 @@ namespace HhotateA.AvatarModifyTools.TailMover
 {
     public class TailMoverSetup : EditorWindow
     {
-        [MenuItem("Window/HhotateA/TailMoverSetup")]
+        [MenuItem("Window/HhotateA/なでもふセットアップ(TailMoverSetup)",false,3)]
         public static void ShowWindow()
         {
             var wnd = GetWindow<TailMoverSetup>();
@@ -91,6 +100,10 @@ namespace HhotateA.AvatarModifyTools.TailMover
         private bool enableTestRotY = false;
         private float testRotX = 0f;
         private float testRotY = 0f;
+        
+        private bool writeDefault = false;
+        private bool notRecommended = false;
+        private bool keepOldAsset = false;
 
         private void OnEnable()
         {
@@ -127,6 +140,8 @@ namespace HhotateA.AvatarModifyTools.TailMover
 
         private void OnGUI()
         {
+            AssetUtility.TitleStyle("なでもふセットアップ");
+            AssetUtility.DetailStyle("アバターの尻尾やケモ耳のアイドルモーションを設定したり，デスクトップモードで腕を動かす設定ができるツールです．",EnvironmentGUIDs.readme);
 #if VRC_SDK_VRCSDK3
             var a = EditorGUILayout.ObjectField("", avatar, typeof(VRCAvatarDescriptor), true) as VRCAvatarDescriptor;
             if (a && a != avatar)
@@ -134,7 +149,6 @@ namespace HhotateA.AvatarModifyTools.TailMover
                 avatarAnim = a.GetComponent<Animator>();
                 if (avatarAnim) avatar = a;
             }
-            
 #else
             avatar = EditorGUILayout.ObjectField("", avatar, typeof(Animator), true) as Animator;
 #endif
@@ -356,6 +370,14 @@ namespace HhotateA.AvatarModifyTools.TailMover
                 }
                 
                 EditorGUILayout.Space();
+                notRecommended = EditorGUILayout.Foldout(notRecommended,"VRChat Not Recommended");
+                if (notRecommended)
+                {
+                    writeDefault = EditorGUILayout.Toggle("Write Default", writeDefault); 
+                    keepOldAsset = EditorGUILayout.Toggle("Keep Old Asset", keepOldAsset); 
+                }
+                EditorGUILayout.Space();
+                EditorGUILayout.Space();
 
                 if (GUILayout.Button("Save RadialControll"))
                 {
@@ -378,6 +400,8 @@ namespace HhotateA.AvatarModifyTools.TailMover
                     }
                 }
             }
+            
+            AssetUtility.Signature();
         }
 
         void Setup()
@@ -592,7 +616,7 @@ namespace HhotateA.AvatarModifyTools.TailMover
             
             var controller = new AnimatorControllerCreator(file,file);
             
-            var idle = new AnimationClipCreator("Idle");
+            var idle = new AnimationClipCreator("Idle",avatar.gameObject);
             ResetTail();
             RecordAnimation(idle);
             
@@ -625,9 +649,28 @@ namespace HhotateA.AvatarModifyTools.TailMover
                 controller.LayerMask(AvatarMaskBodyPart.LeftArm, true, false);
             }
 
-            if (isHumanoidAnimation)
+            if (preset == Presets.RightArm)
             {
                 controller.SetWriteDefault("Idle",true);
+                controller.LayerMask(AvatarMaskBodyPart.RightArm, true, false);
+                controller.LayerTransformMask(avatar.gameObject,false);
+            }
+            else if(preset == Presets.LeftArm)
+            {
+                controller.SetWriteDefault("Idle",true);
+                controller.LayerMask(AvatarMaskBodyPart.LeftArm, true, false);
+                controller.LayerTransformMask(avatar.gameObject,false);
+            }
+            else if(!isHumanoidAnimation)
+            {
+                controller.LayerMask(AvatarMaskBodyPart.Body,false,false);
+                controller.LayerTransformMask(avatar.gameObject,
+                    zeroRots.Select(r => r.Key.gameObject).ToList(), true);
+            }
+            else
+            {
+                controller.SetWriteDefault("Idle",true);
+                controller.LayerTransformMask(avatar.gameObject,false);
             }
             
             controller.AddParameter(tree.blendParameter,AnimatorControllerParameterType.Float);
@@ -663,7 +706,11 @@ namespace HhotateA.AvatarModifyTools.TailMover
                 newAssets.parameter = param.CreateAsset(path, true);
                 newAssets.menu = menu.CreateAsset(path,true);
             }
-            am.ModifyAvatar(newAssets,false);
+            if (writeDefault)
+            {
+                am.WriteDefaultOverride = true;
+            }
+            am.ModifyAvatar(newAssets,false,keepOldAsset);
 #else
 #endif
             AssetDatabase.Refresh();
@@ -711,13 +758,37 @@ namespace HhotateA.AvatarModifyTools.TailMover
             controller.AddTransition("Idle","Move",p,0.001f,true,false,0f,0.25f);
             controller.AddTransition("Move","Reset",p,0.001f,false,false,0f,0.25f);
             controller.AddTransition("Reset","Idle");
+            
+            if (preset == Presets.RightArm)
+            {
+                controller.SetWriteDefault("Idle",true);
+                controller.LayerMask(AvatarMaskBodyPart.RightArm, true, false);
+                controller.LayerTransformMask(avatar.gameObject,false);
+            }
+            else if(preset == Presets.LeftArm)
+            {
+                controller.SetWriteDefault("Idle",true);
+                controller.LayerMask(AvatarMaskBodyPart.LeftArm, true, false);
+                controller.LayerTransformMask(avatar.gameObject,false);
+            }
+            else if(!isHumanoidAnimation)
+            {
+                controller.LayerMask(AvatarMaskBodyPart.Body,false,false);
+                controller.LayerTransformMask(avatar.gameObject,
+                    zeroRots.Select(r => r.Key.gameObject).ToList(), true);
+            }
+            else
+            {
+                controller.SetWriteDefault("Idle",true);
+                controller.LayerTransformMask(avatar.gameObject,false);
+            }
 
             var c = controller.CreateAsset(path);
             move.CreateAsset(path, true);
             reset.CreateAsset(path, true);
 #if VRC_SDK_VRCSDK3
             var menu = new MenuCreater(file);
-            menu.AddRadial(file,idleIcons[(int) preset],"",p);
+            menu.AddRadial(file,idleIcons[(int) preset],p);
             var param = new ParametersCreater(file);
             param.LoadParams(controller,true);
             
@@ -735,7 +806,11 @@ namespace HhotateA.AvatarModifyTools.TailMover
                 newAssets.parameter = param.CreateAsset(path, true);
                 newAssets.menu = menu.CreateAsset(path,true);
             }
-            am.ModifyAvatar(newAssets,false);
+            if (writeDefault)
+            {
+                am.WriteDefaultOverride = true;
+            }
+            am.ModifyAvatar(newAssets,false,keepOldAsset);
 #endif
             AssetDatabase.Refresh();
         }
@@ -769,7 +844,11 @@ namespace HhotateA.AvatarModifyTools.TailMover
             {
                 if (isHumanoidAnimation)
                 {
+#if VRC_SDK_VRCSDK3
                     anim.AddKeyframe_Humanoid(avatarAnim,rot.Key,0f, weight);
+#else
+                    anim.AddKeyframe_Humanoid(avatar,rot.Key,0f, weight);
+#endif
                 }
                 else
                 {

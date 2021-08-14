@@ -1,4 +1,13 @@
-﻿using UnityEditor.Animations;
+﻿/*
+AvatarModifyTools
+https://github.com/HhotateA/AvatarModifyTools
+
+Copyright (c) 2021 @HhotateA_xR
+
+This software is released under the MIT License.
+http://opensource.org/licenses/mit-license.php
+*/
+using UnityEditor.Animations;
 using UnityEngine;
 #if VRC_SDK_VRCSDK3
 using VRC.SDK3.Avatars.ScriptableObjects;
@@ -9,6 +18,7 @@ namespace HhotateA.AvatarModifyTools.Core
     [CreateAssetMenu(menuName = "HhotateA/AvatarModifyData")]
     public class AvatarModifyData : ScriptableObject
     {
+        public string name = "AvatarModifyData";
         public AnimatorController locomotion_controller;
         public AnimatorController idle_controller;
         public AnimatorController gesture_controller;

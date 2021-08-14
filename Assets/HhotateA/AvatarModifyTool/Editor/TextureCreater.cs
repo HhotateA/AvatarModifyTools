@@ -1,4 +1,13 @@
-﻿using System.Collections.Generic;
+﻿/*
+AvatarModifyTools
+https://github.com/HhotateA/AvatarModifyTools
+
+Copyright (c) 2021 @HhotateA_xR
+
+This software is released under the MIT License.
+http://opensource.org/licenses/mit-license.php
+*/
+using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -148,7 +157,7 @@ namespace HhotateA.AvatarModifyTools.Core
         {
             if(targetTexture) targetTexture.Release();
             targetTexture = new CustomRenderTexture(width,height);
-            targetMaterial = new Material(Shader.Find("HhotateA/TexturePainter"));
+            targetMaterial = new Material(AssetUtility.LoadAssetAtGuid<Shader>(EnvironmentVariable.texturePainterShader));
             targetTexture.initializationSource = CustomRenderTextureInitializationSource.Material;
             targetTexture.initializationMode = CustomRenderTextureUpdateMode.OnDemand;
             targetTexture.updateMode = CustomRenderTextureUpdateMode.OnDemand;
@@ -181,9 +190,10 @@ namespace HhotateA.AvatarModifyTools.Core
             SyncLayers();
         }
         
-        public void AddLayer(Color col,Gradient gradient)
+        public void AddLayer(Color col,Gradient gradient = null)
         {
             if(LayerCount() > 16) return;
+            if(gradient==null) gradient = new Gradient();
             var rt = new RenderTexture(targetTexture.width,targetTexture.height,0,RenderTextureFormat.ARGBFloat, RenderTextureReadWrite.Default);
             rt.enableRandomWrite = true;
             rt.Create();
@@ -198,9 +208,10 @@ namespace HhotateA.AvatarModifyTools.Core
             });
             SyncLayers();
         }
-        public void AddMask(Color col,Gradient gradient)
+        public void AddMask(Color col,Gradient gradient = null)
         {
             if(LayerCount() > 16) return;
+            if(gradient==null) gradient = new Gradient();
             var rt = new RenderTexture(targetTexture.width,targetTexture.height,0,RenderTextureFormat.ARGBFloat, RenderTextureReadWrite.Default);
             rt.enableRandomWrite = true;
             rt.Create();
@@ -371,12 +382,15 @@ namespace HhotateA.AvatarModifyTools.Core
                     v.z * (zmax - zmin) - zmin)).ToArray();
 
             var uvs = new ComputeBuffer(mesh.uv.Length,Marshal.SizeOf(typeof(Vector2)));
+            var verts = new ComputeBuffer(mesh.vertices.Length,Marshal.SizeOf(typeof(Vector3)));
             var tris = new ComputeBuffer(mesh.triangles.Length,sizeof(int));
 
             uvs.SetData(mesh.uv);
+            verts.SetData(mesh.vertices);
             tris.SetData(mesh.triangles);
             
             compute.SetBuffer(kernel,"_UVs",uvs);
+            compute.SetBuffer(kernel,"_Vertices",uvs);
             compute.SetBuffer(kernel,"_Triangles",tris);
             
             compute.SetTexture(kernel, "_ResultTex", GetEditTexture());
@@ -385,8 +399,8 @@ namespace HhotateA.AvatarModifyTools.Core
             compute.SetInt("_Height", GetEditTexture().height);
             compute.SetVector("_FromPoint",from);
             compute.SetVector("_ToPoint",to);
-            var gradientBuffer = new ComputeBuffer(GetEditTexture().width, Marshal.SizeOf(typeof(Vector4)));
-            gradientBuffer.SetData(TextureCombinater.GetGradientBuffer(gradient,GetEditTexture().width));
+            var gradientBuffer = new ComputeBuffer(256, Marshal.SizeOf(typeof(Vector4)));
+            gradientBuffer.SetData(TextureCombinater.GetGradientBuffer(gradient,256));
             compute.SetBuffer(kernel, "_Gradient", gradientBuffer);
             compute.SetInt("_AreaExpansion", areaExpansion);
             for (int i = 0; i < index.Count; i++)
@@ -398,6 +412,7 @@ namespace HhotateA.AvatarModifyTools.Core
                 }
             }
             uvs.Release();
+            verts.Release();
             tris.Release();
             gradientBuffer.Release();
         }

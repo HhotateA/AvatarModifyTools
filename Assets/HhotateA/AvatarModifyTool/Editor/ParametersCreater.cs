@@ -1,4 +1,13 @@
-﻿using System.Collections.Generic;
+﻿/*
+AvatarModifyTools
+https://github.com/HhotateA/AvatarModifyTools
+
+Copyright (c) 2021 @HhotateA_xR
+
+This software is released under the MIT License.
+http://opensource.org/licenses/mit-license.php
+*/
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using UnityEditor;
@@ -62,7 +71,7 @@ namespace HhotateA.AvatarModifyTools.Core
                 savedParameters.Add(new AnimatorControllerParameter()
                 {
                     name = param,
-                    type = AnimatorControllerParameterType.Float,
+                    type = AnimatorControllerParameterType.Int,
                     defaultInt = defaultValue,
                 });
             }
@@ -71,7 +80,7 @@ namespace HhotateA.AvatarModifyTools.Core
                 parameters.Add(new AnimatorControllerParameter()
                 {
                     name = param,
-                    type = AnimatorControllerParameterType.Float,
+                    type = AnimatorControllerParameterType.Int,
                     defaultInt = defaultValue,
                 });
             }
@@ -90,7 +99,7 @@ namespace HhotateA.AvatarModifyTools.Core
                 savedParameters.Add(new AnimatorControllerParameter()
                 {
                     name = param,
-                    type = AnimatorControllerParameterType.Float,
+                    type = AnimatorControllerParameterType.Bool,
                     defaultBool = defaultValue,
                 });
             }
@@ -99,7 +108,7 @@ namespace HhotateA.AvatarModifyTools.Core
                 parameters.Add(new AnimatorControllerParameter()
                 {
                     name = param,
-                    type = AnimatorControllerParameterType.Float,
+                    type = AnimatorControllerParameterType.Bool,
                     defaultBool = defaultValue,
                 });
             }
@@ -109,6 +118,7 @@ namespace HhotateA.AvatarModifyTools.Core
         {
             foreach (var p in origin.GetParameter())
             {
+                Debug.Log(p.name+":"+p.type);
                 if (p.type == AnimatorControllerParameterType.Float)
                 {
                     AddParam(p.name,p.defaultFloat,saved);
@@ -186,7 +196,7 @@ namespace HhotateA.AvatarModifyTools.Core
                     AssetDatabase.CreateAsset(asset,path);
                 }
             }
-
+            AssetDatabase.SaveAssets();
             return asset;
         }
 #endif
