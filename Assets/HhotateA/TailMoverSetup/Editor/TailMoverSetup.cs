@@ -141,6 +141,7 @@ namespace HhotateA.AvatarModifyTools.TailMover
         private void OnGUI()
         {
             AssetUtility.TitleStyle("なでもふセットアップ");
+            AssetUtility.DetailStyle("アバターの尻尾やケモ耳のアイドルモーションを設定したり，デスクトップモードで腕を動かす設定ができるツールです．",EnvironmentGUIDs.readme);
 #if VRC_SDK_VRCSDK3
             var a = EditorGUILayout.ObjectField("", avatar, typeof(VRCAvatarDescriptor), true) as VRCAvatarDescriptor;
             if (a && a != avatar)
@@ -148,7 +149,6 @@ namespace HhotateA.AvatarModifyTools.TailMover
                 avatarAnim = a.GetComponent<Animator>();
                 if (avatarAnim) avatar = a;
             }
-            
 #else
             avatar = EditorGUILayout.ObjectField("", avatar, typeof(Animator), true) as Animator;
 #endif
@@ -616,7 +616,7 @@ namespace HhotateA.AvatarModifyTools.TailMover
             
             var controller = new AnimatorControllerCreator(file,file);
             
-            var idle = new AnimationClipCreator("Idle");
+            var idle = new AnimationClipCreator("Idle",avatar.gameObject);
             ResetTail();
             RecordAnimation(idle);
             
@@ -788,7 +788,7 @@ namespace HhotateA.AvatarModifyTools.TailMover
             reset.CreateAsset(path, true);
 #if VRC_SDK_VRCSDK3
             var menu = new MenuCreater(file);
-            menu.AddRadial(file,idleIcons[(int) preset],"",p);
+            menu.AddRadial(file,idleIcons[(int) preset],p);
             var param = new ParametersCreater(file);
             param.LoadParams(controller,true);
             

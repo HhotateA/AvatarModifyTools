@@ -126,6 +126,7 @@ namespace HhotateA.AvatarModifyTools.Core
                         ps[i].defaultFloat = value;
                     }
                 }
+                asset.parameters = ps;
             }
         }
 
@@ -295,9 +296,9 @@ namespace HhotateA.AvatarModifyTools.Core
         public void AddTransition(
             string from, string to,
             AnimatorCondition[] conditions,
-            bool hasExitTime,
-            float exitTime,
-            float duration)
+            bool hasExitTime = true,
+            float exitTime = 1f,
+            float duration = 0f)
         {
             var f = GetState(from);
             var t = GetState(to);
@@ -401,7 +402,7 @@ namespace HhotateA.AvatarModifyTools.Core
             
             if (asset.parameters.All(p=>p.name!=param))
             {
-                AddParameter(param,AnimatorControllerParameterType.Int);
+                AddParameter(param,AnimatorControllerParameterType.Float);
             }
 
             AddTransition(from, to, new AnimatorCondition[1] {conditions}, hasExitTime, exitTime, duration);
@@ -582,6 +583,7 @@ namespace HhotateA.AvatarModifyTools.Core
         Vector2 AlignmentState(AnimatorState state, Vector2 cursor, AnimatorStateMachine machine)
         {
             int index = Array.FindIndex(machine.states, s => s.state.name == state.name);
+            if (index < 0) return Vector2.zero;
             var list = machine.states.ToList();
             if (machine.states[index].position.y < -999f)
             {
@@ -840,7 +842,11 @@ namespace HhotateA.AvatarModifyTools.Core
             var state = GetState(stateName);
             if (!String.IsNullOrWhiteSpace(param))
             {
-                AddParameter(param,AnimatorControllerParameterType.Float);
+                if (asset.parameters.All(p => p.name != param))
+                {
+                    AddParameter(param, AnimatorControllerParameterType.Float);
+                }
+
                 state.timeParameter = param;
                 state.timeParameterActive = true;
             }

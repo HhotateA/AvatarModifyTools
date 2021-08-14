@@ -16,6 +16,7 @@ using System.IO;
 using UnityEditor.Animations;
 using UnityEngine.Animations;
 using Object = UnityEngine.Object;
+using System.Text;
 #if VRC_SDK_VRCSDK3
 using VRC.SDKBase;
 using VRC.SDK3.Avatars.ScriptableObjects;
@@ -97,9 +98,10 @@ namespace HhotateA.AvatarModifyTools.Core
         public bool? WriteDefaultOverride { get; set; } = null;
         private string exportDir = "Assets/";
         private Dictionary<string, string> animRepathList = new Dictionary<string, string>();
-        public void ModifyAvatar(AvatarModifyData assets,bool keepOriginalAsset = true,bool keepOldAsset = false)
+        public void ModifyAvatar(AvatarModifyData assets,bool keepOriginalAsset = true,bool keepOldAsset = false,bool renameParameters = true)
         {
-            if(!keepOldAsset) RevertAvatar(assets);
+            if (renameParameters) assets = RenameAssetsParameters(assets);
+            if (!keepOldAsset) RevertAvatar(assets);
             if (avatar != null)
             {
                 animRepathList = new Dictionary<string,string>();
@@ -793,6 +795,7 @@ namespace HhotateA.AvatarModifyTools.Core
             {
                 foreach (var parameter in originController.parameters)
                 {
+                    parameter.name = GetSafeParam(parameter.name);
                     // すでに同名パラメーターがあれば削除する
                     int index = Array.FindIndex(cloneController.parameters, p => p.name == parameter.name);
                     if (index > -1) cloneController.RemoveParameter(cloneController.parameters[index]);
@@ -841,11 +844,12 @@ namespace HhotateA.AvatarModifyTools.Core
             // パラメータズのコピー作成(重複があった場合スキップ)
             var originalParm = parameters.parameters;
             var newParm = new List<VRCExpressionParameters.Parameter>();
-            for (int i = 0; i < originalParm.Length; i++)
+            foreach (var parameter in parameters.parameters)
             {
-                if (originalParm[i].name != "" && originalParm[i].name != name)
+                if (!String.IsNullOrWhiteSpace(parameter.name) &&
+                    parameter.name != name)
                 {
-                    newParm.Add(originalParm[i]);
+                    newParm.Add(parameter);
                 }
             }
 
@@ -876,19 +880,29 @@ namespace HhotateA.AvatarModifyTools.Core
                 var current = parentnmenu;
                 foreach (var control in menus.controls)
                 {
-                    if (current.controls.Count > 8 && autoNextPage) // 項目が上限に達していたら次ページに飛ぶ
+                    int menuMax = 7;
+                    while (current.controls.Count >= menuMax && autoNextPage) // 項目が上限に達していたら次ページに飛ぶ
                     {
-                        var m = new MenuCreater("NextPage");
-                        m.AddControll(current.controls[7]);
-                        var submenu = m.CreateAsset(exportDir);
-                        current.controls[7] = new VRCExpressionsMenu.Control()
+                        if (current.controls[menuMax].name == "NextPage" &&
+                            current.controls[menuMax].type == VRCExpressionsMenu.Control.ControlType.SubMenu &&
+                            current.controls[menuMax].subMenu != null)
                         {
-                            name = "NextPage",
-                            icon = AssetUtility.LoadAssetAtGuid<Texture2D>(EnvironmentVariable.arrowIcon),
-                            type = VRCExpressionsMenu.Control.ControlType.SubMenu,
-                            subMenu = submenu
-                        };
-                        current = submenu;
+                            current = current.controls[menuMax].subMenu;
+                        }
+                        else
+                        {
+                            var m = new MenuCreater("NextPage");
+                            m.AddControll(current.controls[menuMax]);
+                            var submenu = m.CreateAsset(exportDir);
+                            current.controls[menuMax] = new VRCExpressionsMenu.Control()
+                            {
+                                name = "NextPage",
+                                icon = AssetUtility.LoadAssetAtGuid<Texture2D>(EnvironmentVariable.arrowIcon),
+                                type = VRCExpressionsMenu.Control.ControlType.SubMenu,
+                                subMenu = submenu
+                            };
+                            current = submenu;
+                        }
                         EditorUtility.SetDirty(current);
                     }
                     var newcontroller = new VRCExpressionsMenu.Control()
@@ -987,7 +1001,7 @@ namespace HhotateA.AvatarModifyTools.Core
                 }
 
                 var newParams = new List<VRCExpressionParameters.Parameter>();
-                foreach (var parameter in parameters.parameters)
+                foreach (var parameter in current.parameters)
                 {
                     if (parameters.parameters.Any(p => (
                         p.name == parameter.name &&
@@ -1280,6 +1294,196 @@ namespace HhotateA.AvatarModifyTools.Core
                 }
             }
             return clip;
+        }
+
+        AvatarModifyData RenameAssetsParameters(AvatarModifyData assets)
+        {
+            assets.locomotion_controller = AnimatorControllerParameterRename(assets.locomotion_controller);
+            assets.idle_controller = AnimatorControllerParameterRename(assets.idle_controller);
+            assets.action_controller = AnimatorControllerParameterRename(assets.action_controller);
+            assets.gesture_controller = AnimatorControllerParameterRename(assets.gesture_controller);
+            assets.fx_controller = AnimatorControllerParameterRename(assets.fx_controller);
+            assets.menu = ExpressionMenuParameterRename(assets.menu);
+            assets.parameter = ExpressionParameterRename(assets.parameter);
+            return assets;
+        }
+
+        AnimatorController AnimatorControllerParameterRename(AnimatorController anim)
+        {
+            if(anim == null) return null;
+            anim.parameters = anim.parameters.Select(p => new AnimatorControllerParameter()
+            {
+                name = GetSafeParam(p.name),
+                type = p.type,
+                defaultBool = p.defaultBool,
+                defaultFloat = p.defaultFloat,
+                defaultInt = p.defaultInt,
+            }).ToArray();
+            anim.layers = anim.layers.Select(l =>
+            {
+                l.stateMachine = StateMachineParameterRename(l.stateMachine);
+                return l;
+            }).ToArray();
+            return anim;
+        }
+        
+        AnimatorStateMachine StateMachineParameterRename(AnimatorStateMachine machine)
+        {
+            machine.states = machine.states.Select(s =>
+            {
+                if (s.state.motion is BlendTree)
+                {
+                    BlendTree BlendTreeParameterRename(BlendTree b)
+                    {
+                        b.blendParameter = GetSafeParam(b.blendParameter);
+                        b.blendParameterY = GetSafeParam(b.blendParameterY);
+                        b.children = b.children.Select(c =>
+                        {
+                            if (c.motion is BlendTree)
+                            {
+                                c.motion = BlendTreeParameterRename((BlendTree) c.motion);
+                            }
+                            return c;
+                        }).ToArray();
+                        return b;
+                    }
+                    s.state.motion = BlendTreeParameterRename((BlendTree) s.state.motion);
+                }
+                s.state.timeParameter = GetSafeParam(s.state.timeParameter);
+                s.state.speedParameter = GetSafeParam(s.state.speedParameter);
+                s.state.mirrorParameter = GetSafeParam(s.state.mirrorParameter);
+                s.state.cycleOffsetParameter = GetSafeParam(s.state.cycleOffsetParameter);
+
+                s.state.transitions = s.state.transitions.Select(t =>
+                {
+                    t.conditions = t.conditions.Select(c => new AnimatorCondition()
+                    {
+                        mode = c.mode,
+                        parameter = GetSafeParam(c.parameter),
+                        threshold = c.threshold
+                    }).ToArray();
+                    return t;
+                }).ToArray();
+
+                s.state.behaviours = s.state.behaviours.Select(b =>
+                {
+                    if (b is VRCAvatarParameterDriver)
+                    {
+                        var p = (VRCAvatarParameterDriver) b;
+                        p.parameters = p.parameters.Select(e =>
+                        {
+                            e.name = GetSafeParam(e.name);
+                            return e;
+                        }).ToList();
+                    }
+                    return b;
+                }).ToArray();
+                return s;
+            }).ToArray();
+            
+            machine.entryTransitions = machine.entryTransitions.Select(t =>
+            {
+                t.conditions = t.conditions.Select(c => new AnimatorCondition()
+                {
+                    mode = c.mode,
+                    parameter = GetSafeParam(c.parameter),
+                    threshold = c.threshold
+                }).ToArray();
+                return t;
+            }).ToArray();
+
+            machine.anyStateTransitions = machine.anyStateTransitions.Select(t =>
+            {
+                t.conditions = t.conditions.Select(c => new AnimatorCondition()
+                {
+                    mode = c.mode,
+                    parameter = GetSafeParam(c.parameter),
+                    threshold = c.threshold
+                }).ToArray();
+                return t;
+            }).ToArray();
+
+            machine.stateMachines = machine.stateMachines.Select(m =>
+            {
+                StateMachineParameterRename(m.stateMachine);
+                m.stateMachine.behaviours = m.stateMachine.behaviours.Select(b =>
+                {
+                    if (b is VRCAvatarParameterDriver)
+                    {
+                        var p = (VRCAvatarParameterDriver) b;
+                        p.parameters = p.parameters.Select(e =>
+                        {
+                            e.name = GetSafeParam(e.name);
+                            return e;
+                        }).ToList();
+                    }
+
+                    return b;
+                }).ToArray();
+                return m;
+            }).ToArray();
+            return machine;
+        }
+
+        VRCExpressionParameters ExpressionParameterRename(VRCExpressionParameters param)
+        {
+            if(param == null) return null;
+            if(param.parameters == null) return null;
+            param.parameters = param.parameters.Select(p =>
+                new VRCExpressionParameters.Parameter()
+                {
+                    name = GetSafeParam(p.name),
+                    saved = p.saved,
+                    defaultValue = p.defaultValue,
+                    valueType = p.valueType
+                }
+            ).ToArray();
+            return param;
+        }
+        
+        VRCExpressionsMenu ExpressionMenuParameterRename(VRCExpressionsMenu menu)
+        {
+            if (menu == null) return null;
+            if (menu.controls == null) return null;
+            menu.controls = menu.controls.Select(c =>
+            {
+                if (c.type == VRCExpressionsMenu.Control.ControlType.SubMenu)
+                {
+                    c.subMenu = ExpressionMenuParameterRename(c.subMenu);
+                }
+                c.parameter = new VRCExpressionsMenu.Control.Parameter(){name = GetSafeParam(c.parameter.name)};
+                if (c.subParameters != null)
+                {
+                    c.subParameters = c.subParameters.Select(cc =>
+                    {
+                        return new VRCExpressionsMenu.Control.Parameter(){name = GetSafeParam(cc.name)};
+                    }).ToArray();
+                }
+                return c;
+            }).ToList();
+            return menu;
+        }
+        
+        // パラメータ文字列から2バイト文字の除去を行う
+        public static string GetSafeParam(string param)
+        {
+            if (String.IsNullOrWhiteSpace(param)) return "";
+            StringBuilder builder = new StringBuilder();
+            foreach (char ch in param ) {
+                if ( "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHJIJKLMNOPQRSTUVWXYZ!\"#$%&'()=-~^|\\`@{[}]*:+;_?/>.<,".IndexOf(ch) >= 0 ) {
+                    builder.Append(ch);
+                }
+                else
+                {
+                    int hash = ch.GetHashCode();
+                    int code = hash % 26;
+                    code += (int)'A';
+                    code = Mathf.Clamp(code, (int) 'A', (int) 'Z');
+                    builder.Append((char)code);
+                }
+            }
+
+            return builder.ToString();
         }
 #endif
     }

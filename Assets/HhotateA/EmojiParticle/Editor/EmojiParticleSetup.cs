@@ -90,6 +90,7 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
         private void OnGUI()
         {
             AssetUtility.TitleStyle("絵文字パーティクルセットアップ");
+            AssetUtility.DetailStyle("アバターに好きな画像の絵文字を実装する，簡単なセットアップツールです．",EnvironmentGUIDs.readme);
 #if VRC_SDK_VRCSDK3
             avatar = (VRCAvatarDescriptor) EditorGUILayout.ObjectField("Avatar", avatar,
                 typeof(VRCAvatarDescriptor), true);

@@ -34,6 +34,11 @@ VRChatのアバターで使用できる，尻尾や腕の動きをアニメー�
 1. ExpressionMenuから○○○○Idleを選択
 2. 動かすスピードを設定
 
+## 導入を取り消す
+1. Fx_Animatorから"TailMover_"から始まる名前のレイヤーを削除する．
+2. VRCExpressionsMenuから"TailMover_"から始まる名前の項目を削除する．
+3. VRCExpressionParameters"TailMover_"から始まる名前の項目を削除する．
+
 ## 注意事項
 - アバターのfxAnimatorController,ExpressionMenu,ExpressionParametersに破壊的な変更を加えます．あらかじめ忘れずにバックアップを取ってください．
 
@@ -48,3 +53,4 @@ VRChatのアバターで使用できる，尻尾や腕の動きをアニメー�
 
 ## 更新履歴
 2021/07/31 v1.25
+2021/08/13 v1.26

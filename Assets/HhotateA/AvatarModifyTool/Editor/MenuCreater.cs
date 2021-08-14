@@ -153,7 +153,8 @@ namespace HhotateA.AvatarModifyTools.Core
 
         public void AddRadial(
             string name, Texture2D icon,
-            string param, string radialParam)
+            string radialParam,
+            string param = "", float value = 1f)
         {
             var c = new VRCExpressionsMenu.Control()
             {
@@ -165,6 +166,7 @@ namespace HhotateA.AvatarModifyTools.Core
             if (!string.IsNullOrWhiteSpace(param))
             {
                 c.parameter = new VRCExpressionsMenu.Control.Parameter(){name = param};
+                c.value = value;
             }
             
             c.subParameters = new VRCExpressionsMenu.Control.Parameter[1]

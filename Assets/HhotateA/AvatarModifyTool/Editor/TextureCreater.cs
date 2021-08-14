@@ -190,9 +190,10 @@ namespace HhotateA.AvatarModifyTools.Core
             SyncLayers();
         }
         
-        public void AddLayer(Color col,Gradient gradient)
+        public void AddLayer(Color col,Gradient gradient = null)
         {
             if(LayerCount() > 16) return;
+            if(gradient==null) gradient = new Gradient();
             var rt = new RenderTexture(targetTexture.width,targetTexture.height,0,RenderTextureFormat.ARGBFloat, RenderTextureReadWrite.Default);
             rt.enableRandomWrite = true;
             rt.Create();
@@ -207,9 +208,10 @@ namespace HhotateA.AvatarModifyTools.Core
             });
             SyncLayers();
         }
-        public void AddMask(Color col,Gradient gradient)
+        public void AddMask(Color col,Gradient gradient = null)
         {
             if(LayerCount() > 16) return;
+            if(gradient==null) gradient = new Gradient();
             var rt = new RenderTexture(targetTexture.width,targetTexture.height,0,RenderTextureFormat.ARGBFloat, RenderTextureReadWrite.Default);
             rt.enableRandomWrite = true;
             rt.Create();

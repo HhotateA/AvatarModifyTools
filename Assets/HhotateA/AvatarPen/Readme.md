@@ -14,12 +14,18 @@ VRChatのアバターで使用できる，トレイルタイプの指ペンの�
 ## 使用方法
 1. AvatarのExpressionMenuからPenを選択する．
 2. 色を選択する．
-3. 右手をFingerpointにしたときに，指先からトレイルが出ます．✒
+3. 右手をFingerpointにしたときに，指先からトレイルが出ます．
 4. PenMenuのEraseで消し消しฅ(＾・ω・＾ฅ)
 
 ## 注意事項
 - アバターのfxAnimatorController,ExpressionMenu,ExpressionParametersに破壊的な変更を加えます．あらかじめ忘れずにバックアップを取ってください．
 - ExpressionParameters,ExpressionMenuの項目が上限に達していた場合，正常に導入できない場合があります．その場合は一時的に項目を減らすなどの対処をお願い致します．
+
+## 導入を取り消す
+1. Fx_Animatorから"AvatarPen"から始まる名前のレイヤーを削除する．
+2. VRCExpressionsMenuから"AvatarPen"から始まる名前の項目を削除する．
+3. VRCExpressionParameters"AvatarPen"から始まる名前の項目を削除する．
+4. アバター指先の"Avatar_Pen"オブジェクトを削除する．
 
 ## 利用規約
 - アバターへの同梱，改良，ツールの一部，まるごと含め，二次配布可とします．
@@ -35,3 +41,4 @@ VRChatのアバターで使用できる，トレイルタイプの指ペンの�
 2021/04/06 v1.1 EmojiParticleSetupToolに伴うAvatarModifyToolの破壊的アップデート
 2021/07/08 v1.2 TextureModifyToolのリリースとAvatarModifityToolのアップデート
 2021/07/31 v1.25
+2021/08/13 v1.26

@@ -25,7 +25,7 @@ namespace HhotateA.AvatarModifyTools.AvatarPen
         {
             var wnd = GetWindow<AvatarPenSetup>();
             wnd.titleContent = new GUIContent("AvatarPenSetup");
-            wnd.maxSize = wnd.minSize = new Vector2(340, 250);
+            wnd.maxSize = wnd.minSize = new Vector2(340, 300);
         }
 
 #if VRC_SDK_VRCSDK3
@@ -41,6 +41,7 @@ namespace HhotateA.AvatarModifyTools.AvatarPen
         {
 #if VRC_SDK_VRCSDK3
             AssetUtility.TitleStyle("アバターペンセットアップ");
+            AssetUtility.DetailStyle("アバターに指ペンを実装する，簡単なセットアップツールです．",EnvironmentGUIDs.readme);
             
             avatar = (VRCAvatarDescriptor) EditorGUILayout.ObjectField("Avatar", avatar, typeof(VRCAvatarDescriptor), true);
 

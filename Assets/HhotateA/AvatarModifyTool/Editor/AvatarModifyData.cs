@@ -18,6 +18,7 @@ namespace HhotateA.AvatarModifyTools.Core
     [CreateAssetMenu(menuName = "HhotateA/AvatarModifyData")]
     public class AvatarModifyData : ScriptableObject
     {
+        public string name = "AvatarModifyData";
         public AnimatorController locomotion_controller;
         public AnimatorController idle_controller;
         public AnimatorController gesture_controller;

@@ -298,10 +298,10 @@ Shader "HhotateA/TexturePainter"
                 {
                     float3 hsv = rgb2hsv(col.rgb);
                     hsv = float3(
-                        hsv.x + settings.x,
-                        settings.y < 0.0 ? lerp(0.0,hsv.y,settings.y+1.0) : lerp(hsv.y,1.0,settings.y),
-                        settings.z < 0.0 ? lerp(0.0,hsv.z,settings.z+1.0) : lerp(hsv.z,1.0,settings.z));
-                    float3 rgb = hsv2rgb(float3(hsv.x + settings.x,hsv.y + settings.y,hsv.z + settings.z));
+                        settings.x <= 0.0 ? hsv.x + settings.x : settings.x,
+                        settings.y <= 0.0 ? lerp(0.0,hsv.y,settings.y+1.0) : lerp(hsv.y,1.0,settings.y),
+                        settings.z <= 0.0 ? lerp(0.0,hsv.z,settings.z+1.0) : lerp(hsv.z,1.0,settings.z));
+                    float3 rgb = hsv2rgb(float3(hsv.x,hsv.y,hsv.z));
                     col.rgb = lerp(col.rgb,rgb,getGray(lc));
                 }
                 else if(mode == 8) // color
