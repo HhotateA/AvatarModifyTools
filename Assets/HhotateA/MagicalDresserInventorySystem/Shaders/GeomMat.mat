@@ -1,0 +1,40 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 6
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: GeomMat
+  m_Shader: {fileID: 4800000, guid: d966e1d37c5d75f4582740d758f460eb, type: 3}
+  m_ShaderKeywords: 
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _MainTex:
+        m_Texture: {fileID: 2800000, guid: 15c2f9746c191964e9d8de249578e88e, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Floats:
+    - _AnimationTime: 0.865
+    - _Distance: 5.44
+    - _Factor: 0.5
+    - _Move: 0.1
+    - _MoveNoise: 1
+    - _Rotation: 1
+    - _RotationNoise: 2
+    - _Scale: 5
+    - _ScaleNoise: 1
+    m_Colors:
+    - _Center: {r: 0, g: 0, b: 0, a: 0}
+    - _Color: {r: 1, g: 1, b: 1, a: 1}
+    - _ColorCull: {r: 0.3962264, g: 0.3962264, b: 0.3962264, a: 1}
+    - _Extent: {r: 0.5, g: 0.5, b: 0.5, a: 0.5}
