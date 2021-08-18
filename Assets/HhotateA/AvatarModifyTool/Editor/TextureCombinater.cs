@@ -12,7 +12,6 @@ using System.Linq;
 using UnityEditor;
 using UnityEngine;
 using System.IO;
-using System.Threading.Tasks;
 using Color = UnityEngine.Color;
 
 namespace HhotateA.AvatarModifyTools.Core
