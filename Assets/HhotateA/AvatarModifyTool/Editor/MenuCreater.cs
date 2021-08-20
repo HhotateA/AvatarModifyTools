@@ -280,7 +280,7 @@ namespace HhotateA.AvatarModifyTools.Core
                     foreach (var menu in menus)
                     {
                         AssetDatabase.AddObjectToAsset(menu,path);
-                        SaveSubMenus(menu,path);
+                        //SaveSubMenus(menu,path);
                     }
                 }
                 else
@@ -296,7 +296,7 @@ namespace HhotateA.AvatarModifyTools.Core
                     AssetDatabase.CreateAsset(asset,path);
                     foreach (var menu in menus)
                     {
-                        SaveSubMenus(menu,path);
+                        //SaveSubMenus(menu,path);
                     }
                 }
             }
