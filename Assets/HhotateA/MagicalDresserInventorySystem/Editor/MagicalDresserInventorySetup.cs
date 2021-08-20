@@ -1193,6 +1193,10 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                     // デフォルトエレメントならアクティブをシーンの状態に合わせる
                     foreach (var item in items)
                     {
+                        if (!defaultActive.ContainsKey(item.obj))
+                        {
+                            defaultActive.Add(item.obj,item.obj.activeSelf);
+                        }
                         item.active = defaultActive[item.obj];
                         foreach (var rendOption in item.rendOptions)
                         {
