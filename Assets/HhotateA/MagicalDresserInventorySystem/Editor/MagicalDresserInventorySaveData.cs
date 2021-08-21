@@ -38,10 +38,13 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                 {
                     item.GetRelativeGameobject(root.transform);
                 }
+                menuElement.activeItems = menuElement.activeItems.Where(e => e.obj != null).ToList();
+                
                 foreach (var item in menuElement.inactiveItems)
                 {
                     item.GetRelativeGameobject(root.transform);
                 }
+                menuElement.inactiveItems = menuElement.inactiveItems.Where(e => e.obj != null).ToList();
             }
         }
         public void ApplyPath(GameObject root)
@@ -216,6 +219,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             var cs = path.Split('/');
             foreach (var c in cs)
             {
+                if (!root) return;
                 root = root.FindInChildren(c);
             }
 
@@ -478,7 +482,14 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
     {
         Layer_A,
         Layer_B,
-        Layer_C
+        Layer_C,
+        Layer_D,
+        Layer_E,
+        Layer_F,
+        Layer_G,
+        Layer_H,
+        Layer_I,
+        Layer_J,
     }
 
     public enum ToggleGroup
