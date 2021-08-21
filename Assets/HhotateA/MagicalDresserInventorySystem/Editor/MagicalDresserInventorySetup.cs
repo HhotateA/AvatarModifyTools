@@ -46,6 +46,8 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         private bool notRecommended = false;
         private bool keepOldAsset = false;
         private bool displayItemMode = true;
+
+        private bool idleOverride = false;
         
         Dictionary<Shader,Dictionary<Material, Material>> matlist = new Dictionary<Shader,Dictionary<Material, Material>>();
         Dictionary<GameObject,bool> defaultActive = new Dictionary<GameObject, bool>();
@@ -332,7 +334,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                                         {
                                             foreach (var item in menuElements[index].activeItems)
                                             {
-                                                ItemElementDisplay(item, true, true, true, true);
+                                                ItemElementDisplay(item, true, true, true, true, true);
 
                                                 if (!item.obj)
                                                 {
@@ -347,7 +349,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                                                 {
                                                     using (var add = new EditorGUI.ChangeCheckScope())
                                                     {
-                                                        ItemElementDisplay(item, true, false, true, true);
+                                                        ItemElementDisplay(item, true, false, true, true, true);
 
                                                         if (add.changed)
                                                         {
@@ -362,8 +364,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                                             if (check.changed)
                                             {
                                                 SetObjectActiveForScene(menuElements[index]);
-                                                SyncItemActive(menuElements[index].activeItems,
-                                                    menuElements[index].inactiveItems, true);
+                                                SyncItemActive(menuElements[index].activeItems, menuElements[index].inactiveItems, true);
                                             }
                                         }
                                     }
@@ -371,7 +372,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                                     {
                                         foreach (var item in menuElements[index].inactiveItems)
                                         {
-                                            ItemElementDisplay(item, false, false, true, true);
+                                            ItemElementDisplay(item, true, true, true, true, true);
 
                                             if (!item.obj)
                                             {
@@ -384,7 +385,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                                         {
                                             using (var add = new EditorGUI.ChangeCheckScope())
                                             {
-                                                ItemElementDisplay(item, false, false, true, true);
+                                                ItemElementDisplay(item, false, false, true, true, false);
 
                                                 if (add.changed)
                                                 {
@@ -425,6 +426,8 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                             writeDefault = EditorGUILayout.Toggle("Write Default", writeDefault);
                             keepOldAsset = EditorGUILayout.Toggle("Keep Old Asset", keepOldAsset);
                         }
+                        EditorGUILayout.Space();
+                        idleOverride = EditorGUILayout.Toggle("Override Animation On Idle State", idleOverride);
 
                         EditorGUILayout.Space();
                         EditorGUILayout.Space();
@@ -514,53 +517,71 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             GUILayout.Box("", GUILayout.ExpandWidth(true), GUILayout.Height(1));
         }
         
-        void ItemElementDisplay(ItemElement item,bool activeEdit = true,bool objEdit = true,bool timeEdit = true,bool typeEdit = true)
+        void ItemElementDisplay(ItemElement item,bool activeEdit = true,bool objEdit = true,bool timeEdit = true,bool typeEdit = true, bool optionEdit = true,
+            Action onChange = null)
         {
             using (new EditorGUILayout.HorizontalScope())
             {
                 //EditorGUILayout.LabelField("",GUILayout.Width(5));
                 var r = GUILayoutUtility.GetRect(new GUIContent(""),GUIStyle.none,GUILayout.Width(25));
-                item.extendOption = EditorGUI.Foldout(r,item.extendOption,"");
-                using (new EditorGUI.DisabledScope(!activeEdit))
+                
+                using (new EditorGUI.DisabledScope(!optionEdit))
                 {
-                    item.active = EditorGUILayout.Toggle("", item.active, GUILayout.Width(30));
+                    item.extendOption = EditorGUI.Foldout(r, item.extendOption, "");
                 }
 
-                using (new EditorGUI.DisabledScope(!objEdit))
+                using (var change = new EditorGUI.ChangeCheckScope())
                 {
-                    var o = (GameObject) EditorGUILayout.ObjectField("", item.obj,
-                        typeof(GameObject), true, GUILayout.Width(150));
-                    if (o == null)
+                    using (new EditorGUI.DisabledScope(!activeEdit))
                     {
-                        // 消されたときのみ上書き
-                        item.obj = null;
+                        item.active = EditorGUILayout.Toggle("", item.active, GUILayout.Width(30));
                     }
-                }
 
-                using (new EditorGUI.DisabledScope(!timeEdit))
-                {
-                    item.delay = EditorGUILayout.FloatField("", item.delay, GUILayout.Width(50));
-                    item.duration =
-                        EditorGUILayout.FloatField("", item.duration, GUILayout.Width(50));
-                }
-
-                using (new EditorGUI.DisabledScope(!typeEdit))
-                {
-                    if (item.type == FeedType.Shader)
+                    using (new EditorGUI.DisabledScope(!objEdit))
                     {
-                        item.type = (FeedType) EditorGUILayout.EnumPopup("", item.type,
-                            GUILayout.Width(50));
-                        item.animationShader = (Shader) EditorGUILayout.ObjectField("", item.animationShader,typeof(Shader),true, GUILayout.Width(50));
+                        var o = (GameObject) EditorGUILayout.ObjectField("", item.obj,
+                            typeof(GameObject), true, GUILayout.Width(110));
+                        if (o == null)
+                        {
+                            // 消されたときのみ上書き
+                            item.obj = null;
+                        }
+                        if (GUILayout.Button(objEdit ? "×" : "Sync", GUILayout.Width(40)))
+                        {
+                            item.obj = null;
+                        }
                     }
-                    else
+
+                    using (new EditorGUI.DisabledScope(!timeEdit))
                     {
-                        item.type = (FeedType) EditorGUILayout.EnumPopup("", item.type,
-                            GUILayout.Width(100));
+                        item.delay = EditorGUILayout.FloatField("", item.delay, GUILayout.Width(50));
+                        item.duration =
+                            EditorGUILayout.FloatField("", item.duration, GUILayout.Width(50));
+                    }
+
+                    using (new EditorGUI.DisabledScope(!typeEdit))
+                    {
+                        if (item.type == FeedType.Shader)
+                        {
+                            item.type = (FeedType) EditorGUILayout.EnumPopup("", item.type,
+                                GUILayout.Width(50));
+                            item.animationShader = (Shader) EditorGUILayout.ObjectField("", item.animationShader,typeof(Shader),true, GUILayout.Width(50));
+                        }
+                        else
+                        {
+                            item.type = (FeedType) EditorGUILayout.EnumPopup("", item.type,
+                                GUILayout.Width(100));
+                        }
+                    }
+
+                    if (change.changed)
+                    {
+                        onChange?.Invoke();
                     }
                 }
             }
 
-            if (item.extendOption)
+            if (item.extendOption && optionEdit)
             {
                 foreach (var rendOption in item.rendOptions)
                 {
@@ -572,7 +593,13 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
 
         void RendererOptionDisplay(ItemElement item, RendererOption rendOption)
         {
-            rendOption.extendMaterialOption = EditorGUILayout.Foldout(rendOption.extendMaterialOption,"Change Material : " + rendOption.rend.name);
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                EditorGUILayout.LabelField("", GUILayout.Width(10));
+                rendOption.extendMaterialOption = EditorGUILayout.Foldout(rendOption.extendMaterialOption,
+                    "Change Material : " + rendOption.rend.name);
+            }
+
             if (rendOption.extendMaterialOption)
             {
                 for (int i = 0; i < rendOption.changeMaterialsOption.Count; i++)
@@ -605,15 +632,21 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                 }
             }
 
-            rendOption.extendBlendShapeOption = EditorGUILayout.Foldout(rendOption.extendBlendShapeOption,"Blend Shape Option : " + rendOption.rend.name);
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                EditorGUILayout.LabelField("",GUILayout.Width(10));
+                rendOption.extendBlendShapeOption = EditorGUILayout.Foldout(rendOption.extendBlendShapeOption,
+                    "Blend Shape Option : " + rendOption.rend.name);
+            }
+
             if (rendOption.extendBlendShapeOption)
             {
                 for (int i = 0; i < rendOption.changeBlendShapeOption.Count; i++)
                 {
                     using (new EditorGUILayout.HorizontalScope())
                     {
-                        EditorGUILayout.LabelField("",GUILayout.Width(5));
-                        var toggle = EditorGUILayout.Toggle("", rendOption.changeBlendShapeOption[i] >= 0, GUILayout.Width(50));
+                        EditorGUILayout.LabelField("",GUILayout.Width(30));
+                        var toggle = EditorGUILayout.Toggle("", rendOption.changeBlendShapeOption[i] >= 0, GUILayout.Width(25));
                         EditorGUILayout.LabelField(rendOption.rend.GetMesh().GetBlendShapeName(i),  GUILayout.Width(150));
                         if (toggle)
                         {
@@ -631,7 +664,9 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                             using (new EditorGUI.DisabledScope(true))
                             {
                                 var noChange =
-                                    EditorGUILayout.Slider(rendOption.changeBlendShapeOption[i], 0f, 100f,GUILayout.Width(200));
+                                    GUILayout.HorizontalSlider
+                                        (-1f, 0f, 100f,GUILayout.Width(140));
+                                EditorGUILayout.LabelField("NoChange",GUILayout.Width(60));
                             }
                         }
                     }
@@ -737,8 +772,8 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                     c.AddState("Activate", activateAnim.CreateAsset(path,true));
                     c.AddState("Inactive", inactiveAnim.CreateAsset(path,true));
                     c.AddState("Inactivate", inactivateAnim.CreateAsset(path,true));
-                    c.AddState("ActiveIdle",idleAnim);
-                    c.AddState("InactiveIdle",idleAnim);
+                    c.AddState("ActiveIdle", idleOverride ? activeAnim.Create() : idleAnim);
+                    c.AddState("InactiveIdle", idleOverride ? inactiveAnim.Create() : idleAnim);
                     c.AddTransition("Default","Active",param,true);
                     c.AddTransition("Default","Inactive",param,false);
                     c.AddTransition("Activate","Active");
@@ -813,7 +848,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                         }
                     }
                     c.AddState(i.ToString() + "_Active", activeAnim.CreateAsset(path,true));
-                    c.AddState(i.ToString() + "_Idle", idleAnim);
+                    c.AddState(i.ToString() + "_Idle",  idleOverride ? activeAnim.Create() : idleAnim);
                     c.AddTransition("Default",i.ToString() + "_Active",param,i);
                     c.AddTransition(i.ToString() + "_Active",i.ToString() + "_Idle");
                     //m.AddToggle(menuElement.name,menuElement.icon,param,i);
