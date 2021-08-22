@@ -47,7 +47,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         private bool keepOldAsset = false;
         private bool displayItemMode = true;
 
-        private bool idleOverride = false;
+        private bool idleOverride = true;
         
         Dictionary<Shader,Dictionary<Material, Material>> matlist = new Dictionary<Shader,Dictionary<Material, Material>>();
         Dictionary<GameObject,bool> defaultActive = new Dictionary<GameObject, bool>();

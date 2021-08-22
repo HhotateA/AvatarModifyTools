@@ -101,11 +101,6 @@ namespace HhotateA.AvatarModifyTools.Core
                 AddControll(SubMenuControl(name,icon,subMenu));
             }
         }
-        
-        public void AddSubMenu(MenuCreater subMenu, string name = "", Texture2D icon = null)
-        {
-            AddControll(SubMenuControl(name,icon,subMenu.CreateAsset()));
-        }
 
         public void AddButton(string name,Texture2D icon,string param,float val)
         {

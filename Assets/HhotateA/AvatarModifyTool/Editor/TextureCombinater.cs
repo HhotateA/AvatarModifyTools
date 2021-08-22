@@ -96,11 +96,11 @@ namespace HhotateA.AvatarModifyTools.Core
         public static Texture2D ConvertToPngAndSave(string path,Texture2D tex)
         {
             byte[] bytes = tex.EncodeToPNG();
-            //File.WriteAllBytes(path, bytes);
+            // File.WriteAllBytes(path, bytes);
             using (var fs = new System.IO.FileStream(Path.GetFullPath(path), System.IO.FileMode.Create, System.IO.FileAccess.Write)) {
                 fs.Write(bytes, 0, bytes.Length);
             }
-            path = FileUtil.GetProjectRelativePath(path);
+            path = AssetUtility.GetProjectRelativePath(path);
             AssetDatabase.ImportAsset(path);
             var importer = TextureImporter.GetAtPath(path) as TextureImporter;
             if (importer)
@@ -119,11 +119,11 @@ namespace HhotateA.AvatarModifyTools.Core
         public static Texture2D ConvertToPngAndSave(string path,RenderTexture tex)
         {
             byte[] bytes = Texture2Bytes(tex);
-            //File.WriteAllBytes(path, bytes);
+            // File.WriteAllBytes(path, bytes);
             using (var fs = new System.IO.FileStream(Path.GetFullPath(path), System.IO.FileMode.Create, System.IO.FileAccess.Write)) {
                 fs.Write(bytes, 0, bytes.Length);
             }
-            path = FileUtil.GetProjectRelativePath(path);
+            path = AssetUtility.GetProjectRelativePath(path);
             AssetDatabase.ImportAsset(path);
             var importer = TextureImporter.GetAtPath(path) as TextureImporter;
             if (importer)
