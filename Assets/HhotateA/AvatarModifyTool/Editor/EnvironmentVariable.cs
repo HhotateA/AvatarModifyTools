@@ -165,5 +165,16 @@ namespace HhotateA.AvatarModifyTools.Core
             
             EditorGUILayout.LabelField("powered by AvatarModifyTool @HhotateA_xR",signature);
         }
+
+        public static string GetProjectRelativePath(string path)
+        {
+            path = path.Replace('\\', '/');
+            if (!path.StartsWith("Assets/"))
+            {
+                path = FileUtil.GetProjectRelativePath(path);
+            }
+
+            return path;
+        }
     }
 }

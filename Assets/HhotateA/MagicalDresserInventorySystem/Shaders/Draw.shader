@@ -132,7 +132,7 @@ Shader "HhotateA/DimensionalStorage/Draw"
 				float3 stereocamerapos(){
 				                float3 cameraPos = _WorldSpaceCameraPos;
 				                #if defined(USING_STEREO_MATRICES)
-				                cameraPos = (unity_StereoWorldSpaceCameraPos[0] + unity_StereoWorldSpaceCameraPos[1]) * .5;
+				                // cameraPos = (unity_StereoWorldSpaceCameraPos[0] + unity_StereoWorldSpaceCameraPos[1]) * .5;
 				                #endif
 				                return cameraPos;
 				}

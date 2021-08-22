@@ -38,10 +38,13 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                 {
                     item.GetRelativeGameobject(root.transform);
                 }
+                menuElement.activeItems = menuElement.activeItems.Where(e => e.obj != null).ToList();
+                
                 foreach (var item in menuElement.inactiveItems)
                 {
                     item.GetRelativeGameobject(root.transform);
                 }
+                menuElement.inactiveItems = menuElement.inactiveItems.Where(e => e.obj != null).ToList();
             }
         }
         public void ApplyPath(GameObject root)
@@ -154,9 +157,9 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
     [Serializable]
     public class ItemElement
     {
-        public bool active = true;
-        public GameObject obj;
         public string path;
+        public GameObject obj;
+        public bool active = true;
         public FeedType type = FeedType.None;
         public float delay = 0f;
         public float duration = 1f;
@@ -164,10 +167,15 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         public Shader animationShader;
         public string animationParam = "_AnimationTime";
 
+        public bool extendOption = false;
+        public List<RendererOption> rendOptions = new List<RendererOption>();
+
         public ItemElement(GameObject o,bool defaultActive = true)
         {
             obj = o;
             active = defaultActive;
+
+            rendOptions = o.GetComponentsInChildren<Renderer>().Select(r => new RendererOption(r, o)).ToList();
         }
         
         public ItemElement Clone(bool invert = false)
@@ -181,6 +189,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                 duration = duration,
                 animationShader = animationShader,
                 animationParam = animationParam,
+                rendOptions = rendOptions.Select(r=>r.Clone(obj,invert)).ToList(),
             };
         }
         
@@ -210,10 +219,116 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             var cs = path.Split('/');
             foreach (var c in cs)
             {
+                if (!root) return;
                 root = root.FindInChildren(c);
             }
 
             obj = root.gameObject;
+            foreach (var rendOption in rendOptions)
+            {
+                rendOption.GetRelativeGameobject(obj.transform);
+            }
+
+            rendOptions = rendOptions.Where(r => r.rend != null).ToList();
+        }
+    }
+
+    [Serializable]
+    public class RendererOption
+    {
+        public string path;
+        public Renderer rend;
+        public bool extendMaterialOption = false;
+        public bool extendBlendShapeOption = false;
+        public List<Material> changeMaterialsOption = new List<Material>();
+        public List<float> changeBlendShapeOption = new List<float>();
+
+        public RendererOption(Renderer r, GameObject root)
+        {
+            rend = r;
+            GetRelativePath(root);
+            if (r)
+            {
+                changeMaterialsOption =
+                    Enumerable.Range(0, r.sharedMaterials.Length).Select(_ => (Material) null).ToList();
+                if (r is SkinnedMeshRenderer)
+                {
+                    changeBlendShapeOption = Enumerable.Range(0, r.GetMesh().blendShapeCount).Select(_ => -1f).ToList();
+                }
+            }
+        }
+        
+        public RendererOption Clone(GameObject root,bool invert = false)
+        {
+            var clone = new RendererOption(rend, root);
+            clone.changeMaterialsOption = changeMaterialsOption.ToList();
+            clone.changeBlendShapeOption = changeBlendShapeOption.ToList();
+            if (invert)
+            {
+                for (int i = 0; i < changeMaterialsOption.Count; i++)
+                {
+                    if (changeMaterialsOption[i] == null)
+                    {
+                        clone.changeMaterialsOption[i] = null;
+                    }
+                    else
+                    {
+                        clone.changeMaterialsOption[i] = rend.sharedMaterials[i];
+                    }
+                }
+
+                if (rend is SkinnedMeshRenderer)
+                {
+                    for (int i = 0; i < changeBlendShapeOption.Count; i++)
+                    {
+                        if (changeBlendShapeOption[i] < 0)
+                        {
+                            clone.changeBlendShapeOption[i] = -1f;
+                        }
+                        else
+                        {
+                            clone.changeBlendShapeOption[i] = (rend as SkinnedMeshRenderer)?.GetBlendShapeWeight(i) ?? -1f;
+                        }
+                    }
+                }
+            }
+
+            return clone;
+        }
+        
+        public void GetRelativePath(GameObject root)
+        {
+            if (!rend) return;
+            if (rend.gameObject == root)
+            {
+                path = "";
+            }
+            else
+            {
+                path = rend.gameObject.name;
+                Transform parent = rend.transform.parent;
+                while (parent != null)
+                {
+                    if(parent.gameObject == root) break;
+                    path = parent.name + "/" + path;
+                    parent = parent.parent;
+                }
+            }
+        }
+        
+        public void GetRelativeGameobject(Transform root)
+        {
+            if (!String.IsNullOrWhiteSpace(path))
+            {
+                var cs = path.Split('/');
+                foreach (var c in cs)
+                {
+                    if (!root) return;
+                    root = root.FindInChildren(c);
+                }
+            }
+
+            rend = root.gameObject.GetComponent<Renderer>();
         }
     }
 
@@ -367,7 +482,14 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
     {
         Layer_A,
         Layer_B,
-        Layer_C
+        Layer_C,
+        Layer_D,
+        Layer_E,
+        Layer_F,
+        Layer_G,
+        Layer_H,
+        Layer_I,
+        Layer_J,
     }
 
     public enum ToggleGroup

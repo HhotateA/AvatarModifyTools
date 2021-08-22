@@ -169,6 +169,8 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
             var settingsPath = AssetDatabase.GetAssetPath(data);
             string fileName = System.IO.Path.GetFileNameWithoutExtension (settingsPath);
             string fileDir = System.IO.Path.GetDirectoryName (settingsPath);
+
+            string param = "EmojiParticle_" + fileName;
             
             foreach (var asset in AssetDatabase.LoadAllAssetsAtPath(settingsPath)) {
                 if (AssetDatabase.IsSubAsset(asset)) {
@@ -189,23 +191,27 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
             combinatedMaterial.name = fileName+"_mat";
             AssetDatabase.AddObjectToAsset(combinatedMaterial,settingsPath);
             
+            // param
+            var pc = new ParametersCreater("EmojiParticleParam");
+            pc.AddParam(param,0);
+            
             // メニューの作成
             var iconMenus = new MenuCreater(fileName+"_icons",true);
             for (int i = 0; i < data.emojis.Count; i++)
             {
                 // 0はデフォルトなので+1
-                iconMenus.AddButton(data.emojis[i].name,data.emojis[i].ToTexture2D(),assets.parameter.parameters[0].name,i+1);
+                iconMenus.AddButton(data.emojis[i].name,data.emojis[i].ToTexture2D(),param,i+1);
             }
             // Modify用メニュー作成
             var menu = new MenuCreater("mainMenu");
-            menu.AddSubMenu(iconMenus,"EmojiParticles",TextureCombinater.ResizeSaveTexture(
+            menu.AddSubMenu(iconMenus.CreateAsset(settingsPath,true),"EmojiParticles",TextureCombinater.ResizeSaveTexture(
                 Path.Combine(fileDir,fileName+"_icon"+".png"),
                 combinatedTexture,
                 256,256));
             
             // オリジナルアセットのパーティクルコンポーネント差し替え
             var prefab = Instantiate(assets.items[0].prefab);
-            prefab.name = assets.items[0].prefab.name;
+            prefab.name = assets.items[0].prefab.name + "_" + fileName;
             var ps = prefab.GetComponentsInChildren<ParticleSystem>()[0];
             ps.GetComponent<ParticleSystemRenderer>().material = combinatedMaterial;
             var ts = ps.textureSheetAnimation;
@@ -236,8 +242,8 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
             }
             
             // AnimationClipの作成
-            var controller = new AnimatorControllerCreator("Emoji_Controller","EmojiParticle");
-            controller.AddParameter(assets.parameter.parameters[0].name,AnimatorControllerParameterType.Int);
+            var controller = new AnimatorControllerCreator("Emoji_Controller","EmojiParticle"+fileName);
+            controller.AddParameter(param,AnimatorControllerParameterType.Int);
             var reset = new AnimationClipCreator("Emoji_Anim_Reset",avatar.gameObject);
             reset.AddKeyframe_Gameobject(ps.gameObject, 0f, false);
             reset.AddKeyframe_Gameobject(ps.gameObject, 1f/60f, false);
@@ -249,8 +255,7 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
             controller.AddState("Idle",r);
             controller.AddState("Reset",r);
             controller.SetDefaultState("Idle");
-            controller.AddTransition("Reset","Idle",new AnimatorCondition[]{},true,1f,0f );
-            var anims = new List<AnimationClipCreator>();
+            controller.AddTransition("Reset","Idle",true);
             for (int i = 0; i < data.emojis.Count; i++)
             {
                 var anim = new AnimationClipCreator("Emoji_Anim"+i,avatar.gameObject);
@@ -270,29 +275,16 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
                 var a = anim.CreateAsset(settingsPath, true);
                 controller.AddState("Emoji_"+i,a);
                 // 0はデフォルトなので+1
-                controller.AddTransition("Any","Emoji_"+i,
-                    new AnimatorCondition[]
-                            {
-                                new AnimatorCondition()
-                                {
-                                    mode = AnimatorConditionMode.Equals,
-                                    parameter = assets.parameter.parameters[0].name,
-                                    threshold = i+1
-                                }, 
-                            },false,0.01f,0f );
-                controller.AddTransition("Emoji_"+i,"Reset",new AnimatorCondition[]{},true,1f,0f );
+                controller.AddTransition("Any", "Emoji_" + i, param, i + 1, true,false);
+                controller.AddTransition("Emoji_" + i,"Reset",true );
             }
             controller.LayerMask(AvatarMaskBodyPart.Body,false,false);
             controller.LayerTransformMask(avatar.gameObject,false);
 
             AvatarModifyData newAssets = CreateInstance<AvatarModifyData>();
             {
-                newAssets.locomotion_controller = assets.locomotion_controller;
-                newAssets.idle_controller = assets.idle_controller;
-                newAssets.gesture_controller = assets.gesture_controller;
-                newAssets.action_controller = assets.action_controller;
                 newAssets.fx_controller = controller.CreateAsset(settingsPath, true);
-                newAssets.parameter = assets.parameter;
+                newAssets.parameter = pc.CreateAsset(settingsPath,true);
                 newAssets.menu = menu.CreateAsset(settingsPath,true);
                 newAssets.items = new Item[1]{new Item()
                 {
