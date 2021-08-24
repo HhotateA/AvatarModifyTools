@@ -97,6 +97,11 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
             
             EditorGUILayout.Space();
             
+            data.name = EditorGUILayout.TextField("Save Name",data.name);
+            
+            EditorGUILayout.Space();
+            EditorGUILayout.Space();
+            
             target = (Target) EditorGUILayout.EnumPopup("Target", target);
             
             EditorGUILayout.Space();
@@ -121,17 +126,22 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
                     {
                         var asset = AssetUtility.LoadAssetAtGuid<AvatarModifyData>(EnvironmentGUIDs.emojiModifyData);
                         asset = Instantiate(asset);
-                        var path = EditorUtility.SaveFilePanel("Save", "Assets", "EmojiSetupData", "asset");
+                        
+                        var path = EditorUtility.SaveFilePanel("Save", "Assets","EmojiSetupData" , "asset");
                         if (string.IsNullOrEmpty(path)) return;
-
+                        if (String.IsNullOrWhiteSpace(data.name))
+                        {
+                            string fileName = System.IO.Path.GetFileNameWithoutExtension(path);
+                            data.name = fileName;
+                        }
                         path = FileUtil.GetProjectRelativePath(path);
 
                         data = Instantiate(data);
                         AssetDatabase.CreateAsset(data, path);
 
-                        var newAssets = Setup(asset);
-                        data.assets = newAssets;
-                        AssetDatabase.AddObjectToAsset(newAssets,path);
+                        var modifyAsset = Setup(asset);
+                        data.assets = modifyAsset;
+                        AssetDatabase.AddObjectToAsset(modifyAsset,path);
 
                         var mod = new AvatarModifyTool(avatar, AssetDatabase.GetAssetPath(data));
                         if (writeDefault)
@@ -139,10 +149,10 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
                             mod.WriteDefaultOverride = true;
                         }
 
-                        mod.ModifyAvatar(newAssets,true,keepOldAsset);
+                        mod.ModifyAvatar(modifyAsset,true,keepOldAsset);
 
                         // ゴミ処理忘れずに
-                        DestroyImmediate(newAssets.items[0].prefab);
+                        DestroyImmediate(modifyAsset.items[0].prefab);
                         AssetDatabase.SaveAssets();
                     }
 
@@ -167,10 +177,9 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
         AvatarModifyData Setup(AvatarModifyData assets)
         {
             var settingsPath = AssetDatabase.GetAssetPath(data);
-            string fileName = System.IO.Path.GetFileNameWithoutExtension (settingsPath);
             string fileDir = System.IO.Path.GetDirectoryName (settingsPath);
 
-            string param = "EmojiParticle_" + fileName;
+            string param = "EmojiParticle_" + data.name;
             
             foreach (var asset in AssetDatabase.LoadAllAssetsAtPath(settingsPath)) {
                 if (AssetDatabase.IsSubAsset(asset)) {
@@ -184,11 +193,11 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
     
             // 結合テクスチャの作成
             var textures = data.emojis.Select(icon=>icon.ToTexture2D()).ToArray();
-            var combinatedTexture = TextureCombinater.CombinateSaveTexture(textures,Path.Combine(fileDir,fileName+"_tex"+".png"),tilling);
-            combinatedTexture.name = fileName+"_tex";
+            var combinatedTexture = TextureCombinater.CombinateSaveTexture(textures,Path.Combine(fileDir,data.name+"_tex"+".png"),tilling);
+            combinatedTexture.name = data.name+"_tex";
             // マテリアルの作成
             var combinatedMaterial = SaveParticleMaterial(combinatedTexture);
-            combinatedMaterial.name = fileName+"_mat";
+            combinatedMaterial.name = data.name+"_mat";
             AssetDatabase.AddObjectToAsset(combinatedMaterial,settingsPath);
             
             // param
@@ -196,7 +205,7 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
             pc.AddParam(param,0);
             
             // メニューの作成
-            var iconMenus = new MenuCreater(fileName+"_icons",true);
+            var iconMenus = new MenuCreater(data.name+"_icons",true);
             for (int i = 0; i < data.emojis.Count; i++)
             {
                 // 0はデフォルトなので+1
@@ -205,13 +214,13 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
             // Modify用メニュー作成
             var menu = new MenuCreater("mainMenu");
             menu.AddSubMenu(iconMenus.CreateAsset(settingsPath,true),"EmojiParticles",TextureCombinater.ResizeSaveTexture(
-                Path.Combine(fileDir,fileName+"_icon"+".png"),
+                Path.Combine(fileDir,data.name+"_icon"+".png"),
                 combinatedTexture,
                 256,256));
             
             // オリジナルアセットのパーティクルコンポーネント差し替え
             var prefab = Instantiate(assets.items[0].prefab);
-            prefab.name = assets.items[0].prefab.name + "_" + fileName;
+            prefab.name = assets.items[0].prefab.name + "_" + data.name;
             var ps = prefab.GetComponentsInChildren<ParticleSystem>()[0];
             ps.GetComponent<ParticleSystemRenderer>().material = combinatedMaterial;
             var ts = ps.textureSheetAnimation;
@@ -242,7 +251,7 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
             }
             
             // AnimationClipの作成
-            var controller = new AnimatorControllerCreator("Emoji_Controller","EmojiParticle"+fileName);
+            var controller = new AnimatorControllerCreator("Emoji_Controller","EmojiParticle"+data.name);
             controller.AddParameter(param,AnimatorControllerParameterType.Int);
             var reset = new AnimationClipCreator("Emoji_Anim_Reset",avatar.gameObject);
             reset.AddKeyframe_Gameobject(ps.gameObject, 0f, false);
