@@ -257,7 +257,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                 {
                     data.icon = (Texture2D) EditorGUILayout.ObjectField(data.icon, typeof(Texture2D), false,
                         GUILayout.Width(60), GUILayout.Height(60));
-                    data.name = EditorGUILayout.TextField(data.name, GUILayout.Height(20));
+                    data.saveName = EditorGUILayout.TextField(data.saveName, GUILayout.Height(20));
                 }
 
                 return;
@@ -271,7 +271,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                 {
                     data.icon = (Texture2D) EditorGUILayout.ObjectField(data.icon, typeof(Texture2D), false,
                         GUILayout.Width(60), GUILayout.Height(60));
-                    data.name = EditorGUILayout.TextField(data.name, GUILayout.Height(20));
+                    data.saveName = EditorGUILayout.TextField(data.saveName, GUILayout.Height(20));
                 }
 
                 EditorGUILayout.Space();
@@ -453,10 +453,10 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                                 {
                                     RevertObjectActiveForScene();
                                     var path = EditorUtility.SaveFilePanel("Save", "Assets",
-                                        data.name,
+                                        data.saveName,
                                         "asset");
                                     if (string.IsNullOrWhiteSpace(path)) return;
-                                    data.name = System.IO.Path.GetFileNameWithoutExtension(path);
+                                    data.saveName = System.IO.Path.GetFileNameWithoutExtension(path);
                                     data = ScriptableObject.Instantiate(data);
                                     data.ApplyPath(avatar.gameObject);
                                     AssetDatabase.CreateAsset(data, FileUtil.GetProjectRelativePath(path));
@@ -471,7 +471,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
     #if VRC_SDK_VRCSDK3
                                         var mod = new AvatarModifyTool(avatar);
                                         mod.RevertAnimator(VRCAvatarDescriptor.AnimLayerType.FX,
-                                            "MDInventory" + data.name + "_");
+                                            "MDInventory" + data.saveName + "_");
                                         mod.RevertAvatar(data.assets);
     #endif
                                     }
@@ -483,9 +483,10 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                         if (GUILayout.Button("Export Animation"))
                         {
                             RevertObjectActiveForScene();
-                            var path = EditorUtility.SaveFilePanel("Save", "Assets", data.name,
+                            var path = EditorUtility.SaveFilePanel("Save", "Assets", data.saveName,
                                 "anim");
                             if (string.IsNullOrWhiteSpace(path)) return;
+                            data.saveName = System.IO.Path.GetFileNameWithoutExtension(path);
                             data = Instantiate(data);
                             data.ApplyPath(avatar.gameObject);
                             AssetDatabase.CreateAsset(data, FileUtil.GetProjectRelativePath(path));
@@ -767,7 +768,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                 var menuElement = toggleMenuElements[i];
                 if (menuElement.isToggle)
                 {
-                    var param = "MDInventory_" + data.name + "_Toggle" + i.ToString();
+                    var param = "MDInventory_" + data.saveName + "_Toggle" + i.ToString();
                     p.AddParam(param,menuElement.isDefault,menuElement.isSaved);
                     c.CreateLayer(param);
                     c.AddParameter(param,menuElement.isDefault);
@@ -828,7 +829,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             {
                 var layerMenuElements = menuElements.Where(e => !e.isToggle && e.layer == layer).ToList();
                 if (layerMenuElements.Count == 0) continue;
-                var param = "MDInventory_" + data.name + "_" + layer.ToString();
+                var param = "MDInventory_" + data.saveName + "_" + layer.ToString();
                 p.AddParam(param,0,data.layerSettingses[(int) layer].isSaved);
                 c.CreateLayer(param);
                 c.AddDefaultState("Default",null);
@@ -948,7 +949,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             }
             
             var pm = new MenuCreater("ParentMenu");
-            pm.AddSubMenu(m.CreateAsset(path, true),data.name,data.icon);
+            pm.AddSubMenu(m.CreateAsset(path, true),data.saveName,data.icon);
 
             //p.LoadParams(c,true);
             var am = new AvatarModifyTool(avatar,fileDir);
@@ -964,7 +965,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             {
                 am.WriteDefaultOverride = true;
             }
-            am.RevertAnimator(VRCAvatarDescriptor.AnimLayerType.FX,"MDInventory_" + data.name + "_");
+            am.RevertAnimator(VRCAvatarDescriptor.AnimLayerType.FX,"MDInventory_" + data.saveName + "_");
             am.ModifyAvatar(assets,false,keepOldAsset);
 #endif
             SaveMaterials(path,true);

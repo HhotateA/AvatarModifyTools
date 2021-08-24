@@ -13,12 +13,13 @@ using System;
 using System.Linq;
 using HhotateA.AvatarModifyTools.Core;
 using UnityEditor;
+using UnityEngine.Serialization;
 
 namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
 {
     public class MagicalDresserInventorySaveData : ScriptableObject
     {
-        public string name = "MagicalDresserInventorySaveData";
+        [FormerlySerializedAs("name")] public string saveName = "MagicalDresserInventorySaveData";
         public Texture2D icon = null;
         public List<MenuElement> menuElements = new List<MenuElement>();
         public LayerSettings[] layerSettingses;

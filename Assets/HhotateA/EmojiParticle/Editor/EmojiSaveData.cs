@@ -10,12 +10,14 @@ http://opensource.org/licenses/mit-license.php
 using HhotateA.AvatarModifyTools.Core;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace HhotateA.AvatarModifyTools.EmojiParticle
 {
     [CreateAssetMenu(menuName = "HhotateA/EmojiSaveData")]
     public class EmojiSaveData : ScriptableObject
     {
+        [FormerlySerializedAs("name")] public string saveName = "EmojiParticle";
         public List<IconElement> emojis = new List<IconElement>();
         public AvatarModifyData assets;
     }
