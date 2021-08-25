@@ -68,6 +68,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
     public class LayerSettings
     {
         public bool isSaved = true;
+        public bool isRandom = false;
         //public DefaultValue defaultValue;
         public string defaultElementGUID = "";
 
@@ -101,9 +102,15 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         public LayerGroup layer = LayerGroup.Layer_A;
         public bool isSaved = true;
         public bool isDefault = false;
+        public bool isRandom = false;
         public string param = "";
         public int value = 0;
         public string guid;
+        
+        public List<string> activeSyncOnElements = new List<string>();
+        public List<string> activeSyncOffElements = new List<string>();
+        public List<string> inactiveSyncOnElements = new List<string>();
+        public List<string> inactiveSyncOffElements = new List<string>();
 
         public MenuElement()
         {

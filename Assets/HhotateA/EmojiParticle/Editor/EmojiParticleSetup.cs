@@ -127,7 +127,7 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
                         var asset = AssetUtility.LoadAssetAtGuid<AvatarModifyData>(EnvironmentGUIDs.emojiModifyData);
                         asset = Instantiate(asset);
                         
-                        var path = EditorUtility.SaveFilePanel("Save", "Assets","EmojiSetupData" , "asset");
+                        var path = EditorUtility.SaveFilePanel("Save", "Assets",String.IsNullOrWhiteSpace(data.saveName) ? "EmojiSetupData" : data.saveName , "asset");
                         if (string.IsNullOrEmpty(path)) return;
                         if (String.IsNullOrWhiteSpace(data.saveName))
                         {
