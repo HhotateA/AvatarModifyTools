@@ -108,12 +108,22 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             if (saveddata)
             {
                 wnd.data = saveddata;
+                
+                wnd.LoadReorderableList();
+                
+                var root = wnd.data.GetRoot();
+                if (root)
+                {
+#if VRC_SDK_VRCSDK3
+                    wnd.avatar = root.GetComponent<VRCAvatarDescriptor>();
+#endif
+                    if (wnd.avatar)
+                    {
+                        wnd.data.ApplyRoot(wnd.avatar.gameObject);
+                    }
+                }
             }
-        }
-
-        private void OnEnable()
-        {
-            LoadReorderableList();
+            wnd.LoadReorderableList();
         }
 
         void LoadReorderableList()
@@ -258,6 +268,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                 if (avatar)
                 {
                     data.ApplyRoot(avatar.gameObject);
+                    data.SaveGUID(avatar.gameObject);
                     LoadReorderableList();
                 }
             }
@@ -362,7 +373,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                                     {
                                         using (var check = new EditorGUI.ChangeCheckScope())
                                         {
-                                            foreach (var item in menuElements[index].activeItems)
+                                            foreach (var item in menuElements[index].SafeActiveItems())
                                             {
                                                 ItemElementDisplay(item, true, true, true, true, true);
 
@@ -400,7 +411,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                                     }
                                     else
                                     {
-                                        foreach (var item in menuElements[index].inactiveItems)
+                                        foreach (var item in menuElements[index].SafeInactiveItems())
                                         {
                                             ItemElementDisplay(item, true, true, true, true, true);
 
@@ -433,7 +444,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                                     {
                                         if (menuElements[index].activeItems.All(e => e.obj != newItem))
                                         {
-                                            menuElements[index].activeItems.Add(new ItemElement(newItem,
+                                            menuElements[index].activeItems.Add(new ItemElement(newItem, avatar.gameObject,
                                                 IsMenuElementDefault(menuElements[index])
                                                     ? newItem.gameObject.activeSelf
                                                     : !newItem.gameObject.activeSelf));
@@ -535,7 +546,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                                     if (string.IsNullOrWhiteSpace(path)) return;
                                     data.saveName = System.IO.Path.GetFileNameWithoutExtension(path);
                                     data = ScriptableObject.Instantiate(data);
-                                    data.ApplyPath(avatar.gameObject);
+                                    // data.ApplyPath(avatar.gameObject);
                                     AssetDatabase.CreateAsset(data, FileUtil.GetProjectRelativePath(path));
                                     Setup(path);
                                 }
@@ -565,7 +576,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                             if (string.IsNullOrWhiteSpace(path)) return;
                             data.saveName = System.IO.Path.GetFileNameWithoutExtension(path);
                             data = Instantiate(data);
-                            data.ApplyPath(avatar.gameObject);
+                            // data.ApplyPath(avatar.gameObject);
                             AssetDatabase.CreateAsset(data, FileUtil.GetProjectRelativePath(path));
                             SaveAnim(path);
                         }
@@ -582,7 +593,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
 
         bool GetLayerDefaultActive(LayerGroup layer,GameObject obj)
         {
-            var item = data.layerSettingses[(int) layer].GetDefaultElement(menuElements).activeItems
+            var item = data.layerSettingses[(int) layer].GetDefaultElement(menuElements).SafeActiveItems()
                 .FirstOrDefault(e => e.obj == obj);
             if (item != null)
             {
@@ -799,7 +810,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                 var menuElement = menuElements[i];
                 var activateAnim = new AnimationClipCreator(menuElement.name+"_Activate",avatar.gameObject);
                 var inactivateAnim = new AnimationClipCreator(menuElement.name+"_Inactivate",avatar.gameObject);
-                foreach (var item in menuElement.activeItems)
+                foreach (var item in menuElement.SafeActiveItems())
                 {
                     if (item.active)
                     {
@@ -810,7 +821,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                         SaveElementInactive(item,activateAnim);
                     }
                 }
-                foreach (var item in menuElement.inactiveItems)
+                foreach (var item in menuElement.SafeInactiveItems())
                 {
                     if (item.active)
                     {
@@ -855,7 +866,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                     var inactiveAnim = new AnimationClipCreator(menuElement.name+"_Inactive",avatar.gameObject);
                     var inactivateAnim = new AnimationClipCreator(menuElement.name+"_Inactivate",avatar.gameObject);
                     
-                    var activeItems = menuElement.activeItems.ToList();
+                    var activeItems = menuElement.SafeActiveItems();
                     activeItems.AddRange(ComputeLayerAnotherItems(menuElement));
                     foreach (var item in activeItems)
                     {
@@ -869,7 +880,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                         }
                     }
                     
-                    var inactiveItems = menuElement.inactiveItems.ToList();
+                    var inactiveItems = menuElement.SafeInactiveItems();
                     inactiveItems.AddRange(ComputeLayerInactiveItems(menuElement));
                     foreach (var item in inactiveItems)
                     {
@@ -936,7 +947,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                 for (int i = 0; i < layerMenuElements.Count; i++)
                 {
                     var menuElement = layerMenuElements[i];
-                    var itemElements = menuElement.activeItems.ToList();
+                    var itemElements = menuElement.SafeActiveItems();
                     itemElements.AddRange(ComputeLayerAnotherItems(menuElement));
                     var activeAnim = new AnimationClipCreator(layer.ToString() + i.ToString() + "_Active", avatar.gameObject);
                     foreach (var item in itemElements)
@@ -954,6 +965,15 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                                     activeAnim.AddKeyframe_Material(rendOption.rend,rendOption.changeMaterialsOption[j],0f,j);
                                     activeAnim.AddKeyframe_Material(rendOption.rend,rendOption.changeMaterialsOption[j],1f/60f,j);
                                 }
+                                else
+                                if(materialOverride)
+                                {
+                                    // デフォルトのマテリアルで上書き（同期エラー対策）
+                                    activeAnim.AddKeyframe_Material(rendOption.rend,rendOption.rend.sharedMaterials[i],0f,i);
+                                    activeAnim.AddKeyframe_Material(rendOption.rend,rendOption.rend.sharedMaterials[i],1f/60f,i);
+                                }
+                                activeAnim.AddKeyframe_MaterialParam(0f, rendOption.rend, "_AnimationTime", 1f);
+                                activeAnim.AddKeyframe_MaterialParam(1f/60f, rendOption.rend, "_AnimationTime", 1f);
                             }
                             for (int j = 0; j < rendOption.changeBlendShapeOption.Count; j++)
                             {
@@ -981,9 +1001,9 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                     {
                         if(i==j) continue;
                         var transitionAnim = new AnimationClipCreator( layer.ToString() + j.ToString() + "to" + i.ToString() + "_Transition", avatar.gameObject);
-                        var fromItems = layerMenuElements[j].activeItems.ToList();
+                        var fromItems = layerMenuElements[j].SafeActiveItems();
                         fromItems.AddRange(ComputeLayerAnotherItems(layerMenuElements[j]));
-                        var toItems = layerMenuElements[i].activeItems.ToList();
+                        var toItems = layerMenuElements[i].SafeActiveItems();
                         toItems.AddRange(ComputeLayerAnotherItems(layerMenuElements[i]));
                         foreach (var item in ComputeDefaultItems(layer))
                         { 
@@ -1216,11 +1236,11 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                         if(materialOverride)
                         {
                             // デフォルトのマテリアルで上書き（同期エラー対策）
-                            setAnim.AddKeyframe_Material(rendOption.rend,rendOption.rend.sharedMaterials[i],0f,i);
-                            setAnim.AddKeyframe_Material(rendOption.rend,rendOption.rend.sharedMaterials[i],1f/60f,i);
+                            /*setAnim.AddKeyframe_Material(rendOption.rend,rendOption.rend.sharedMaterials[i],0f,i);
+                            setAnim.AddKeyframe_Material(rendOption.rend,rendOption.rend.sharedMaterials[i],1f/60f,i);*/
                         }
-                        setAnim.AddKeyframe_MaterialParam(0f, rendOption.rend, "_AnimationTime", 0f);
-                        setAnim.AddKeyframe_MaterialParam(1f/60f, rendOption.rend, "_AnimationTime", 0f);
+                        /*setAnim.AddKeyframe_MaterialParam(0f, rendOption.rend, "_AnimationTime", 0f);
+                        setAnim.AddKeyframe_MaterialParam(1f/60f, rendOption.rend, "_AnimationTime", 0f);*/
                     }
                     for (int i = 0; i < rendOption.changeBlendShapeOption.Count; i++)
                     {
@@ -1361,7 +1381,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         void SetObjectActiveForScene(MenuElement menu,bool active = true, bool material = true, bool blendShape = true)
         {
             RevertObjectActiveForScene(active,material,blendShape);
-            foreach (var item in menu.activeItems)
+            foreach (var item in menu.SafeActiveItems())
             {
                 if (active)
                 {
@@ -1463,6 +1483,8 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         // デフォルトのアクティブ状態(シーン)を記録&取得する
         bool GetDefaultActive(GameObject obj)
         {
+            if (!obj) return false;
+                
             if (!defaultActive.ContainsKey(obj))
             {
                 defaultActive.Add(obj,obj.activeSelf);
@@ -1537,13 +1559,13 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
 
         List<ItemElement> ComputeLayerInactiveItems(MenuElement menu)
         {
-            var activeItems = menu.activeItems.ToList();
+            var activeItems = menu.SafeActiveItems();
             if (!menu.isToggle)
             {
                 activeItems.AddRange(ComputeLayerAnotherItems(menu));
             }
             
-            return activeItems.Where(e=>menu.inactiveItems.All(f=>f.obj!=e.obj)).Select(e=>e.Clone(true)).ToList();
+            return activeItems.Where(e=>menu.SafeInactiveItems().All(f=>f.obj!=e.obj)).Select(e=>e.Clone(true)).ToList();
         }
         
         // レイヤー内の未設定アイテムを走査し返す
@@ -1552,7 +1574,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             if (!menu.isToggle)
             {
                 var items = GetActiveItems(menu.layer).
-                    Where(e => menu.activeItems.All(f => f.obj != e.obj)).
+                    Where(e => menu.SafeActiveItems().All(f => f.obj != e.obj)).
                     Select(e => e.Clone(true)).ToList();
                 if (IsMenuElementDefault(menu))
                 {
@@ -1646,7 +1668,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             {
                 if (!menuElement.isToggle && menuElement.layer == layer)
                 {
-                    foreach (var item in menuElement.activeItems)
+                    foreach (var item in menuElement.SafeActiveItems())
                     {
                         items.Add(item.Clone());
                     }
@@ -1664,7 +1686,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             {
                 if (!menuElement.isToggle && menuElement.layer == layer)
                 {
-                    foreach (var item in menuElement.inactiveItems)
+                    foreach (var item in menuElement.SafeInactiveItems())
                     {
                         items.Add(item.Clone());
                     }
@@ -1694,7 +1716,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         {
             foreach (var r in data.menuElements.
                 Where(m=>m.layer == layer).
-                SelectMany(m=>m.activeItems).
+                SelectMany(m=>m.SafeActiveItems()).
                 SelectMany(i=>i.rendOptions))
             {
                 if (r.rend == rend)
@@ -1708,7 +1730,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         // メニュー内のRendererOptionの有効無効を同期
         void ToggleMaterialOption(MenuElement menu,Renderer rend,int index,bool val)
         {
-            foreach (var ie in menu.activeItems)
+            foreach (var ie in menu.SafeActiveItems())
             {
                 foreach (var ro in ie.rendOptions)
                 {
@@ -1719,7 +1741,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                     }
                 }
             }
-            foreach (var ie in menu.inactiveItems)
+            foreach (var ie in menu.SafeInactiveItems())
             {
                 foreach (var ro in ie.rendOptions)
                 {
@@ -1737,7 +1759,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         {
             foreach (var r in data.menuElements.
                 Where(m=>m.layer == layer).
-                SelectMany(m=>m.activeItems).
+                SelectMany(m=>m.SafeActiveItems()).
                 SelectMany(i=>i.rendOptions))
             {
                 if (r.rend == rend)
@@ -1751,7 +1773,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         // メニュー内のRendererOptionの有効無効を同期
         void ToggleBlendshapeOption(MenuElement menu,SkinnedMeshRenderer rend,int index,bool val)
         {
-            foreach (var ie in menu.activeItems)
+            foreach (var ie in menu.SafeActiveItems())
             {
                 foreach (var ro in ie.rendOptions)
                 {
@@ -1762,7 +1784,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                     }
                 }
             }
-            foreach (var ie in menu.inactiveItems)
+            foreach (var ie in menu.SafeInactiveItems())
             {
                 foreach (var ro in ie.rendOptions)
                 {

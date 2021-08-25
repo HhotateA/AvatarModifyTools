@@ -14,12 +14,15 @@ using System.Linq;
 using HhotateA.AvatarModifyTools.Core;
 using UnityEditor;
 using UnityEngine.Serialization;
+using System.Reflection;
 
 namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
 {
     public class MagicalDresserInventorySaveData : ScriptableObject
     {
         [FormerlySerializedAs("name")] public string saveName = "MagicalDresserInventorySaveData";
+        public string avatarName;
+        public int avatarGUID;
         public Texture2D icon = null;
         public List<MenuElement> menuElements = new List<MenuElement>();
         public LayerSettings[] layerSettingses;
@@ -31,6 +34,33 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                 Select(l=>new LayerSettings()).ToArray();
         }
 
+        public void SaveGUID(GameObject root)
+        {
+            avatarGUID = root.GetInstanceID();
+            avatarName = root.name;
+            root = root.transform.parent?.gameObject;
+            while (root)
+            {
+                avatarName = root.name + "/" + avatarName;
+                root = root.transform.parent?.gameObject;
+            }
+        }
+
+        public GameObject GetRoot()
+        {
+            var root = GameObject.Find(avatarName);
+            if (root)
+            {
+                Debug.Log(root.GetInstanceID());
+                if (root.GetInstanceID() == avatarGUID)
+                {
+                    Debug.Log(root.GetInstanceID());
+                    return root;
+                }
+            }
+            return null;
+        }
+
         public void ApplyRoot(GameObject root)
         {
             foreach (var menuElement in menuElements)
@@ -39,27 +69,29 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                 {
                     item.GetRelativeGameobject(root.transform);
                 }
-                menuElement.activeItems = menuElement.activeItems.Where(e => e.obj != null).ToList();
+                // menuElement.activeItems = menuElement.activeItems.Where(e => e.obj != null).ToList();
                 
                 foreach (var item in menuElement.inactiveItems)
                 {
                     item.GetRelativeGameobject(root.transform);
                 }
-                menuElement.inactiveItems = menuElement.inactiveItems.Where(e => e.obj != null).ToList();
+                // menuElement.inactiveItems = menuElement.inactiveItems.Where(e => e.obj != null).ToList();
             }
         }
         public void ApplyPath(GameObject root)
         {
             foreach (var menuElement in menuElements)
             {
-                foreach (var item in menuElement.activeItems)
+                foreach (var item in menuElement.SafeActiveItems())
                 {
                     item.GetRelativePath(root);
                 }
-                foreach (var item in menuElement.inactiveItems)
+                menuElement.activeItems = menuElement.activeItems.Where(e => !String.IsNullOrWhiteSpace(e.path)).ToList();
+                foreach (var item in menuElement.SafeInactiveItems())
                 {
                     item.GetRelativePath(root);
                 }
+                menuElement.inactiveItems = menuElement.inactiveItems.Where(e => !String.IsNullOrWhiteSpace(e.path)).ToList();
             }
         }
     }
@@ -97,7 +129,16 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         public string name;
         public Texture2D icon;
         public List<ItemElement> activeItems = new List<ItemElement>();
+
+        public List<ItemElement> SafeActiveItems()
+        {
+            return activeItems.Where(e => e.obj != null).ToList();
+        }
         public List<ItemElement> inactiveItems = new List<ItemElement>();
+        public List<ItemElement> SafeInactiveItems()
+        {
+            return inactiveItems.Where(e => e.obj != null).ToList();
+        }
         public bool isToggle = true;
         public LayerGroup layer = LayerGroup.Layer_A;
         public bool isSaved = true;
@@ -178,12 +219,14 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         public bool extendOption = false;
         public List<RendererOption> rendOptions = new List<RendererOption>();
 
-        public ItemElement(GameObject o,bool defaultActive = true)
+        public ItemElement(GameObject o,GameObject root = null,bool defaultActive = true)
         {
             obj = o;
             active = defaultActive;
 
-            rendOptions = o.GetComponentsInChildren<Renderer>().Select(r => new RendererOption(r, o)).ToList();
+            rendOptions = o?.GetComponentsInChildren<Renderer>().Select(r => new RendererOption(r, o)).ToList();
+            
+            if(root) GetRelativePath(root);
         }
         
         public ItemElement Clone(bool invert = false)
@@ -223,11 +266,19 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         
         public void GetRelativeGameobject(Transform root)
         {
-            if (String.IsNullOrWhiteSpace(path)) return;
+            if (String.IsNullOrWhiteSpace(path))
+            {
+                obj = null;
+                return;
+            }
             var cs = path.Split('/');
             foreach (var c in cs)
             {
-                if (!root) return;
+                if (!root)
+                {
+                    obj = null;
+                    return;
+                }
                 root = root.FindInChildren(c);
             }
 
@@ -331,7 +382,11 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                 var cs = path.Split('/');
                 foreach (var c in cs)
                 {
-                    if (!root) return;
+                    if (!root)
+                    {
+                        rend = null;
+                        return;
+                    }
                     root = root.FindInChildren(c);
                 }
             }
