@@ -969,8 +969,8 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                                 if(materialOverride)
                                 {
                                     // デフォルトのマテリアルで上書き（同期エラー対策）
-                                    activeAnim.AddKeyframe_Material(rendOption.rend,rendOption.rend.sharedMaterials[i],0f,i);
-                                    activeAnim.AddKeyframe_Material(rendOption.rend,rendOption.rend.sharedMaterials[i],1f/60f,i);
+                                    activeAnim.AddKeyframe_Material(rendOption.rend,rendOption.rend.sharedMaterials[j],0f,i);
+                                    activeAnim.AddKeyframe_Material(rendOption.rend,rendOption.rend.sharedMaterials[j],1f/60f,i);
                                 }
                                 activeAnim.AddKeyframe_MaterialParam(0f, rendOption.rend, "_AnimationTime", 1f);
                                 activeAnim.AddKeyframe_MaterialParam(1f/60f, rendOption.rend, "_AnimationTime", 1f);
