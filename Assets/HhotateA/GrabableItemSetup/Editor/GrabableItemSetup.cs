@@ -37,6 +37,7 @@ namespace HhotateA.AvatarModifyTools.GrabableItem
         private Triggers dropTrigger = Triggers.Menu;
 
         private bool constraintMode = true;
+        private bool safeMode = false;
         private bool deleateObject = true;
 
         private string saveName = "GrabControll";
@@ -91,6 +92,7 @@ namespace HhotateA.AvatarModifyTools.GrabableItem
                 EditorGUILayout.Space();
 
                 constraintMode = EditorGUILayout.Toggle("Use Constraint", constraintMode);
+                safeMode = EditorGUILayout.Toggle("Safe Original Item", safeMode);
 
                 EditorGUILayout.Space();
 
@@ -118,7 +120,7 @@ namespace HhotateA.AvatarModifyTools.GrabableItem
                 {
 #if VRC_SDK_VRCSDK3
                     var am = new AvatarModifyTool(avatar);
-                    am.RevertByKeyword(EnvironmentGUIDs.Prefix);
+                    am.RevertByKeyword(EnvironmentGUIDs.prefix);
                     OnFinishRevert();
 #endif
                 }
@@ -158,13 +160,13 @@ namespace HhotateA.AvatarModifyTools.GrabableItem
 
         void ConstraintSetup(string path)
         {
-            GameObject worldPoint = avatar.transform.FindInChildren(EnvironmentGUIDs.Prefix + saveName + "_WorldPoint")?.gameObject;
-            if (!worldPoint) worldPoint = new GameObject(EnvironmentGUIDs.Prefix + saveName + "_WorldPoint");
+            GameObject worldPoint = avatar.transform.FindInChildren(EnvironmentGUIDs.prefix + saveName + "_WorldPoint")?.gameObject;
+            if (!worldPoint) worldPoint = new GameObject(EnvironmentGUIDs.prefix + saveName + "_WorldPoint");
             worldPoint.transform.SetPositionAndRotation(Vector3.zero,Quaternion.identity);
             worldPoint.transform.SetParent(avatar.transform);
             
-            GameObject worldAnchor = worldPoint.transform.FindInChildren(EnvironmentGUIDs.Prefix + saveName + "_WorldAnchor")?.gameObject;
-            if (!worldAnchor) worldAnchor = new GameObject(EnvironmentGUIDs.Prefix + saveName + "_WorldAnchor");
+            GameObject worldAnchor = worldPoint.transform.FindInChildren(EnvironmentGUIDs.prefix + saveName + "_WorldAnchor")?.gameObject;
+            if (!worldAnchor) worldAnchor = new GameObject(EnvironmentGUIDs.prefix + saveName + "_WorldAnchor");
             worldAnchor.transform.SetPositionAndRotation(Vector3.zero,Quaternion.identity);
             worldAnchor.transform.SetParent(worldPoint.transform);
             var worldConstP = worldAnchor.GetComponent<PositionConstraint>();
@@ -198,40 +200,36 @@ namespace HhotateA.AvatarModifyTools.GrabableItem
             
             if (deleateObject)
             {
-                var ia = worldAnchor.transform.RecursiveFindChild(EnvironmentGUIDs.Prefix + saveName + "_ItemShip");
+                var ia = worldAnchor.transform.RecursiveFindChild(EnvironmentGUIDs.prefix + saveName + "_ItemShip");
                 if(ia) DestroyImmediate(ia.gameObject);
-                var ha = handBone.transform.RecursiveFindChild(EnvironmentGUIDs.Prefix + saveName + "_HandAnchor");
+                var ha = handBone.transform.RecursiveFindChild(EnvironmentGUIDs.prefix + saveName + "_HandAnchor");
                 if(ha) DestroyImmediate(ha.gameObject);
-                var ra = target.transform.parent.RecursiveFindChild(EnvironmentGUIDs.Prefix + saveName + "_RootAnchor");
+                var ra = target.transform.parent.RecursiveFindChild(EnvironmentGUIDs.prefix + saveName + "_RootAnchor");
                 if(ra) DestroyImmediate(ra.gameObject);
             }
             
-            GameObject itemAnchor = new GameObject(EnvironmentGUIDs.Prefix + saveName + "_ItemShip");
+            GameObject itemAnchor = new GameObject(EnvironmentGUIDs.prefix + saveName + "_ItemShip");
             itemAnchor.transform.SetPositionAndRotation(Vector3.zero,Quaternion.identity);
             itemAnchor.transform.SetParent(worldAnchor.transform);
             
-            GameObject handAnchor = new GameObject(EnvironmentGUIDs.Prefix + saveName + "_HandAnchor");
+            GameObject handAnchor = new GameObject(EnvironmentGUIDs.prefix + saveName + "_HandAnchor");
             handAnchor.transform.SetPositionAndRotation(handBone.transform.position,handBone.transform.rotation);
             handAnchor.transform.SetParent(handBone.transform);
             
-            GameObject rootAnchor = new GameObject(EnvironmentGUIDs.Prefix + saveName + "_RootAnchor");
+            GameObject rootAnchor = new GameObject(EnvironmentGUIDs.prefix + saveName + "_RootAnchor");
             rootAnchor.transform.SetPositionAndRotation(target.transform.position,target.transform.rotation);
             rootAnchor.transform.SetParent(target.transform.parent);
-
-            var clone = GameObject.Instantiate(target,itemAnchor.transform);
-            clone.transform.SetPositionAndRotation(Vector3.zero,Quaternion.identity);
-            clone.SetActive(false);
             
             var itemConst = itemAnchor.AddComponent<ParentConstraint>();
             itemConst.AddSource(new ConstraintSource()
             {
                 sourceTransform = rootAnchor.transform,
-                weight = 0f
+                weight = 1f
             });
             itemConst.AddSource(new ConstraintSource()
             {
                 sourceTransform = handAnchor.transform,
-                weight = 1f
+                weight = 0f
             });
             itemConst.weight = 1f;
             itemConst.translationAtRest = Vector3.zero;
@@ -244,35 +242,59 @@ namespace HhotateA.AvatarModifyTools.GrabableItem
             resetAnim.AddKeyframe(0f,itemConst,"m_Enabled",1f);
             resetAnim.AddKeyframe(0f,itemConst,"m_Sources.Array.data[0].weight",1f);
             resetAnim.AddKeyframe(0f,itemConst,"m_Sources.Array.data[1].weight",0f);
-            resetAnim.AddKeyframe_Gameobject(target,0f,true);
-            resetAnim.AddKeyframe_Gameobject(clone,0f,false);
             resetAnim.AddKeyframe(1f/60f,itemConst,"m_Enabled",1f);
             resetAnim.AddKeyframe(1f/60f,itemConst,"m_Sources.Array.data[0].weight",1f);
             resetAnim.AddKeyframe(1f/60f,itemConst,"m_Sources.Array.data[1].weight",0f);
-            resetAnim.AddKeyframe_Gameobject(target,1f/60f,true);
-            resetAnim.AddKeyframe_Gameobject(clone,1f/60f,false);
             
             var grabAnim = new AnimationClipCreator("Grab",avatar.gameObject);
             grabAnim.AddKeyframe(0f,itemConst,"m_Enabled",1f);
             grabAnim.AddKeyframe(0f,itemConst,"m_Sources.Array.data[0].weight",0f);
             grabAnim.AddKeyframe(0f,itemConst,"m_Sources.Array.data[1].weight",1f);
-            grabAnim.AddKeyframe_Gameobject(target,0f,false);
-            grabAnim.AddKeyframe_Gameobject(clone,0f,true);
             grabAnim.AddKeyframe(1f/60f,itemConst,"m_Enabled",1f);
             grabAnim.AddKeyframe(1f/60f,itemConst,"m_Sources.Array.data[0].weight",0f);
             grabAnim.AddKeyframe(1f/60f,itemConst,"m_Sources.Array.data[1].weight",1f);
-            grabAnim.AddKeyframe_Gameobject(target,1f/60f,false);
-            grabAnim.AddKeyframe_Gameobject(clone,1f/60f,true);
             
             var dropAnim = new AnimationClipCreator("Drop",avatar.gameObject);
             dropAnim.AddKeyframe(0f,itemConst,"m_Enabled",0f);
-            dropAnim.AddKeyframe_Gameobject(target,0f,false);
-            dropAnim.AddKeyframe_Gameobject(clone,0f,true);
             dropAnim.AddKeyframe(1f/60f,itemConst,"m_Enabled",0f);
-            dropAnim.AddKeyframe_Gameobject(target,1f/60f,false);
-            dropAnim.AddKeyframe_Gameobject(clone,1f/60f,true);
+
+            if (safeMode)
+            {
+                var targetConst = target.AddComponent<ParentConstraint>();
+                targetConst.AddSource(new ConstraintSource()
+                {
+                    sourceTransform = itemAnchor.transform,
+                    weight = 1f
+                });
+                targetConst.weight = 1f;
+                targetConst.translationAtRest = Vector3.zero;
+                targetConst.rotationAtRest = Vector3.zero;
+                targetConst.locked = true;
+                targetConst.constraintActive = true;
+            }
+            else
+            {
+                var clone = GameObject.Instantiate(target,itemAnchor.transform);
+                clone.transform.SetPositionAndRotation(Vector3.zero,Quaternion.identity);
+                clone.SetActive(false);
+                
+                resetAnim.AddKeyframe_Gameobject(target,0f,true);
+                resetAnim.AddKeyframe_Gameobject(target,1f/60f,true);
+                resetAnim.AddKeyframe_Gameobject(clone,0f,false);
+                resetAnim.AddKeyframe_Gameobject(clone,1f/60f,false);
+                
+                grabAnim.AddKeyframe_Gameobject(target,0f,false);
+                grabAnim.AddKeyframe_Gameobject(target,1f/60f,false);
+                grabAnim.AddKeyframe_Gameobject(clone,0f,true);
+                grabAnim.AddKeyframe_Gameobject(clone,1f/60f,true);
+                
+                dropAnim.AddKeyframe_Gameobject(target,0f,false);
+                dropAnim.AddKeyframe_Gameobject(target,1f/60f,false);
+                dropAnim.AddKeyframe_Gameobject(clone,0f,true);
+                dropAnim.AddKeyframe_Gameobject(clone,1f/60f,true);
+            }
             
-            c.AddDefaultState("Idle");
+            c.AddDefaultState("Idle",resetAnim.Create());
             c.AddState("Reset",resetAnim.Create());
             c.AddState("Grab", grabAnim.Create());
             c.AddState("Drop", dropAnim.Create());
@@ -288,18 +310,8 @@ namespace HhotateA.AvatarModifyTools.GrabableItem
             
             if (grabTrigger == Triggers.Menu)
             {
-                c.AddTransition("Idle","Grab",new AnimatorCondition[1]{ new AnimatorCondition()
-                {
-                    mode = AnimatorConditionMode.If,
-                    parameter = paramGrab,
-                    threshold = 1,
-                }},true,1f,0.2f);
-                c.AddTransition("Grab","Reset",new AnimatorCondition[1]{ new AnimatorCondition()
-                {
-                    mode = AnimatorConditionMode.IfNot,
-                    parameter = paramGrab,
-                    threshold = 0,
-                }},true,1f,0.2f);
+                c.AddTransition("Idle","Grab",paramGrab,true,true,1f,0.2f);
+                c.AddTransition("Grab","Reset",paramGrab,false,true,1f,0.2f);
             }
             else
             {
@@ -315,20 +327,10 @@ namespace HhotateA.AvatarModifyTools.GrabableItem
 
             if (dropTrigger == Triggers.Menu)
             {
-                c.AddTransition("Idle","Drop",new AnimatorCondition[1]{ new AnimatorCondition()
-                {
-                    mode = AnimatorConditionMode.If,
-                    parameter = paramDrop,
-                    threshold = 1,
-                }},true,1f,0f);
+                c.AddTransition("Idle","Drop",paramDrop,true,true,1f,0f);
                 c.AddTransition("Drop","Grab",paramDrop,false);
                 
-                c.AddTransition("Grab","Drop",new AnimatorCondition[1]{ new AnimatorCondition()
-                {
-                    mode = AnimatorConditionMode.If,
-                    parameter = paramDrop,
-                    threshold = 1,
-                }},true,1f,0f);
+                c.AddTransition("Grab","Drop",paramDrop,true,true,1f,0f);
             }
             else
             {
@@ -379,7 +381,7 @@ namespace HhotateA.AvatarModifyTools.GrabableItem
             {
                 am.WriteDefaultOverride = true;
             }
-            am.ModifyAvatar(assets,false,false,true,EnvironmentGUIDs.Prefix);
+            am.ModifyAvatar(assets,false,false,true,EnvironmentGUIDs.prefix);
 #endif
         }
 
@@ -387,11 +389,11 @@ namespace HhotateA.AvatarModifyTools.GrabableItem
         {
             if (deleateObject)
             {
-                var go = handBone.transform.FindInChildren(EnvironmentGUIDs.Prefix + saveName);
+                var go = handBone.transform.FindInChildren(EnvironmentGUIDs.prefix + saveName);
                 if(go) DestroyImmediate(go);
             }
             var grabObj = GameObject.Instantiate(target,handBone.transform,false);
-            grabObj.name = EnvironmentGUIDs.Prefix + saveName;
+            grabObj.name = EnvironmentGUIDs.prefix + saveName;
             
             string paramGrab = saveName + "_Grab";
 
@@ -467,7 +469,7 @@ namespace HhotateA.AvatarModifyTools.GrabableItem
                     assets.menu = m.CreateAsset(path, true);
                 }
                 AssetDatabase.AddObjectToAsset(assets,path);
-                am.ModifyAvatar(assets,false,false,true,EnvironmentGUIDs.Prefix);
+                am.ModifyAvatar(assets,false,false,true,EnvironmentGUIDs.prefix);
 #endif
             }
         }

@@ -514,7 +514,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                                 RevertObjectActiveForScene();
 #if VRC_SDK_VRCSDK3
                                 var mod = new AvatarModifyTool(avatar);
-                                mod.RevertByKeyword(EnvironmentGUIDs.Prefix);
+                                mod.RevertByKeyword(EnvironmentGUIDs.prefix);
                                 OnFinishRevert();
 #endif
                             }
@@ -533,11 +533,20 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                                     var path = EditorUtility.SaveFilePanel("Save", "Assets",
                                         String.IsNullOrWhiteSpace(data.saveName) ? "MagicalDresserInventorySaveData" : data.saveName,
                                         "asset");
-                                    if (string.IsNullOrWhiteSpace(path)) return;
-                                    data.saveName = System.IO.Path.GetFileNameWithoutExtension(path);
+                                    if (string.IsNullOrEmpty(path))
+                                    {
+                                        OnCancel();
+                                        return;
+                                    }
+                                    if (String.IsNullOrWhiteSpace(data.saveName))
+                                    {
+                                        string fileName = System.IO.Path.GetFileNameWithoutExtension(path);
+                                        data.saveName = fileName;
+                                    }
                                     data = ScriptableObject.Instantiate(data);
                                     // data.ApplyPath(avatar.gameObject);
-                                    AssetDatabase.CreateAsset(data, FileUtil.GetProjectRelativePath(path));
+                                    path = FileUtil.GetProjectRelativePath(path);
+                                    AssetDatabase.CreateAsset(data, path);
                                     Setup(path);
                                     OnFinishSetup();
                                 }
@@ -819,7 +828,6 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
 
         void Setup(string path)
         {
-            path = FileUtil.GetProjectRelativePath(path);
             string fileName = System.IO.Path.GetFileNameWithoutExtension(path);
             string fileDir = System.IO.Path.GetDirectoryName (path);
 #if VRC_SDK_VRCSDK3
@@ -1102,7 +1110,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             {
                 am.WriteDefaultOverride = true;
             }
-            am.ModifyAvatar(assets,false,keepOldAsset,true,EnvironmentGUIDs.Prefix);
+            am.ModifyAvatar(assets,false,keepOldAsset,true,EnvironmentGUIDs.prefix);
 #endif
             SaveMaterials(path,true);
         }

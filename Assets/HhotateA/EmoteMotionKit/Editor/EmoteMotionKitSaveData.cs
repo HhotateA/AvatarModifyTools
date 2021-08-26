@@ -20,25 +20,31 @@ namespace HhotateA.AvatarModifyTools.EmoteMotionKit
         [FormerlySerializedAs("name")] public string saveName = "EmoteMotionSaveData";
         public Texture2D icon;
         public List<EmoteElement> emotes = new List<EmoteElement>();
+        public bool isSaved = false;
     }
     
     [System.Serializable]
     public class EmoteElement
     {
-        public string name;
+        public string name = "Emote";
         public Texture2D icon;
         public AnimationClip anim;
         public bool isEmote;
         public bool locomotionStop;
         public bool poseControll;
         public TrackingType tracking;
+
+        public EmoteElement(Texture2D tex)
+        {
+            icon = tex;
+        }
     }
 
     public enum TrackingType
     {
-        HeadTracking,
-        HandTracking,
         FullTracking,
+        HandTracking,
+        HeadTracking,
         Animation,
     }
 }

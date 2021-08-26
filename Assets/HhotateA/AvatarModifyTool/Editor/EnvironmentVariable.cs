@@ -39,6 +39,7 @@ namespace HhotateA.AvatarModifyTools.Core
         {
             "IsLocal",
             "Viseme",
+            "GestureLeft",
             "GestureRight",
             "GestureLeftWeight",
             "GestureRightWeight",

@@ -146,7 +146,7 @@ namespace HhotateA.AvatarModifyTools.TailMover
                     {
 #if VRC_SDK_VRCSDK3
                         var mod = new AvatarModifyTool(avatar);
-                        mod.RevertByKeyword(EnvironmentGUIDs.Prefix);
+                        mod.RevertByKeyword(EnvironmentGUIDs.prefix);
                         OnFinishRevert();
 #endif
                     }
@@ -374,7 +374,7 @@ namespace HhotateA.AvatarModifyTools.TailMover
                     {
 #if VRC_SDK_VRCSDK3
                         var mod = new AvatarModifyTool(avatar);
-                        mod.RevertByKeyword(EnvironmentGUIDs.Prefix);
+                        mod.RevertByKeyword(EnvironmentGUIDs.prefix);
                         OnFinishRevert();
 #endif
                     }
@@ -647,9 +647,11 @@ namespace HhotateA.AvatarModifyTools.TailMover
             tree.blendType = BlendTreeType.SimpleDirectional2D;
             
             controller.AddDefaultState("Idle",idle.Create());
+            controller.AddState("Reset",idle.Create());
             controller.AddState("Blend",tree);
             controller.AddTransition("Idle","Blend", param,true,false,0f,0.25f);
-            controller.AddTransition("Blend","Idle",param,false,false,0f,0.25f);
+            controller.AddTransition("Blend","Reset",param,false,false,0f,0.25f);
+            controller.AddTransition("Reset","Idle");
             if (preset == Presets.RightArm)
             {
 #if VRC_SDK_VRCSDK3
@@ -729,7 +731,7 @@ namespace HhotateA.AvatarModifyTools.TailMover
             {
                 am.WriteDefaultOverride = true;
             }
-            am.ModifyAvatar(newAssets,false,keepOldAsset,true,EnvironmentGUIDs.Prefix);
+            am.ModifyAvatar(newAssets,false,keepOldAsset,true,EnvironmentGUIDs.prefix);
 #else
 #endif
             AssetDatabase.Refresh();
@@ -768,10 +770,12 @@ namespace HhotateA.AvatarModifyTools.TailMover
             
             var controller = new AnimatorControllerCreator(param,param);
             controller.AddDefaultState("Idle",idle.Create());
+            controller.AddState("Reset",idle.Create());
             controller.AddState("Move", move.Create());
             controller.SetStateSpeed("Move",param);
             controller.AddTransition("Idle","Move",param,0.001f,true,false,0f,0.25f);
-            controller.AddTransition("Move","Idle",param,0.001f,false,false,0f,0.25f);
+            controller.AddTransition("Move","Reset",param,0.001f,false,false,0f,0.25f);
+            controller.AddTransition("Reset","Idle");
             
             if (preset == Presets.RightArm)
             {
@@ -824,7 +828,7 @@ namespace HhotateA.AvatarModifyTools.TailMover
             {
                 am.WriteDefaultOverride = true;
             }
-            am.ModifyAvatar(newAssets,false,keepOldAsset,true,EnvironmentGUIDs.Prefix);
+            am.ModifyAvatar(newAssets,false,keepOldAsset,true,EnvironmentGUIDs.prefix);
 #endif
             AssetDatabase.Refresh();
         }

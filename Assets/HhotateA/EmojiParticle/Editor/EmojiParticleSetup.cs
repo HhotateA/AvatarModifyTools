@@ -107,7 +107,7 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
                 {
 #if VRC_SDK_VRCSDK3
                     var am = new AvatarModifyTool(avatar);
-                    am.RevertByKeyword(EnvironmentGUIDs.Prefix);
+                    am.RevertByKeyword(EnvironmentGUIDs.prefix);
                     OnFinishRevert();
 #endif
                 }
@@ -149,7 +149,7 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
                             mod.WriteDefaultOverride = true;
                         }
 
-                        mod.ModifyAvatar(modifyAsset, true, keepOldAsset, true, EnvironmentGUIDs.Prefix);
+                        mod.ModifyAvatar(modifyAsset, true, keepOldAsset, true, EnvironmentGUIDs.prefix);
 
                         // ゴミ処理忘れずに
                         DestroyImmediate(modifyAsset.items[0].prefab);
@@ -218,7 +218,7 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
             
             // オリジナルアセットのパーティクルコンポーネント差し替え
             var prefab = Instantiate(assets.items[0].prefab);
-            prefab.name = EnvironmentGUIDs.Prefix + assets.items[0].prefab.name + "_" + data.saveName;
+            prefab.name = EnvironmentGUIDs.prefix + assets.items[0].prefab.name + "_" + data.saveName;
             var ps = prefab.GetComponentsInChildren<ParticleSystem>()[0];
             ps.GetComponent<ParticleSystemRenderer>().material = combinatedMaterial;
             var ts = ps.textureSheetAnimation;

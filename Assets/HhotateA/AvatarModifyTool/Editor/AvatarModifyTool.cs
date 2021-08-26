@@ -129,6 +129,7 @@ namespace HhotateA.AvatarModifyTools.Core
             {
                 throw new NullReferenceException("VRCAvatarDescriptor : avatar not found");
             }
+            EditorUtility.SetDirty( avatar );
         }
 
         public void RevertByAssets(AvatarModifyData assets)
@@ -156,6 +157,7 @@ namespace HhotateA.AvatarModifyTools.Core
             {
                 throw new NullReferenceException("VRCAvatarDescriptor : avatar not found");
             }
+            EditorUtility.SetDirty( avatar );
         }
 
         public void RevertByKeyword(string keyword)
@@ -176,6 +178,7 @@ namespace HhotateA.AvatarModifyTools.Core
             {
                 throw new NullReferenceException("VRCAvatarDescriptor : avatar not found");
             }
+            EditorUtility.SetDirty( avatar );
         }
 
         void DeleateInChild(Transform parent,string keyword)

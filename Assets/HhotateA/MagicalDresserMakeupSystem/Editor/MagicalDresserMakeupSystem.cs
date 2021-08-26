@@ -130,7 +130,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserMakeupSystem
                 {
 #if VRC_SDK_VRCSDK3
                     var mod = new AvatarModifyTool(avatar);
-                    mod.RevertByKeyword(EnvironmentGUIDs.Prefix);
+                    mod.RevertByKeyword(EnvironmentGUIDs.prefix);
                     OnFinishRevert();
 #endif
                 }
@@ -208,7 +208,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserMakeupSystem
                 {
                     am.WriteDefaultOverride = true;
                 }
-                am.ModifyAvatar(assets,false,keepOldAsser,true,EnvironmentGUIDs.Prefix);
+                am.ModifyAvatar(assets,false,keepOldAsser,true,EnvironmentGUIDs.prefix);
                 taskDone += 1;
                 OnFinishSetup();
 #endif

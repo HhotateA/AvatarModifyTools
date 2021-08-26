@@ -920,11 +920,20 @@ namespace HhotateA.AvatarModifyTools.Core
             },true);
         }
         
-        public void SetLayerLocomotion(string stateName,bool active)
+        public void SetLocomotionControll(string stateName,bool active)
         {
             EditStateMachineBehaviour<VRCAnimatorLocomotionControl>(stateName, (controll) =>
             {
                 controll.disableLocomotion = !active;
+            },false);
+        }
+        public void SetEnterPoseControll(string stateName,bool active,float delay = 0f)
+        {
+            EditStateMachineBehaviour<VRCAnimatorTemporaryPoseSpace>(stateName, (controll) =>
+            {
+                controll.enterPoseSpace = active;
+                controll.fixedDelay = true;
+                controll.delayTime = delay;
             },false);
         }
         
