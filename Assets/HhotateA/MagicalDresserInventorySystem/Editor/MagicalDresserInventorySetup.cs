@@ -528,6 +528,14 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                             keepOldAsset = EditorGUILayout.Toggle("Keep Old Asset", keepOldAsset);
                             idleOverride = EditorGUILayout.Toggle("Override Animation On Idle State", idleOverride);
                             materialOverride = EditorGUILayout.Toggle("Override Material On Activate", materialOverride);
+                            if (GUILayout.Button("Force Revert"))
+                            {
+                                RevertObjectActiveForScene();
+#if VRC_SDK_VRCSDK3
+                                var mod = new AvatarModifyTool(avatar);
+                                mod.RevertByKeyword(EnvironmentGUIDs.Prefix);
+#endif
+                            }
                         }
 
                         EditorGUILayout.Space();
@@ -549,20 +557,6 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                                     // data.ApplyPath(avatar.gameObject);
                                     AssetDatabase.CreateAsset(data, FileUtil.GetProjectRelativePath(path));
                                     Setup(path);
-                                }
-
-                                if (keepOldAsset && data.assets)
-                                {
-                                    if (GUILayout.Button("Revert"))
-                                    {
-                                        RevertObjectActiveForScene();
-    #if VRC_SDK_VRCSDK3
-                                        var mod = new AvatarModifyTool(avatar);
-                                        mod.RevertAnimator(VRCAvatarDescriptor.AnimLayerType.FX,
-                                            "MDInventory" + data.saveName + "_");
-                                        mod.RevertAvatar(data.assets);
-    #endif
-                                    }
                                 }
                             }
                         }
@@ -856,7 +850,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                 var menuElement = toggleMenuElements[i];
                 if (menuElement.isToggle)
                 {
-                    var param = "MDInventory_" + data.saveName + "_Toggle" + i.ToString();
+                    var param = data.saveName + "_Toggle" + i.ToString();
                     p.AddParam(param,menuElement.isDefault,menuElement.isSaved);
                     c.CreateLayer(param);
                     c.AddParameter(param,menuElement.isDefault);
@@ -921,7 +915,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             {
                 var layerMenuElements = menuElements.Where(e => !e.isToggle && e.layer == layer).ToList();
                 if (layerMenuElements.Count == 0) continue;
-                var param = "MDInventory_" + data.saveName + "_" + layer.ToString();
+                var param = data.saveName + "_" + layer.ToString();
                 p.AddParam(param,0,data.layerSettingses[(int) layer].isSaved);
                 c.CreateLayer(param);
                 c.AddDefaultState("Default",null);
@@ -969,8 +963,8 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                                 if(materialOverride)
                                 {
                                     // デフォルトのマテリアルで上書き（同期エラー対策）
-                                    activeAnim.AddKeyframe_Material(rendOption.rend,rendOption.rend.sharedMaterials[j],0f,i);
-                                    activeAnim.AddKeyframe_Material(rendOption.rend,rendOption.rend.sharedMaterials[j],1f/60f,i);
+                                    activeAnim.AddKeyframe_Material(rendOption.rend,rendOption.rend.sharedMaterials[j],0f,j);
+                                    activeAnim.AddKeyframe_Material(rendOption.rend,rendOption.rend.sharedMaterials[j],1f/60f,j);
                                 }
                                 activeAnim.AddKeyframe_MaterialParam(0f, rendOption.rend, "_AnimationTime", 1f);
                                 activeAnim.AddKeyframe_MaterialParam(1f/60f, rendOption.rend, "_AnimationTime", 1f);
@@ -1123,8 +1117,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             {
                 am.WriteDefaultOverride = true;
             }
-            am.RevertAnimator(VRCAvatarDescriptor.AnimLayerType.FX,"MDInventory_" + data.saveName + "_");
-            am.ModifyAvatar(assets,false,keepOldAsset);
+            am.ModifyAvatar(assets,false,keepOldAsset,true,EnvironmentGUIDs.Prefix);
 #endif
             SaveMaterials(path,true);
         }

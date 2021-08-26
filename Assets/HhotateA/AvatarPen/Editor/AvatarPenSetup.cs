@@ -70,7 +70,7 @@ namespace HhotateA.AvatarModifyTools.AvatarPen
                         {
                             mod.WriteDefaultOverride = true;
                         }
-                        mod.ModifyAvatar(asset,true,keepOldAsset);
+                        mod.ModifyAvatar(asset,true,keepOldAsset,true);
                     }
 
                     if (keepOldAsset)
@@ -80,7 +80,7 @@ namespace HhotateA.AvatarModifyTools.AvatarPen
                             var asset = AssetUtility.LoadAssetAtGuid<AvatarModifyData>(
                                 isLeftHand ? EnvironmentGUIDs.penModifyData_Left : EnvironmentGUIDs.penModifyData_right);
                             var mod = new AvatarModifyTool(avatar);
-                            mod.RevertAvatar(asset);
+                            mod.RevertByAssets(asset);
                         }
                     }
                 }

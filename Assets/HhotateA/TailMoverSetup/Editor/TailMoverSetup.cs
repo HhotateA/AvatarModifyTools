@@ -382,7 +382,14 @@ namespace HhotateA.AvatarModifyTools.TailMover
                 if (notRecommended)
                 {
                     writeDefault = EditorGUILayout.Toggle("Write Default", writeDefault); 
-                    keepOldAsset = EditorGUILayout.Toggle("Keep Old Asset", keepOldAsset); 
+                    keepOldAsset = EditorGUILayout.Toggle("Keep Old Asset", keepOldAsset);
+                    if (GUILayout.Button("Force Revert"))
+                    {
+#if VRC_SDK_VRCSDK3
+                        var mod = new AvatarModifyTool(avatar);
+                        mod.RevertByKeyword(EnvironmentGUIDs.Prefix);
+#endif
+                    }
                 }
                 EditorGUILayout.Space();
                 EditorGUILayout.Space();
@@ -631,9 +638,9 @@ namespace HhotateA.AvatarModifyTools.TailMover
             path = FileUtil.GetProjectRelativePath(path);
             var dir = Path.GetDirectoryName(path);
 
-            var param = "TailMover_" + dataname + "_Controll";
-            var paramX = "TailMover_" + dataname + "_Controll_X";
-            var paramY = "TailMover_" + dataname + "_Controll_Y";
+            var param = dataname + "_Controll";
+            var paramX = dataname + "_Controll_X";
+            var paramY = dataname + "_Controll_Y";
             
             var controller = new AnimatorControllerCreator(param,param);
             
@@ -732,7 +739,7 @@ namespace HhotateA.AvatarModifyTools.TailMover
             {
                 am.WriteDefaultOverride = true;
             }
-            am.ModifyAvatar(newAssets,false,keepOldAsset);
+            am.ModifyAvatar(newAssets,false,keepOldAsset,true,EnvironmentGUIDs.Prefix);
 #else
 #endif
             AssetDatabase.Refresh();
@@ -743,7 +750,7 @@ namespace HhotateA.AvatarModifyTools.TailMover
             path = FileUtil.GetProjectRelativePath(path);
             var dir = Path.GetDirectoryName(path);
 
-            string param = "TailMover_" + dataname + "_Idle";
+            string param = dataname + "_Idle";
             
             var move = new AnimationClipCreator("idle",avatar.gameObject,false,true,true);
             RotTail(
@@ -831,7 +838,7 @@ namespace HhotateA.AvatarModifyTools.TailMover
             {
                 am.WriteDefaultOverride = true;
             }
-            am.ModifyAvatar(newAssets,false,keepOldAsset);
+            am.ModifyAvatar(newAssets,false,keepOldAsset,true,EnvironmentGUIDs.Prefix);
 #endif
             AssetDatabase.Refresh();
         }

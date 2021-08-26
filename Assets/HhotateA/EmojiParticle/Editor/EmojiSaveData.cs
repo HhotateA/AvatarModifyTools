@@ -17,7 +17,7 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
     [CreateAssetMenu(menuName = "HhotateA/EmojiSaveData")]
     public class EmojiSaveData : ScriptableObject
     {
-        [FormerlySerializedAs("name")] public string saveName = "EmojiParticle";
+        [FormerlySerializedAs("name")] public string saveName = "";
         public List<IconElement> emojis = new List<IconElement>();
         public AvatarModifyData assets;
     }

@@ -60,7 +60,7 @@ namespace HhotateA.AvatarModifyTools.Core
             if (GUILayout.Button("Revert"))
             {
                 var mod = new AvatarModifyTool(avatar);
-                mod.RevertAvatar(data);
+                mod.RevertByAssets(data);
             }
             AssetUtility.Signature();
 #else

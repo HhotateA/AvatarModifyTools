@@ -34,6 +34,43 @@ namespace HhotateA.AvatarModifyTools.Core
 
         public static string texturePreviewShader = "e422dd8b39cd79343b42ffba228bb53b";
         public static string texturePainterShader = "3cfd9a4da725f0c41b16979b05bd5a53";
+
+        public static string[] VRChatParams = new string[]
+        {
+            "IsLocal",
+            "Viseme",
+            "GestureRight",
+            "GestureLeftWeight",
+            "GestureRightWeight",
+            "AngularY",
+            "VelocityX",
+            "VelocityY",
+            "VelocityZ",
+            "Upright",
+            "Grounded",
+            "Seated",
+            "AFK",
+            "TrackingType",
+            "VRMode",
+            "MuteSelf",
+            "InStation",
+            "Expression1",
+            "Expression2",
+            "Expression3",
+            "Expression4",
+            "Expression5",
+            "Expression6",
+            "Expression7",
+            "Expression8",
+            "Expression9",
+            "Expression10",
+            "Expression11",
+            "Expression12",
+            "Expression13",
+            "Expression14",
+            "Expression15",
+            "Expression16",
+        };
     }
 
     public static class AssetUtility

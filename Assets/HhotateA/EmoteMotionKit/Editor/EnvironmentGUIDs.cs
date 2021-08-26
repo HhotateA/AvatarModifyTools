@@ -7,13 +7,11 @@ Copyright (c) 2021 @HhotateA_xR
 This software is released under the MIT License.
 http://opensource.org/licenses/mit-license.php
 */
-namespace HhotateA.AvatarModifyTools.EmojiParticle
+namespace HhotateA.AvatarModifyTools.EmoteMotionKit
 {
     public static class EnvironmentGUIDs
     {
-        public static string Prefix = "HhotateA_EP_";
-        
+        public static string Prefix = "HhotateA_EMK_";
         public static string readme = "a0b40f9092ea1bd419ae89844c1699ed";
-        public static string emojiModifyData = "7a095102f4fbaf64db6c9ed439a3e4df";
     }
 }

@@ -15,6 +15,8 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserMakeupSystem
 {
     public class EnvironmentGUIDs
     {
+        public static string Prefix = "HhotateA_MDM_";
+
         public static string readme = "8a5ca7da2ee6869468bed6aa839b68cf";
         public static string dresserIcon = "f2090e7d4a6654c42ab620402215324f";
         public static string rotateHIcon = "9041b681958a0bd43a5af42807df1af8";

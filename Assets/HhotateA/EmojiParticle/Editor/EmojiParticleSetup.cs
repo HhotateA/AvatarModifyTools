@@ -114,6 +114,13 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
             {
                 writeDefault = EditorGUILayout.Toggle("Write Default", writeDefault); 
                 keepOldAsset = EditorGUILayout.Toggle("Keep Old Asset", keepOldAsset); 
+                if (GUILayout.Button("Force Revert"))
+                {
+#if VRC_SDK_VRCSDK3
+                    var am = new AvatarModifyTool(avatar);
+                    am.RevertByKeyword(EnvironmentGUIDs.Prefix);
+#endif
+                }
             }
             EditorGUILayout.Space();
             EditorGUILayout.Space();
@@ -149,21 +156,21 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
                             mod.WriteDefaultOverride = true;
                         }
 
-                        mod.ModifyAvatar(modifyAsset,true,keepOldAsset);
+                        mod.ModifyAvatar(modifyAsset,true,keepOldAsset,true,EnvironmentGUIDs.Prefix);
 
                         // ゴミ処理忘れずに
                         DestroyImmediate(modifyAsset.items[0].prefab);
                         AssetDatabase.SaveAssets();
                     }
 
-                    if (keepOldAsset && data.assets)
+                    /*if (keepOldAsset && data.assets)
                     {
                         if (GUILayout.Button("Revert"))
                         {
                             var mod = new AvatarModifyTool(avatar);
-                            mod.RevertAvatar(data.assets);
+                            mod.RevertByAssets(data.assets);
                         }
-                    }
+                    }*/
                 }
             }
             
@@ -179,7 +186,7 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
             var settingsPath = AssetDatabase.GetAssetPath(data);
             string fileDir = System.IO.Path.GetDirectoryName (settingsPath);
 
-            string param = "EmojiParticle_" + data.saveName;
+            string param = data.saveName;
             
             foreach (var asset in AssetDatabase.LoadAllAssetsAtPath(settingsPath)) {
                 if (AssetDatabase.IsSubAsset(asset)) {
@@ -220,7 +227,7 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
             
             // オリジナルアセットのパーティクルコンポーネント差し替え
             var prefab = Instantiate(assets.items[0].prefab);
-            prefab.name = assets.items[0].prefab.name + "_" + data.saveName;
+            prefab.name = EnvironmentGUIDs.Prefix + assets.items[0].prefab.name + "_" + data.saveName;
             var ps = prefab.GetComponentsInChildren<ParticleSystem>()[0];
             ps.GetComponent<ParticleSystemRenderer>().material = combinatedMaterial;
             var ts = ps.textureSheetAnimation;

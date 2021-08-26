@@ -11,6 +11,8 @@ namespace HhotateA.AvatarModifyTools.TailMover
 {
     public static class EnvironmentGUIDs
     {
+        public static string Prefix = "HhotateA_TM_";
+
         public static string readme = "ea909459584d80147bdf4c011cc0d131";
         public static string tailIdleIcon = "25a8fbd6e6e1ab543a75b1d3e69521f3";
         public static string tailControllIcon = "f54f59f8768fdf54eb8bb8c23a1f055c";
