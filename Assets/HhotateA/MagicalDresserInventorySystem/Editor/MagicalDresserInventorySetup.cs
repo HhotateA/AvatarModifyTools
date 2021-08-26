@@ -23,28 +23,20 @@ using VRC.SDK3.Avatars.Components;
 
 namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
 {
-    public class MagicalDresserInventorySetup : EditorWindow
+    public class MagicalDresserInventorySetup : WindowBase
     {
         [MenuItem("Window/HhotateA/マジックドレッサーインベントリ(MDInventorySystem)",false,6)]
         public static void ShowWindow()
         {
             OpenSavedWindow();
         }
-
-#if VRC_SDK_VRCSDK3
-        private VRCAvatarDescriptor avatar;
-#else
-        private Animator avatar;
-#endif
+        
         private MagicalDresserInventorySaveData data;
         private List<MenuElement> menuElements => data.menuElements;
         private SerializedProperty prop;
         ReorderableList menuReorderableList;
         private bool syncInactiveItems = true;
 
-        private bool writeDefault = false;
-        private bool notRecommended = false;
-        private bool keepOldAsset = false;
         private bool displayItemMode = true;
         private bool displaySyncTransition = false;
 
@@ -258,23 +250,15 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
 
         private void OnGUI()
         {
-            AssetUtility.TitleStyle("マジックドレッサーインベントリ");
-            AssetUtility.DetailStyle("アバターのメニューから，服やアイテムの入れ替えを行える設定ツールです．",EnvironmentGUIDs.readme);
-#if VRC_SDK_VRCSDK3
-            var a = EditorGUILayout.ObjectField("", avatar, typeof(VRCAvatarDescriptor), true) as VRCAvatarDescriptor;
-            if (a != avatar)
+            TitleStyle("マジックドレッサーインベントリ");
+            DetailStyle("アバターのメニューから，服やアイテムの入れ替えを行える設定ツールです．",EnvironmentGUIDs.readme);
+            AvatartField("",()=>
             {
-                avatar = a;
-                if (avatar)
-                {
-                    data.ApplyRoot(avatar.gameObject);
-                    data.SaveGUID(avatar.gameObject);
-                    LoadReorderableList();
-                }
-            }
-#else
-            avatar = EditorGUILayout.ObjectField("", avatar, typeof(Animator), true) as Animator;
-#endif
+                data.ApplyRoot(avatar.gameObject);
+                data.SaveGUID(avatar.gameObject);
+                LoadReorderableList();
+            });
+            
             if (!avatar)
             {
                 GUILayout.Label("シーン上のアバターをドラッグ＆ドロップ");
@@ -521,11 +505,8 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                         }
 
                         EditorGUILayout.Space();
-                        notRecommended = EditorGUILayout.Foldout(notRecommended, "VRChat Not Recommended");
-                        if (notRecommended)
+                        if (ShowNotRecommended())
                         {
-                            writeDefault = EditorGUILayout.Toggle("Write Default", writeDefault);
-                            keepOldAsset = EditorGUILayout.Toggle("Keep Old Asset", keepOldAsset);
                             idleOverride = EditorGUILayout.Toggle("Override Animation On Idle State", idleOverride);
                             materialOverride = EditorGUILayout.Toggle("Override Material On Activate", materialOverride);
                             if (GUILayout.Button("Force Revert"))
@@ -534,6 +515,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
 #if VRC_SDK_VRCSDK3
                                 var mod = new AvatarModifyTool(avatar);
                                 mod.RevertByKeyword(EnvironmentGUIDs.Prefix);
+                                OnFinishRevert();
 #endif
                             }
                         }
@@ -557,6 +539,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                                     // data.ApplyPath(avatar.gameObject);
                                     AssetDatabase.CreateAsset(data, FileUtil.GetProjectRelativePath(path));
                                     Setup(path);
+                                    OnFinishSetup();
                                 }
                             }
                         }
@@ -573,16 +556,18 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                             // data.ApplyPath(avatar.gameObject);
                             AssetDatabase.CreateAsset(data, FileUtil.GetProjectRelativePath(path));
                             SaveAnim(path);
+                            status.Success("Finish Export");
                         }
+                        status.Display();
 
                         EditorGUILayout.Space();
-
-                        AssetUtility.Signature();
                     }
                     
-                    EditorGUILayout.Space(10);
+                    EditorGUILayout.Space();
                 }
             }
+
+            Signature();
         }
 
         bool GetLayerDefaultActive(LayerGroup layer,GameObject obj)

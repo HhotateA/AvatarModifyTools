@@ -17,7 +17,7 @@ MonoBehaviour:
     icon: {fileID: 2800000, guid: c93bb797a13f7bd4083bb7b272852ad0, type: 3}
     type: 102
     parameter:
-      name: HhotateA_AP_AvatarPen
+      name: AvatarPen
     value: 1
     style: 0
     subMenu: {fileID: 0}
@@ -27,7 +27,7 @@ MonoBehaviour:
     icon: {fileID: 2800000, guid: c1fffaa456a594d4da0e7c0b0963a669, type: 3}
     type: 102
     parameter:
-      name: HhotateA_AP_AvatarPen
+      name: AvatarPen
     value: 2
     style: 0
     subMenu: {fileID: 0}
@@ -37,7 +37,7 @@ MonoBehaviour:
     icon: {fileID: 2800000, guid: e4177cba3d02b374aa037f5fd68046b8, type: 3}
     type: 102
     parameter:
-      name: HhotateA_AP_AvatarPen
+      name: AvatarPen
     value: 3
     style: 0
     subMenu: {fileID: 0}
@@ -47,7 +47,7 @@ MonoBehaviour:
     icon: {fileID: 2800000, guid: f94edb0b54e0e7c45b1c2dc63de0885b, type: 3}
     type: 102
     parameter:
-      name: HhotateA_AP_AvatarPen
+      name: AvatarPen
     value: 4
     style: 0
     subMenu: {fileID: 0}
@@ -57,7 +57,7 @@ MonoBehaviour:
     icon: {fileID: 2800000, guid: f581ffd57d8695d4494a09fd87c3a56b, type: 3}
     type: 102
     parameter:
-      name: HhotateA_AP_AvatarPen
+      name: AvatarPen
     value: 5
     style: 0
     subMenu: {fileID: 0}
@@ -67,7 +67,7 @@ MonoBehaviour:
     icon: {fileID: 2800000, guid: b0326ed958d1aa741b64ad962adff34c, type: 3}
     type: 101
     parameter:
-      name: HhotateA_AP_AvatarPen
+      name: AvatarPen
     value: 10
     style: 0
     subMenu: {fileID: 0}

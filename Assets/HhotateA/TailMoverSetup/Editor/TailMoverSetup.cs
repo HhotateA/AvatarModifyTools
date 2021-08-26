@@ -21,7 +21,7 @@ using VRC.SDK3.Avatars.Components;
 
 namespace HhotateA.AvatarModifyTools.TailMover
 {
-    public class TailMoverSetup : EditorWindow
+    public class TailMoverSetup : WindowBase
     {
         [MenuItem("Window/HhotateA/なでもふセットアップ(TailMoverSetup)",false,3)]
         public static void ShowWindow()
@@ -30,13 +30,6 @@ namespace HhotateA.AvatarModifyTools.TailMover
             wnd.minSize = new Vector2(600,200);
             wnd.titleContent = new GUIContent("TailMoverSetup");
         }
-
-#if VRC_SDK_VRCSDK3
-        private VRCAvatarDescriptor avatar;
-        private Animator avatarAnim;
-#else
-        private Animator avatar;
-#endif
 
         private bool isHumanoidAnimation = false;
         
@@ -100,10 +93,6 @@ namespace HhotateA.AvatarModifyTools.TailMover
         private bool enableTestRotY = false;
         private float testRotX = 0f;
         private float testRotY = 0f;
-        
-        private bool writeDefault = false;
-        private bool notRecommended = false;
-        private bool keepOldAsset = false;
 
         private string dataname = "TailMover";
 
@@ -142,27 +131,28 @@ namespace HhotateA.AvatarModifyTools.TailMover
 
         private void OnGUI()
         {
-            AssetUtility.TitleStyle("なでもふセットアップ");
-            AssetUtility.DetailStyle("アバターの尻尾やケモ耳のアイドルモーションを設定したり，デスクトップモードで腕を動かす設定ができるツールです．",EnvironmentGUIDs.readme);
-#if VRC_SDK_VRCSDK3
-            var a = EditorGUILayout.ObjectField("", avatar, typeof(VRCAvatarDescriptor), true) as VRCAvatarDescriptor;
-            if (a && a != avatar)
-            {
-                avatarAnim = a.GetComponent<Animator>();
-                if (avatarAnim) avatar = a;
-            }
-#else
-            avatar = EditorGUILayout.ObjectField("", avatar, typeof(Animator), true) as Animator;
-#endif
-            if (!avatar)
-            {
-                EditorGUILayout.LabelField("アバターをドラッグドロップしてください．");
-                return;
-            }
-            
+            TitleStyle("なでもふセットアップ");
+            DetailStyle("アバターの尻尾やケモ耳のアイドルモーションを設定したり，デスクトップモードで腕を動かす設定ができるツールです．",EnvironmentGUIDs.readme);
             EditorGUILayout.Space();
             
-            dataname = EditorGUILayout.TextField("Save Name",dataname);
+            AvatartField();
+            
+            EditorGUILayout.Space();
+            if (!avatar)
+            {
+                if (ShowNotRecommended())
+                {
+                    if (GUILayout.Button("Force Revert"))
+                    {
+#if VRC_SDK_VRCSDK3
+                        var mod = new AvatarModifyTool(avatar);
+                        mod.RevertByKeyword(EnvironmentGUIDs.Prefix);
+                        OnFinishRevert();
+#endif
+                    }
+                }
+                return;
+            }
             
             EditorGUILayout.Space();
             
@@ -256,7 +246,7 @@ namespace HhotateA.AvatarModifyTools.TailMover
                 return;
             }
 
-            if (GUILayout.Button("Setup"))
+            if (GUILayout.Button("Create Animation"))
             {
                 ResetTail();
                 Setup();
@@ -378,16 +368,14 @@ namespace HhotateA.AvatarModifyTools.TailMover
                 }
                 
                 EditorGUILayout.Space();
-                notRecommended = EditorGUILayout.Foldout(notRecommended,"VRChat Not Recommended");
-                if (notRecommended)
+                if (ShowNotRecommended())
                 {
-                    writeDefault = EditorGUILayout.Toggle("Write Default", writeDefault); 
-                    keepOldAsset = EditorGUILayout.Toggle("Keep Old Asset", keepOldAsset);
                     if (GUILayout.Button("Force Revert"))
                     {
 #if VRC_SDK_VRCSDK3
                         var mod = new AvatarModifyTool(avatar);
                         mod.RevertByKeyword(EnvironmentGUIDs.Prefix);
+                        OnFinishRevert();
 #endif
                     }
                 }
@@ -405,6 +393,7 @@ namespace HhotateA.AvatarModifyTools.TailMover
                         dataname = fileName;
                     }
                     SaveTailAnim(path);
+                    OnFinishSetup();
                 }
 
                 EditorGUILayout.Space();
@@ -422,11 +411,16 @@ namespace HhotateA.AvatarModifyTools.TailMover
                             dataname = fileName;
                         }
                         SaveTailIdle(path);
+                        OnFinishSetup();
                     }
                 }
+                EditorGUILayout.Space();
+                status.Display();
+                EditorGUILayout.Space();
+                EditorGUILayout.Space();
             }
             
-            AssetUtility.Signature();
+            Signature();
         }
 
         void Setup()
@@ -645,8 +639,6 @@ namespace HhotateA.AvatarModifyTools.TailMover
             var controller = new AnimatorControllerCreator(param,param);
             
             var idle = new AnimationClipCreator("Idle",avatar.gameObject);
-            ResetTail();
-            RecordAnimation(idle);
             
             var tree = new BlendTree();
             tree.name = "blend";
@@ -654,12 +646,10 @@ namespace HhotateA.AvatarModifyTools.TailMover
             tree.blendParameterY = paramY;
             tree.blendType = BlendTreeType.SimpleDirectional2D;
             
-            controller.AddDefaultState("Idle",null);
+            controller.AddDefaultState("Idle",idle.Create());
             controller.AddState("Blend",tree);
-            controller.AddState("Reset",idle.Create());
             controller.AddTransition("Idle","Blend", param,true,false,0f,0.25f);
-            controller.AddTransition("Blend","Reset",param,false,false,0f,0.25f);
-            controller.AddTransition("Reset","Idle");
+            controller.AddTransition("Blend","Idle",param,false,false,0f,0.25f);
             if (preset == Presets.RightArm)
             {
 #if VRC_SDK_VRCSDK3
@@ -679,13 +669,13 @@ namespace HhotateA.AvatarModifyTools.TailMover
 
             if (preset == Presets.RightArm)
             {
-                controller.SetWriteDefault("Idle",true);
+                // controller.SetWriteDefault("Idle",true);
                 controller.LayerMask(AvatarMaskBodyPart.RightArm, true, false);
                 controller.LayerTransformMask(avatar.gameObject,false);
             }
             else if(preset == Presets.LeftArm)
             {
-                controller.SetWriteDefault("Idle",true);
+               //  controller.SetWriteDefault("Idle",true);
                 controller.LayerMask(AvatarMaskBodyPart.LeftArm, true, false);
                 controller.LayerTransformMask(avatar.gameObject,false);
             }
@@ -774,28 +764,24 @@ namespace HhotateA.AvatarModifyTools.TailMover
                 enableTestRotY ? -1f : testRotY);
             RecordAnimation(move,0.4f, -1f);
             
-            var reset = new AnimationClipCreator("reset",avatar.gameObject);
-            ResetTail();
-            RecordAnimation(reset,0f);
+            var idle = new AnimationClipCreator("Idle",avatar.gameObject);
             
             var controller = new AnimatorControllerCreator(param,param);
-            controller.AddDefaultState("Idle",null);
+            controller.AddDefaultState("Idle",idle.Create());
             controller.AddState("Move", move.Create());
-            controller.AddState("Reset", reset.Create());
             controller.SetStateSpeed("Move",param);
             controller.AddTransition("Idle","Move",param,0.001f,true,false,0f,0.25f);
-            controller.AddTransition("Move","Reset",param,0.001f,false,false,0f,0.25f);
-            controller.AddTransition("Reset","Idle");
+            controller.AddTransition("Move","Idle",param,0.001f,false,false,0f,0.25f);
             
             if (preset == Presets.RightArm)
             {
-                controller.SetWriteDefault("Idle",true);
+                // controller.SetWriteDefault("Idle",true);
                 controller.LayerMask(AvatarMaskBodyPart.RightArm, true, false);
                 controller.LayerTransformMask(avatar.gameObject,false);
             }
             else if(preset == Presets.LeftArm)
             {
-                controller.SetWriteDefault("Idle",true);
+                // controller.SetWriteDefault("Idle",true);
                 controller.LayerMask(AvatarMaskBodyPart.LeftArm, true, false);
                 controller.LayerTransformMask(avatar.gameObject,false);
             }
@@ -813,7 +799,7 @@ namespace HhotateA.AvatarModifyTools.TailMover
 
             var c = controller.CreateAsset(path);
             move.CreateAsset(path, true);
-            reset.CreateAsset(path, true);
+            idle.CreateAsset(path, true);
 #if VRC_SDK_VRCSDK3
             var menu = new MenuCreater(dataname+"_Idle");
             menu.AddRadial(dataname+"_Idle",idleIcons[(int) preset],param);

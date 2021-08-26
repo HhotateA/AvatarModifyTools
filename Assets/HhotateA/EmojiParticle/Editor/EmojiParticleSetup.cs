@@ -24,7 +24,7 @@ using VRC.SDK3.Avatars.Components;
 
 namespace HhotateA.AvatarModifyTools.EmojiParticle
 {
-    public class EmojiParticleSetup : EditorWindow
+    public class EmojiParticleSetup : WindowBase
     {
         [MenuItem("Window/HhotateA/絵文字パーティクルセットアップ(EmojiParticleSetup)",false,2)]
 
@@ -66,16 +66,8 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
                 onAddCallback = l => saveddata.emojis.Add(new IconElement("",null))
             };
         }
-
-#if VRC_SDK_VRCSDK3
-        private VRCAvatarDescriptor avatar;
-#endif
         private Target target;
         ReorderableList emojiReorderableList;
-
-        private bool writeDefault = false;
-        private bool notRecommended = false;
-        private bool keepOldAsset = false;
 
         enum Target
         {
@@ -89,14 +81,14 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
 
         private void OnGUI()
         {
-            AssetUtility.TitleStyle("絵文字パーティクルセットアップ");
-            AssetUtility.DetailStyle("アバターに好きな画像の絵文字を実装する，簡単なセットアップツールです．",EnvironmentGUIDs.readme);
-#if VRC_SDK_VRCSDK3
-            avatar = (VRCAvatarDescriptor) EditorGUILayout.ObjectField("Avatar", avatar,
-                typeof(VRCAvatarDescriptor), true);
-            
+            TitleStyle("絵文字パーティクルセットアップ");
+            DetailStyle("アバターに好きな画像の絵文字を実装する，簡単なセットアップツールです．",EnvironmentGUIDs.readme);
             EditorGUILayout.Space();
             
+            AvatartField();
+            EditorGUILayout.Space();
+            
+#if VRC_SDK_VRCSDK3
             data.saveName = EditorGUILayout.TextField("Save Name",data.saveName);
             
             EditorGUILayout.Space();
@@ -109,16 +101,14 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
             emojiReorderableList.DoLayoutList();
             
             EditorGUILayout.Space();
-            notRecommended = EditorGUILayout.Foldout(notRecommended,"VRChat Not Recommended");
-            if (notRecommended)
+            if (ShowNotRecommended())
             {
-                writeDefault = EditorGUILayout.Toggle("Write Default", writeDefault); 
-                keepOldAsset = EditorGUILayout.Toggle("Keep Old Asset", keepOldAsset); 
                 if (GUILayout.Button("Force Revert"))
                 {
 #if VRC_SDK_VRCSDK3
                     var am = new AvatarModifyTool(avatar);
                     am.RevertByKeyword(EnvironmentGUIDs.Prefix);
+                    OnFinishRevert();
 #endif
                 }
             }
@@ -127,28 +117,31 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
 
             using (new EditorGUI.DisabledScope(avatar==null))
             {
-                using (new EditorGUILayout.HorizontalScope())
+                if (GUILayout.Button("Setup"))
                 {
-                    if (GUILayout.Button("Setup"))
+                    var asset = AssetUtility.LoadAssetAtGuid<AvatarModifyData>(EnvironmentGUIDs.emojiModifyData);
+                    asset = Instantiate(asset);
+                    
+                    var path = EditorUtility.SaveFilePanel("Save", "Assets",String.IsNullOrWhiteSpace(data.saveName) ? "EmojiSetupData" : data.saveName , "asset");
+                    if (string.IsNullOrEmpty(path))
                     {
-                        var asset = AssetUtility.LoadAssetAtGuid<AvatarModifyData>(EnvironmentGUIDs.emojiModifyData);
-                        asset = Instantiate(asset);
-                        
-                        var path = EditorUtility.SaveFilePanel("Save", "Assets",String.IsNullOrWhiteSpace(data.saveName) ? "EmojiSetupData" : data.saveName , "asset");
-                        if (string.IsNullOrEmpty(path)) return;
-                        if (String.IsNullOrWhiteSpace(data.saveName))
-                        {
-                            string fileName = System.IO.Path.GetFileNameWithoutExtension(path);
-                            data.saveName = fileName;
-                        }
-                        path = FileUtil.GetProjectRelativePath(path);
+                        OnCancel();
+                        return;
+                    }
+                    if (String.IsNullOrWhiteSpace(data.saveName))
+                    {
+                        string fileName = System.IO.Path.GetFileNameWithoutExtension(path);
+                        data.saveName = fileName;
+                    }
+                    path = FileUtil.GetProjectRelativePath(path);
 
-                        data = Instantiate(data);
-                        AssetDatabase.CreateAsset(data, path);
-
+                    data = Instantiate(data);
+                    AssetDatabase.CreateAsset(data, path);
+                    try
+                    {
                         var modifyAsset = Setup(asset);
                         data.assets = modifyAsset;
-                        AssetDatabase.AddObjectToAsset(modifyAsset,path);
+                        AssetDatabase.AddObjectToAsset(modifyAsset, path);
 
                         var mod = new AvatarModifyTool(avatar, AssetDatabase.GetAssetPath(data));
                         if (writeDefault)
@@ -156,25 +149,23 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
                             mod.WriteDefaultOverride = true;
                         }
 
-                        mod.ModifyAvatar(modifyAsset,true,keepOldAsset,true,EnvironmentGUIDs.Prefix);
+                        mod.ModifyAvatar(modifyAsset, true, keepOldAsset, true, EnvironmentGUIDs.Prefix);
 
                         // ゴミ処理忘れずに
                         DestroyImmediate(modifyAsset.items[0].prefab);
                         AssetDatabase.SaveAssets();
                     }
-
-                    /*if (keepOldAsset && data.assets)
+                    catch (Exception e)
                     {
-                        if (GUILayout.Button("Revert"))
-                        {
-                            var mod = new AvatarModifyTool(avatar);
-                            mod.RevertByAssets(data.assets);
-                        }
-                    }*/
+                        OnError(e);
+                        throw;
+                    }
+                    OnFinishSetup();
                 }
+                status.Display();
             }
             
-            AssetUtility.Signature();
+            Signature();
 #else
             EditorGUILayout.LabelField("Please import VRCSDK3.0 in your project.");
 #endif

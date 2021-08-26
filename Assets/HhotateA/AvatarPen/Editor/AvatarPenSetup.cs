@@ -17,7 +17,7 @@ using VRC.SDK3.Avatars.Components;
 
 namespace HhotateA.AvatarModifyTools.AvatarPen
 {
-    public class AvatarPenSetup : EditorWindow
+    public class AvatarPenSetup : WindowBase
     {
         [MenuItem("Window/HhotateA/アバターペンセットアップ(AvatarPenSetup)",false,1)]
 
@@ -27,32 +27,23 @@ namespace HhotateA.AvatarModifyTools.AvatarPen
             wnd.titleContent = new GUIContent("AvatarPenSetup");
             wnd.maxSize = wnd.minSize = new Vector2(340, 300);
         }
-
-#if VRC_SDK_VRCSDK3
-        private VRCAvatarDescriptor avatar;
-#endif
         private bool isLeftHand = false;
-
-        private bool writeDefault = false;
-        private bool notRecommended = false;
-        private bool keepOldAsset = false;
 
         private void OnGUI()
         {
 #if VRC_SDK_VRCSDK3
-            AssetUtility.TitleStyle("アバターペンセットアップ");
-            AssetUtility.DetailStyle("アバターに指ペンを実装する，簡単なセットアップツールです．",EnvironmentGUIDs.readme);
+            TitleStyle("アバターペンセットアップ");
+            DetailStyle("アバターに指ペンを実装する，簡単なセットアップツールです．",EnvironmentGUIDs.readme);
             
-            avatar = (VRCAvatarDescriptor) EditorGUILayout.ObjectField("Avatar", avatar, typeof(VRCAvatarDescriptor), true);
+            AvatartField("Avatar");
 
             EditorGUILayout.Space();
             isLeftHand = EditorGUILayout.Toggle("Left Hand", isLeftHand);
             EditorGUILayout.Space();
-            notRecommended = EditorGUILayout.Foldout(notRecommended,"VRChat Not Recommended");
-            if (notRecommended)
+
+            if (ShowNotRecommended())
             {
-                writeDefault = EditorGUILayout.Toggle("Write Default", writeDefault); 
-                keepOldAsset = EditorGUILayout.Toggle("Keep Old Asset", keepOldAsset); 
+                
             }
             EditorGUILayout.Space();
             EditorGUILayout.Space();
@@ -63,14 +54,23 @@ namespace HhotateA.AvatarModifyTools.AvatarPen
                 {
                     if (GUILayout.Button("Setup"))
                     {
-                        var asset = AssetUtility.LoadAssetAtGuid<AvatarModifyData>(
-                            isLeftHand ? EnvironmentGUIDs.penModifyData_Left : EnvironmentGUIDs.penModifyData_right);
-                        var mod = new AvatarModifyTool(avatar);
-                        if (writeDefault)
+                        try
                         {
-                            mod.WriteDefaultOverride = true;
+                            var asset = AssetUtility.LoadAssetAtGuid<AvatarModifyData>(
+                                isLeftHand ? EnvironmentGUIDs.penModifyData_Left : EnvironmentGUIDs.penModifyData_right);
+                            var mod = new AvatarModifyTool(avatar);
+                            if (writeDefault)
+                            {
+                                mod.WriteDefaultOverride = true;
+                            }
+                            mod.ModifyAvatar(asset,true,keepOldAsset);
                         }
-                        mod.ModifyAvatar(asset,true,keepOldAsset,true);
+                        catch (Exception e)
+                        {
+                            OnError(e);
+                            throw;
+                        }
+                        OnFinishSetup();
                     }
 
                     if (keepOldAsset)
@@ -81,12 +81,14 @@ namespace HhotateA.AvatarModifyTools.AvatarPen
                                 isLeftHand ? EnvironmentGUIDs.penModifyData_Left : EnvironmentGUIDs.penModifyData_right);
                             var mod = new AvatarModifyTool(avatar);
                             mod.RevertByAssets(asset);
+                            OnFinishRevert();
                         }
                     }
                 }
             }
+            status.Display();
             
-            AssetUtility.Signature();
+            Signature();
 #else
             EditorGUILayout.LabelField("Please import VRCSDK3.0 in your project.");
 #endif

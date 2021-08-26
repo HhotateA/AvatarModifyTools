@@ -20,7 +20,7 @@ using VRC.SDK3.Avatars.Components;
 
 namespace HhotateA.AvatarModifyTools.GrabableItem
 {
-    public class GrabableItemSetup : EditorWindow
+    public class GrabableItemSetup : WindowBase
     {
         [MenuItem("Window/HhotateA/アバターアイテムセットアップ(GrabableItemSetup)",false,5)]
 
@@ -29,11 +29,6 @@ namespace HhotateA.AvatarModifyTools.GrabableItem
             var wnd = GetWindow<GrabableItemSetup>();
             wnd.titleContent = new GUIContent("GrabableItemSetup");
         }
-#if VRC_SDK_VRCSDK3
-        private VRCAvatarDescriptor avatar;
-#else
-        private Animator avatar;
-#endif
         private GameObject handBone;
         private GameObject worldBone;
         private GameObject target;
@@ -43,9 +38,6 @@ namespace HhotateA.AvatarModifyTools.GrabableItem
 
         private bool constraintMode = true;
         private bool deleateObject = true;
-        private bool writeDefault = false;
-        private bool notRecommended = false;
-        private bool keepOldAsser = false;
 
         private string saveName = "GrabControll";
 
@@ -57,30 +49,18 @@ namespace HhotateA.AvatarModifyTools.GrabableItem
 
         private void OnGUI()
         {
-            AssetUtility.TitleStyle("アバターアイテムセットアップ(GrabableItemSetup)");
-            AssetUtility.DetailStyle(
+            TitleStyle("アバターアイテムセットアップ(GrabableItemSetup)");
+            DetailStyle(
                 "アバターに付属したアイテムを，手に持ったり，ワールドに置いたりするための簡単なセットアップツールです．",
                 EnvironmentGUIDs.readme);
-#if VRC_SDK_VRCSDK3
-            var newAvatar = (VRCAvatarDescriptor) EditorGUILayout.ObjectField("Avatar", avatar, typeof(VRCAvatarDescriptor), true);
-#else
-            var newAvatar = (Animator) EditorGUILayout.ObjectField("Avatar", avatar, typeof(Animator), true);
-#endif
-            if (newAvatar)
-            {
-                if (newAvatar != avatar)
+            AvatartField("Avatar",
+                () =>
                 {
-                    avatar = newAvatar;
-                    var anim = newAvatar.GetComponent<Animator>();
-                    if (anim)
+                    if (avatarAnim.isHuman)
                     {
-                        if (anim.isHuman)
-                        {
-                            handBone = anim.GetHumanBones()[(int) HumanBodyBones.RightHand].gameObject;
-                        }
+                        handBone = avatarAnim.GetHumanBones()[(int) HumanBodyBones.RightHand].gameObject;
                     }
-                }
-            }
+                });
             
             EditorGUILayout.Space();
             EditorGUILayout.Space();
@@ -132,16 +112,14 @@ namespace HhotateA.AvatarModifyTools.GrabableItem
             }
 
             EditorGUILayout.Space();
-            notRecommended = EditorGUILayout.Foldout(notRecommended,"VRChat Not Recommended");
-            if (notRecommended)
+            if (ShowNotRecommended())
             {
-                writeDefault = EditorGUILayout.Toggle("Write Default", writeDefault); 
-                keepOldAsser = EditorGUILayout.Toggle("Keep Old Asset", keepOldAsser);
                 if (GUILayout.Button("Force Revert"))
                 {
 #if VRC_SDK_VRCSDK3
                     var am = new AvatarModifyTool(avatar);
                     am.RevertByKeyword(EnvironmentGUIDs.Prefix);
+                    OnFinishRevert();
 #endif
                 }
             }
@@ -167,10 +145,15 @@ namespace HhotateA.AvatarModifyTools.GrabableItem
                     {
                         SimpleSetup(path);
                     }
+                    OnFinishSetup();
                 }
             }
+            status.Display();
+            
+            EditorGUILayout.Space();
+            EditorGUILayout.Space();
 
-            AssetUtility.Signature();
+            Signature();
         }
 
         void ConstraintSetup(string path)

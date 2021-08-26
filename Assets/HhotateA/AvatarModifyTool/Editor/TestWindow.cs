@@ -16,7 +16,7 @@ using VRC.SDK3.Avatars.Components;
 
 namespace HhotateA.AvatarModifyTools.Core
 {
-    public class TestWindow : EditorWindow
+    public class TestWindow : WindowBase
     {
         [OnOpenAssetAttribute(0)]
         public static bool step0(int instanceID, int line)
@@ -34,23 +34,19 @@ namespace HhotateA.AvatarModifyTools.Core
             wnd.data = data;
         }
         
-#if VRC_SDK_VRCSDK3
-        private VRCAvatarDescriptor avatar;
-#endif
         private AvatarModifyData data;
-        private bool writeDefault = false;
         private bool saveOrigin = true;
-        private bool keepOldAsset = false;
         private void OnGUI()
         {
-            AssetUtility.TitleStyle("HhotateA.AvatarModifyTools.Core");
+            TitleStyle("HhotateA.AvatarModifyTools.Core");
 #if VRC_SDK_VRCSDK3
             if(data==null) return;
             EditorGUILayout.LabelField("DATA : " + data.name);
-            avatar = (VRCAvatarDescriptor) EditorGUILayout.ObjectField("Avatar", avatar, typeof(VRCAvatarDescriptor), true);
-            writeDefault = EditorGUILayout.Toggle("Write Default", writeDefault); 
-            saveOrigin = EditorGUILayout.Toggle("Save Origin", saveOrigin); 
-            keepOldAsset = EditorGUILayout.Toggle("Keep Old Asset", keepOldAsset); 
+            AvatartField("Avatar");
+            if (ShowNotRecommended())
+            {
+                saveOrigin = EditorGUILayout.Toggle("Save Origin", saveOrigin); 
+            }
             if (GUILayout.Button("Setup"))
             {
                 var mod = new AvatarModifyTool(avatar);
@@ -62,7 +58,8 @@ namespace HhotateA.AvatarModifyTools.Core
                 var mod = new AvatarModifyTool(avatar);
                 mod.RevertByAssets(data);
             }
-            AssetUtility.Signature();
+            status.Display();
+            Signature();
 #else
             EditorGUILayout.LabelField("Please Import VRCSDK");
 #endif

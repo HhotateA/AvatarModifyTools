@@ -206,14 +206,14 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
                 {
                     if (rends == null)
                     {
-                        AssetUtility.TitleStyle("にゃんにゃんメッシュエディター");
-                        AssetUtility.DetailStyle("Unityだけでアバターのメッシュ改変ができるツールです．",EnvironmentGUIDs.readme);
+                        WindowBase.TitleStyle("にゃんにゃんメッシュエディター");
+                        WindowBase.DetailStyle("Unityだけでアバターのメッシュ改変ができるツールです．",EnvironmentGUIDs.readme);
                         avatar = EditorGUILayout.ObjectField("", avatar, typeof(GameObject), true) as GameObject;
                         if (GUILayout.Button("Setup"))
                         {
                             Setup(avatar);
                         }
-                        AssetUtility.Signature();
+                        WindowBase.Signature();
                         return;
                     }
                     rendsScroll = EditorGUILayout.BeginScrollView(rendsScroll, false, false, GUIStyle.none, GUI.skin.verticalScrollbar, GUI.skin.scrollView);

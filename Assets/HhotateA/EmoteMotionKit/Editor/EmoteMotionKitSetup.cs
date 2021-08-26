@@ -24,7 +24,7 @@ using VRC.SDK3.Avatars.Components;
 
 namespace HhotateA.AvatarModifyTools.EmoteMotionKit
 {
-    public class EmoteMotionKitSetup : EditorWindow
+    public class EmoteMotionKitSetup : WindowBase
     {
         [MenuItem("Window/HhotateA/EmoteMotionKit",false,2)]
 
@@ -83,21 +83,14 @@ namespace HhotateA.AvatarModifyTools.EmoteMotionKit
             };
         }
 
-#if VRC_SDK_VRCSDK3
-        private VRCAvatarDescriptor avatar;
-#endif
         ReorderableList emoteReorderableList;
-
-        private bool writeDefault = false;
-        private bool notRecommended = false;
-        private bool keepOldAsset = false;
         
         private EmoteMotionKitSaveData data;
 
         private void OnGUI()
         {
-            AssetUtility.TitleStyle("エモートモーションキットβ");
-            AssetUtility.DetailStyle("エモートとアイドルアニメーションを設定するツールです．",EnvironmentGUIDs.readme);
+            TitleStyle("エモートモーションキットβ");
+            DetailStyle("エモートとアイドルアニメーションを設定するツールです．",EnvironmentGUIDs.readme);
 
             EditorGUILayout.Space();
             
@@ -118,7 +111,7 @@ namespace HhotateA.AvatarModifyTools.EmoteMotionKit
             EditorGUILayout.Space();
             EditorGUILayout.Space();
             
-            AssetUtility.Signature();
+            Signature();
 //#else
             EditorGUILayout.LabelField("Please import VRCSDK3.0 in your project.");
 //#endif

@@ -22,7 +22,7 @@ using VRC.SDK3.Avatars.Components;
 
 namespace HhotateA.AvatarModifyTools.MagicalDresserMakeupSystem
 {
-    public class MagicalDresserSetup : EditorWindow
+    public class MagicalDresserSetup : WindowBase
     {
         [MenuItem("Window/HhotateA/マジックドレッサーメイクアップ(MDMakeup)",false,7)]
         public static void ShowWindow()
@@ -31,10 +31,6 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserMakeupSystem
             wnd.titleContent = new GUIContent("マジックドレッサーメイクアップ(MDMakeup)");
             wnd.Show();
         }
-#if VRC_SDK_VRCSDK3
-        private VRCAvatarDescriptor avatar;
-#endif
-        private Animator avatarAnim;
         private Renderer makeupRenderer;
         private ColorRotateMode matMode = ColorRotateMode.Texture;
         private ShapeRotateMode shapeMode = ShapeRotateMode.None;
@@ -68,24 +64,11 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserMakeupSystem
         private float threshold = 1f / 60f;
         private void OnGUI()
         {
-            AssetUtility.TitleStyle("マジックドレッサーメイクアップ(MDMakeup)");
-            AssetUtility.DetailStyle("VRChat上でのメニューからの色変えや，BlendShapeの切り替えを設定するツールです．",EnvironmentGUIDs.readme);
-#if VRC_SDK_VRCSDK3
-            var ava = EditorGUILayout.ObjectField("", avatar, typeof(VRCAvatarDescriptor), true) as VRCAvatarDescriptor;
-            if (ava != avatar)
-            {
-                if (ava == null)
-                {
-                    avatarAnim = null;
-                    ava = null;
-                }
-                var anim = ava?.GetComponent<Animator>() as Animator;
-                avatar = ava;
-                avatarAnim = anim;
-            }
-#else
-            avatarAnim = EditorGUILayout.ObjectField("", avatarAnim, typeof(Animator), true) as Animator;
-#endif
+            TitleStyle("マジックドレッサーメイクアップ(MDMakeup)");
+            DetailStyle("VRChat上でのメニューからの色変えや，BlendShapeの切り替えを設定するツールです．",EnvironmentGUIDs.readme);
+            EditorGUILayout.Space();
+            
+            AvatartField();
             
             EditorGUILayout.Space();
             EditorGUILayout.Space();
@@ -141,16 +124,14 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserMakeupSystem
             }
             
             EditorGUILayout.Space();
-            notRecommended = EditorGUILayout.Foldout(notRecommended,"VRChat Not Recommended");
-            if (notRecommended)
+            if (ShowNotRecommended())
             {
-                writeDefault = EditorGUILayout.Toggle("Write Default", writeDefault); 
-                keepOldAsser = EditorGUILayout.Toggle("Keep Old Asset", keepOldAsser);
                 if (GUILayout.Button("Force Revert"))
                 {
 #if VRC_SDK_VRCSDK3
                     var mod = new AvatarModifyTool(avatar);
                     mod.RevertByKeyword(EnvironmentGUIDs.Prefix);
+                    OnFinishRevert();
 #endif
                 }
             }
@@ -229,13 +210,14 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserMakeupSystem
                 }
                 am.ModifyAvatar(assets,false,keepOldAsser,true,EnvironmentGUIDs.Prefix);
                 taskDone += 1;
+                OnFinishSetup();
 #endif
             }
-            EditorGUILayout.Space();
+            status.Display();
             EditorGUILayout.LabelField("Task " + taskDone + " / " + taskTodo);
             EditorGUILayout.Space();
             EditorGUILayout.Space();
-            AssetUtility.Signature();
+            Signature();
         }
 
 #if VRC_SDK_VRCSDK3
