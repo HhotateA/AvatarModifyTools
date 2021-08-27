@@ -386,7 +386,7 @@ namespace HhotateA.AvatarModifyTools.GrabableItem
             p.AddParam(paramGrab,false,false);
             p.AddParam(paramDrop,false,false);
             
-            var am = new AvatarModifyTool(avatar,path);
+            var mod = new AvatarModifyTool(avatar,path);
             var assets = CreateInstance<AvatarModifyData>();
             {
                 assets.fx_controller = c.Create();
@@ -394,11 +394,7 @@ namespace HhotateA.AvatarModifyTools.GrabableItem
                 assets.menu = mp.CreateAsset(path, true);
             }
             AssetDatabase.AddObjectToAsset(assets,path);
-            if (writeDefault)
-            {
-                am.WriteDefaultOverride = true;
-            }
-            am.ModifyAvatar(assets,false,false,true,EnvironmentGUIDs.prefix);
+            ApplySettings(mod).ModifyAvatar(assets,EnvironmentGUIDs.prefix);
 #endif
         }
 
@@ -478,7 +474,7 @@ namespace HhotateA.AvatarModifyTools.GrabableItem
                 var p = new ParametersCreater(paramGrab);
                 p.AddParam(paramGrab,false,false);
             
-                var am = new AvatarModifyTool(avatar,path);
+                var mod = new AvatarModifyTool(avatar,path);
                 var assets = CreateInstance<AvatarModifyData>();
                 {
                     assets.fx_controller = c.Create();
@@ -486,7 +482,7 @@ namespace HhotateA.AvatarModifyTools.GrabableItem
                     assets.menu = m.CreateAsset(path, true);
                 }
                 AssetDatabase.AddObjectToAsset(assets,path);
-                am.ModifyAvatar(assets,false,false,true,EnvironmentGUIDs.prefix);
+                ApplySettings(mod).ModifyAvatar(assets,EnvironmentGUIDs.prefix);
 #endif
             }
         }

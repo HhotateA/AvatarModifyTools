@@ -142,12 +142,7 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
                         AssetDatabase.AddObjectToAsset(modifyAsset, path);
 
                         var mod = new AvatarModifyTool(avatar, AssetDatabase.GetAssetPath(data));
-                        if (writeDefault)
-                        {
-                            mod.WriteDefaultOverride = true;
-                        }
-
-                        mod.ModifyAvatar(modifyAsset, true, keepOldAsset, true, EnvironmentGUIDs.prefix);
+                        ApplySettings(mod).ModifyAvatar(modifyAsset,EnvironmentGUIDs.prefix);
 
                         // ゴミ処理忘れずに
                         DestroyImmediate(modifyAsset.items[0].prefab);

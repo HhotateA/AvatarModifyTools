@@ -734,25 +734,21 @@ namespace HhotateA.AvatarModifyTools.TailMover
             var p = new ParametersCreater(param);
             p.LoadParams(controller,false);
             
-            var am = new AvatarModifyTool(avatar,dir);
-            AvatarModifyData newAssets = CreateInstance<AvatarModifyData>();
+            var mod = new AvatarModifyTool(avatar,dir);
+            AvatarModifyData assets = CreateInstance<AvatarModifyData>();
             {
                 if (isHumanoidAnimation)
                 {
-                    newAssets.locomotion_controller = c;
+                    assets.locomotion_controller = c;
                 }
                 else
                 {
-                    newAssets.fx_controller = c;
+                    assets.fx_controller = c;
                 }
-                newAssets.parameter = p.CreateAsset(path, true);
-                newAssets.menu = menu.CreateAsset(path,true);
+                assets.parameter = p.CreateAsset(path, true);
+                assets.menu = menu.CreateAsset(path,true);
             }
-            if (writeDefault)
-            {
-                am.WriteDefaultOverride = true;
-            }
-            am.ModifyAvatar(newAssets,false,keepOldAsset,true,EnvironmentGUIDs.prefix);
+            ApplySettings(mod).ModifyAvatar(assets,EnvironmentGUIDs.prefix);
 #else
 #endif
             AssetDatabase.Refresh();
@@ -831,25 +827,21 @@ namespace HhotateA.AvatarModifyTools.TailMover
             var p = new ParametersCreater(dataname+"_Idle");
             p.LoadParams(controller,true);
             
-            var am = new AvatarModifyTool(avatar,dir);
-            AvatarModifyData newAssets = CreateInstance<AvatarModifyData>();
+            var mod = new AvatarModifyTool(avatar,dir);
+            AvatarModifyData assets = CreateInstance<AvatarModifyData>();
             {
                 if (isHumanoidAnimation)
                 {
-                    newAssets.locomotion_controller = c;
+                    assets.locomotion_controller = c;
                 }
                 else
                 {
-                    newAssets.fx_controller = c;
+                    assets.fx_controller = c;
                 }
-                newAssets.parameter = p.CreateAsset(path, true);
-                newAssets.menu = menu.CreateAsset(path,true);
+                assets.parameter = p.CreateAsset(path, true);
+                assets.menu = menu.CreateAsset(path,true);
             }
-            if (writeDefault)
-            {
-                am.WriteDefaultOverride = true;
-            }
-            am.ModifyAvatar(newAssets,false,keepOldAsset,true,EnvironmentGUIDs.prefix);
+            ApplySettings(mod).ModifyAvatar(assets,EnvironmentGUIDs.prefix);
 #endif
             AssetDatabase.Refresh();
         }

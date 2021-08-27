@@ -50,8 +50,7 @@ namespace HhotateA.AvatarModifyTools.Core
             if (GUILayout.Button("Setup"))
             {
                 var mod = new AvatarModifyTool(avatar);
-                if (writeDefault) mod.WriteDefaultOverride = writeDefault;
-                mod.ModifyAvatar(data,saveOrigin,keepOldAsset);
+                ApplySettings(mod).ModifyAvatar(data,"");
             }
             if (GUILayout.Button("Revert"))
             {

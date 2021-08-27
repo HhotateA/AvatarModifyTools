@@ -221,7 +221,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserMakeupSystem
                     ref paramAsset);
             }
             
-            var am = new AvatarModifyTool(avatar,fileDir);
+            var mod = new AvatarModifyTool(avatar,fileDir);
             var assets = ScriptableObject.CreateInstance<AvatarModifyData>();
             {
                 assets.fx_controller = animAsset.Create();
@@ -229,11 +229,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserMakeupSystem
                 assets.parameter = paramAsset.CreateAsset(path, true);
             };
             AssetDatabase.AddObjectToAsset(assets,path);
-            if (writeDefault)
-            {
-                am.WriteDefaultOverride = true;
-            }
-            am.ModifyAvatar(assets,false,keepOldAsser,true,EnvironmentGUIDs.prefix);
+            ApplySettings(mod).ModifyAvatar(assets,EnvironmentGUIDs.prefix);
             taskDone += 1;
 #endif
         }

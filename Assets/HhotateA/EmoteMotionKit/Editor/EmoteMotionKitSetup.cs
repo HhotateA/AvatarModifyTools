@@ -28,7 +28,7 @@ namespace HhotateA.AvatarModifyTools.EmoteMotionKit
 {
     public class EmoteMotionKitSetup : WindowBase
     {
-        [MenuItem("Window/HhotateA/エモートモーションキット(EmoteMotionKit)",false,2)]
+        [MenuItem("Window/HhotateA/エモートモーションキット(EmoteMotionKit)",false,8)]
 
         public static void ShowWindow()
         {
@@ -266,7 +266,7 @@ namespace HhotateA.AvatarModifyTools.EmoteMotionKit
 
             var pm = new MenuCreater(param+"parent");
             pm.AddSubMenu(m.CreateAsset(path,true),data.saveName,data.icon);
-            var am = new AvatarModifyTool(avatar,fileDir);
+            var mod = new AvatarModifyTool(avatar,fileDir);
             var assets = CreateInstance<AvatarModifyData>();
             {
                 assets.locomotion_controller = ac.CreateAsset(path, true);
@@ -274,11 +274,7 @@ namespace HhotateA.AvatarModifyTools.EmoteMotionKit
                 assets.menu = pm.CreateAsset(path,true);
             }
             AssetDatabase.AddObjectToAsset(assets,path);
-            if (writeDefault)
-            {
-                am.WriteDefaultOverride = true;
-            }
-            am.ModifyAvatar(assets,false,keepOldAsset,true,EnvironmentGUIDs.prefix);
+            ApplySettings(mod).ModifyAvatar(assets,EnvironmentGUIDs.prefix);
 #endif
         }
 

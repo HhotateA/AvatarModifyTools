@@ -96,14 +96,18 @@ namespace HhotateA.AvatarModifyTools.Core
         }
         
         public bool? WriteDefaultOverride { get; set; } = null;
+        public bool safeOriginalAsset = true;
+        public bool overrideSettings = true;
+        public bool renameParameters = false;
+        public bool autoAddNextPage = false;
         private string exportDir = "Assets/";
         string prefix = "";
         private Dictionary<string, string> animRepathList = new Dictionary<string, string>();
-        public void ModifyAvatar(AvatarModifyData assets,bool keepOriginalAsset = true,bool keepOldAsset = false,bool renameParameters = true,string keyword = "")
+        public void ModifyAvatar(AvatarModifyData assets,string keyword = "")
         {
             prefix = keyword;
             if (renameParameters) assets = RenameAssetsParameters(assets);
-            if (!keepOldAsset) RevertByAssets(assets);
+            if (overrideSettings) RevertByAssets(assets);
             if (avatar != null)
             {
                 animRepathList = new Dictionary<string,string>();
@@ -121,8 +125,8 @@ namespace HhotateA.AvatarModifyTools.Core
                 ModifyAvatarAnimatorController(VRCAvatarDescriptor.AnimLayerType.Gesture,assets.gesture_controller);
                 ModifyAvatarAnimatorController(VRCAvatarDescriptor.AnimLayerType.Action,assets.action_controller);
                 ModifyAvatarAnimatorController(VRCAvatarDescriptor.AnimLayerType.FX,assets.fx_controller);
-                ModifyExpressionParameter(assets.parameter,keepOriginalAsset);
-                ModifyExpressionMenu(assets.menu,true,keepOriginalAsset);
+                ModifyExpressionParameter(assets.parameter,safeOriginalAsset);
+                ModifyExpressionMenu(assets.menu,autoAddNextPage,safeOriginalAsset);
                 AssetDatabase.SaveAssets();
             }
             else
@@ -921,21 +925,21 @@ namespace HhotateA.AvatarModifyTools.Core
                 var current = parentnmenu;
                 foreach (var control in menus.controls)
                 {
-                    int menuMax = 7;
+                    int menuMax = 8;
                     while (current.controls.Count >= menuMax && autoNextPage) // 項目が上限に達していたら次ページに飛ぶ
                     {
-                        if (current.controls[menuMax].name == "NextPage" &&
-                            current.controls[menuMax].type == VRCExpressionsMenu.Control.ControlType.SubMenu &&
-                            current.controls[menuMax].subMenu != null)
+                        if (current.controls[menuMax-1].name == "NextPage" &&
+                            current.controls[menuMax-1].type == VRCExpressionsMenu.Control.ControlType.SubMenu &&
+                            current.controls[menuMax-1].subMenu != null)
                         {
-                            current = current.controls[menuMax].subMenu;
+                            current = current.controls[menuMax-1].subMenu;
                         }
                         else
                         {
                             var m = new MenuCreater("NextPage");
-                            m.AddControll(current.controls[menuMax]);
+                            m.AddControll(current.controls[menuMax-1]);
                             var submenu = m.CreateAsset(exportDir);
-                            current.controls[menuMax] = new VRCExpressionsMenu.Control()
+                            current.controls[menuMax-1] = new VRCExpressionsMenu.Control()
                             {
                                 name = "NextPage",
                                 icon = AssetUtility.LoadAssetAtGuid<Texture2D>(EnvironmentVariable.arrowIcon),

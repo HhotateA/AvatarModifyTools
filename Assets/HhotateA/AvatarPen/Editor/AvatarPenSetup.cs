@@ -61,11 +61,7 @@ namespace HhotateA.AvatarModifyTools.AvatarPen
                             var asset = AssetUtility.LoadAssetAtGuid<AvatarModifyData>(
                                 isLeftHand ? EnvironmentGUIDs.penModifyData_Left : EnvironmentGUIDs.penModifyData_right);
                             var mod = new AvatarModifyTool(avatar);
-                            if (writeDefault)
-                            {
-                                mod.WriteDefaultOverride = true;
-                            }
-                            mod.ModifyAvatar(asset,true,keepOldAsset);
+                            ApplySettings(mod).ModifyAvatar(asset,EnvironmentGUIDs.prefix);
                             OnFinishSetup();
                         }
                         catch (Exception e)
@@ -75,7 +71,7 @@ namespace HhotateA.AvatarModifyTools.AvatarPen
                         }
                     }
 
-                    if (keepOldAsset)
+                    if (notRecommended)
                     {
                         if (GUILayout.Button("Revert"))
                         {

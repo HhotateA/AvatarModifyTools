@@ -1116,7 +1116,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             pm.AddSubMenu(m.CreateAsset(path, true),data.saveName,data.icon);
 
             //p.LoadParams(c,true);
-            var am = new AvatarModifyTool(avatar,fileDir);
+            var mod = new AvatarModifyTool(avatar,fileDir);
             var assets = CreateInstance<AvatarModifyData>();
             {
                 assets.fx_controller = c.CreateAsset(path, true);
@@ -1125,11 +1125,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             }
             AssetDatabase.AddObjectToAsset(assets,path);
             data.assets = assets;
-            if (writeDefault)
-            {
-                am.WriteDefaultOverride = true;
-            }
-            am.ModifyAvatar(assets,false,keepOldAsset,true,EnvironmentGUIDs.prefix);
+            ApplySettings(mod).ModifyAvatar(assets,EnvironmentGUIDs.prefix);
 #endif
             SaveMaterials(path,true);
         }

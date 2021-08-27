@@ -28,7 +28,8 @@ namespace HhotateA.AvatarModifyTools.Core
         
         public bool notRecommended = false;
         public bool writeDefault = false;
-        public bool keepOldAsset = false;
+        public bool overrideSettings = true;
+        public bool autoNextPage = true;
 
         public void VRCErrorLabel()
         {
@@ -111,11 +112,27 @@ namespace HhotateA.AvatarModifyTools.Core
             if (notRecommended)
             {
                 writeDefault = EditorGUILayout.Toggle("Write Default", writeDefault); 
-                keepOldAsset = EditorGUILayout.Toggle("Keep Old Asset", keepOldAsset); 
+                overrideSettings = EditorGUILayout.Toggle("Override Settings", overrideSettings); 
+                autoNextPage = EditorGUILayout.Toggle("Auto Next Page", autoNextPage); 
             }
 
             return notRecommended;
         }
+
+#if VRC_SDK_VRCSDK3
+        public AvatarModifyTool ApplySettings(AvatarModifyTool mod)
+        {
+            if (writeDefault)
+            {
+                mod.WriteDefaultOverride = true;
+            }
+            mod.safeOriginalAsset = true;
+            mod.overrideSettings = overrideSettings;
+            mod.renameParameters = true;
+            mod.autoAddNextPage = autoNextPage;
+            return mod;
+        }
+#endif
 
         public static GUIStyle TitleStyle(string title = "",int fontSize = 17,int outline = 1)
         {
