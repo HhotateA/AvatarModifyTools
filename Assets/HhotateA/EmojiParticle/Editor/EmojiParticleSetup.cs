@@ -24,7 +24,7 @@ using VRC.SDK3.Avatars.Components;
 
 namespace HhotateA.AvatarModifyTools.EmojiParticle
 {
-    public class EmojiParticleSetup : EditorWindow
+    public class EmojiParticleSetup : WindowBase
     {
         [MenuItem("Window/HhotateA/絵文字パーティクルセットアップ(EmojiParticleSetup)",false,2)]
 
@@ -66,16 +66,8 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
                 onAddCallback = l => saveddata.emojis.Add(new IconElement("",null))
             };
         }
-
-#if VRC_SDK_VRCSDK3
-        private VRCAvatarDescriptor avatar;
-#endif
         private Target target;
         ReorderableList emojiReorderableList;
-
-        private bool writeDefault = false;
-        private bool notRecommended = false;
-        private bool keepOldAsset = false;
 
         enum Target
         {
@@ -89,12 +81,18 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
 
         private void OnGUI()
         {
-            AssetUtility.TitleStyle("絵文字パーティクルセットアップ");
-            AssetUtility.DetailStyle("アバターに好きな画像の絵文字を実装する，簡単なセットアップツールです．",EnvironmentGUIDs.readme);
+            TitleStyle("絵文字パーティクルセットアップ");
+            DetailStyle("アバターに好きな画像の絵文字を実装する，簡単なセットアップツールです．",EnvironmentGUIDs.readme);
+
 #if VRC_SDK_VRCSDK3
-            avatar = (VRCAvatarDescriptor) EditorGUILayout.ObjectField("Avatar", avatar,
-                typeof(VRCAvatarDescriptor), true);
+            EditorGUILayout.Space();
+            AvatartField();
+            EditorGUILayout.Space();
+            EditorGUILayout.Space();
+
+            data.saveName = EditorGUILayout.TextField("Save Name",data.saveName);
             
+            EditorGUILayout.Space();
             EditorGUILayout.Space();
             
             target = (Target) EditorGUILayout.EnumPopup("Target", target);
@@ -104,73 +102,74 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
             emojiReorderableList.DoLayoutList();
             
             EditorGUILayout.Space();
-            notRecommended = EditorGUILayout.Foldout(notRecommended,"VRChat Not Recommended");
-            if (notRecommended)
+            if (ShowNotRecommended())
             {
-                writeDefault = EditorGUILayout.Toggle("Write Default", writeDefault); 
-                keepOldAsset = EditorGUILayout.Toggle("Keep Old Asset", keepOldAsset); 
+                if (GUILayout.Button("Force Revert"))
+                {
+                    var am = new AvatarModifyTool(avatar);
+                    am.RevertByKeyword(EnvironmentGUIDs.prefix);
+                    OnFinishRevert();
+                }
             }
             EditorGUILayout.Space();
             EditorGUILayout.Space();
 
             using (new EditorGUI.DisabledScope(avatar==null))
             {
-                using (new EditorGUILayout.HorizontalScope())
+                if (GUILayout.Button("Setup"))
                 {
-                    if (GUILayout.Button("Setup"))
+                    var asset = AssetUtility.LoadAssetAtGuid<AvatarModifyData>(EnvironmentGUIDs.emojiModifyData);
+                    asset = Instantiate(asset);
+                    
+                    var path = EditorUtility.SaveFilePanel("Save", "Assets",String.IsNullOrWhiteSpace(data.saveName) ? "EmojiSetupData" : data.saveName , "asset");
+                    if (string.IsNullOrEmpty(path))
                     {
-                        var asset = AssetUtility.LoadAssetAtGuid<AvatarModifyData>(EnvironmentGUIDs.emojiModifyData);
-                        asset = Instantiate(asset);
-                        var path = EditorUtility.SaveFilePanel("Save", "Assets", "EmojiSetupData", "asset");
-                        if (string.IsNullOrEmpty(path)) return;
-
-                        path = FileUtil.GetProjectRelativePath(path);
-
+                        OnCancel();
+                        return;
+                    }
+                    if (String.IsNullOrWhiteSpace(data.saveName))
+                    {
+                        string fileName = System.IO.Path.GetFileNameWithoutExtension(path);
+                        data.saveName = fileName;
+                    }
+                    path = FileUtil.GetProjectRelativePath(path);
+                    try
+                    {
                         data = Instantiate(data);
                         AssetDatabase.CreateAsset(data, path);
-
-                        var newAssets = Setup(asset);
-                        data.assets = newAssets;
-                        AssetDatabase.AddObjectToAsset(newAssets,path);
+                        var modifyAsset = Setup(asset);
+                        data.assets = modifyAsset;
+                        AssetDatabase.AddObjectToAsset(modifyAsset, path);
 
                         var mod = new AvatarModifyTool(avatar, AssetDatabase.GetAssetPath(data));
-                        if (writeDefault)
-                        {
-                            mod.WriteDefaultOverride = true;
-                        }
-
-                        mod.ModifyAvatar(newAssets,true,keepOldAsset);
+                        ApplySettings(mod).ModifyAvatar(modifyAsset,EnvironmentGUIDs.prefix);
 
                         // ゴミ処理忘れずに
-                        DestroyImmediate(newAssets.items[0].prefab);
+                        DestroyImmediate(modifyAsset.items[0].prefab);
                         AssetDatabase.SaveAssets();
+                        OnFinishSetup();
                     }
-
-                    if (keepOldAsset && data.assets)
+                    catch (Exception e)
                     {
-                        if (GUILayout.Button("Revert"))
-                        {
-                            var mod = new AvatarModifyTool(avatar);
-                            mod.RevertAvatar(data.assets);
-                        }
+                        OnError(e);
+                        throw;
                     }
                 }
+                status.Display();
             }
-            
-            AssetUtility.Signature();
 #else
-            EditorGUILayout.LabelField("Please import VRCSDK3.0 in your project.");
+            VRCErrorLabel();
 #endif
+            Signature();
         }
 
 #if VRC_SDK_VRCSDK3
         AvatarModifyData Setup(AvatarModifyData assets)
         {
             var settingsPath = AssetDatabase.GetAssetPath(data);
-            string fileName = System.IO.Path.GetFileNameWithoutExtension (settingsPath);
             string fileDir = System.IO.Path.GetDirectoryName (settingsPath);
 
-            string param = "EmojiParticle_" + fileName;
+            string param = data.saveName;
             
             foreach (var asset in AssetDatabase.LoadAllAssetsAtPath(settingsPath)) {
                 if (AssetDatabase.IsSubAsset(asset)) {
@@ -184,11 +183,11 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
     
             // 結合テクスチャの作成
             var textures = data.emojis.Select(icon=>icon.ToTexture2D()).ToArray();
-            var combinatedTexture = TextureCombinater.CombinateSaveTexture(textures,Path.Combine(fileDir,fileName+"_tex"+".png"),tilling);
-            combinatedTexture.name = fileName+"_tex";
+            var combinatedTexture = TextureCombinater.CombinateSaveTexture(textures,Path.Combine(fileDir,data.saveName+"_tex"+".png"),tilling);
+            combinatedTexture.name = data.saveName+"_tex";
             // マテリアルの作成
             var combinatedMaterial = SaveParticleMaterial(combinatedTexture);
-            combinatedMaterial.name = fileName+"_mat";
+            combinatedMaterial.name = data.saveName+"_mat";
             AssetDatabase.AddObjectToAsset(combinatedMaterial,settingsPath);
             
             // param
@@ -196,7 +195,7 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
             pc.AddParam(param,0);
             
             // メニューの作成
-            var iconMenus = new MenuCreater(fileName+"_icons",true);
+            var iconMenus = new MenuCreater(data.saveName+"_icons",true);
             for (int i = 0; i < data.emojis.Count; i++)
             {
                 // 0はデフォルトなので+1
@@ -205,13 +204,13 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
             // Modify用メニュー作成
             var menu = new MenuCreater("mainMenu");
             menu.AddSubMenu(iconMenus.CreateAsset(settingsPath,true),"EmojiParticles",TextureCombinater.ResizeSaveTexture(
-                Path.Combine(fileDir,fileName+"_icon"+".png"),
+                Path.Combine(fileDir,data.saveName+"_icon"+".png"),
                 combinatedTexture,
                 256,256));
             
             // オリジナルアセットのパーティクルコンポーネント差し替え
             var prefab = Instantiate(assets.items[0].prefab);
-            prefab.name = assets.items[0].prefab.name + "_" + fileName;
+            prefab.name = EnvironmentGUIDs.prefix + assets.items[0].prefab.name + "_" + data.saveName;
             var ps = prefab.GetComponentsInChildren<ParticleSystem>()[0];
             ps.GetComponent<ParticleSystemRenderer>().material = combinatedMaterial;
             var ts = ps.textureSheetAnimation;
@@ -242,7 +241,7 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
             }
             
             // AnimationClipの作成
-            var controller = new AnimatorControllerCreator("Emoji_Controller","EmojiParticle"+fileName);
+            var controller = new AnimatorControllerCreator("Emoji_Controller","EmojiParticle"+data.saveName);
             controller.AddParameter(param,AnimatorControllerParameterType.Int);
             var reset = new AnimationClipCreator("Emoji_Anim_Reset",avatar.gameObject);
             reset.AddKeyframe_Gameobject(ps.gameObject, 0f, false);

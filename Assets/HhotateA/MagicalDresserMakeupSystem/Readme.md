@@ -25,15 +25,20 @@ VRChatのアバターで，メニューから服や髪色や，BlendShapeの上�
 1. AvatarのExpressionMenuから"MagicalDresserMakeupSystem"メニューを開きアイテムを選択する．
 2. 色，またはBlendShapeの値を設定できるฅ(＾・ω・＾ฅ)
 
-## 注意事項
-- アバターのfxAnimatorController,ExpressionMenu,ExpressionParametersに破壊的な変更を加えます．あらかじめ忘れずにバックアップを取ってください．
-- ExpressionParameters,ExpressionMenuの項目が上限に達していた場合，正常に導入できない場合があります．その場合は一時的に項目を減らすなどの対処をお願い致します．
-
-## 導入を取り消す
+## アンインストール手順
+### v1.27以降
+ 1. 本ツールのVRChatNotRecommendedオプションから"Force Revert"ボタンを押す．
+ 2. 「Status : Complete Revert」というメッセージが出れば成功
+### v1.26以前
 1. Fx_Animatorから"MDMakeup_"から始まる名前のレイヤーを削除する．
 2. VRCExpressionsMenuから"MDMakeup_"から始まる名前の項目を削除する．
 3. VRCExpressionParameters"MDMakeup_"から始まる名前の項目を削除する．
 4. HSV設定した場合，Rendererの子オブジェクトの"(clone)_Filter"という名前のオブジェクトを削除する
+
+## 注意事項
+- アバターのfxAnimatorController,ExpressionMenu,ExpressionParametersに破壊的な変更を加えます．あらかじめ忘れずにバックアップを取ってください．
+- ExpressionParameters,ExpressionMenuの項目が上限に達していた場合，正常に導入できない場合があります．その場合は一時的に項目を減らすなどの対処をお願い致します．
+- 過去バージョンと競合してエラーが出る場合はFullPackageを試してください．
 
 ## 利用規約
 - アバターへの同梱，改良，ツールの一部，まるごと含め，二次配布可とします．
@@ -41,8 +46,14 @@ VRChatのアバターで，メニューから服や髪色や，BlendShapeの上�
 - 本ツールを使用して発生した問題に対しては製作者は一切の責任を負いません.
 - VRChatやUnity等の仕様変更により本ツールの機能が使えなくなった場合、製作者は責任を負いません。
 
+## 動作確認環境
+- Unity2019.4.24f1
+- VRCSDK3-AVATAR-2021.08.11.15.16_Public
+
 ## 制作者
 @HhotateA_xR
+問題報告は https://github.com/HhotateA/AvatarModifyTools へ
 
 ## 更新履歴
 2021/08/13 v1.26
+2021/08/27 v1.27

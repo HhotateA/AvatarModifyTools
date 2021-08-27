@@ -116,8 +116,8 @@ namespace HhotateA.AvatarModifyTools.TextureModifyTool
         {
             if (meshCreater == null)
             {
-                AssetUtility.TitleStyle("にゃんにゃんテクスチャエディター");
-                AssetUtility.DetailStyle("Unityだけでアバターのテクスチャ改変ができるツールです．",EnvironmentGUIDs.readme);
+                WindowBase.TitleStyle("にゃんにゃんテクスチャエディター");
+                WindowBase.DetailStyle("Unityだけでアバターのテクスチャ改変ができるツールです．",EnvironmentGUIDs.readme);
                 avatar = EditorGUILayout.ObjectField("", avatar, typeof(GameObject), true) as GameObject;
                 if (GUILayout.Button("Setup"))
                 {
@@ -129,7 +129,7 @@ namespace HhotateA.AvatarModifyTools.TextureModifyTool
 
                 loadUVMap = EditorGUILayout.Toggle("Load UVMap", loadUVMap);
                 
-                AssetUtility.Signature();
+                WindowBase.Signature();
                 return;
             }
             
