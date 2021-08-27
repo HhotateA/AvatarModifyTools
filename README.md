@@ -88,3 +88,4 @@ public class TestSetupTool : EditorWindow
 2021/04/06 v1.1<br>
 2021/07/08 v1.2<br>
 2021/07/31 v1.25<br>
+2021/08/27 v1.27<br>
