@@ -21,7 +21,7 @@ namespace HhotateA.AvatarModifyTools.EmoteMotionKit
         public Texture2D icon;
         public List<EmoteElement> emotes = new List<EmoteElement>();
         public bool isSaved = false;
-        public EmoteLayer emoteLayer;
+        public EmoteLayer emoteLayer = EmoteLayer.Base;
         public bool copyToFXLayer = false;
     }
     
@@ -31,10 +31,10 @@ namespace HhotateA.AvatarModifyTools.EmoteMotionKit
         public string name = "Emote";
         public Texture2D icon;
         public AnimationClip anim;
-        public bool isEmote;
-        public bool locomotionStop;
-        public bool poseControll;
-        public TrackingSpace tracking;
+        public bool isEmote = false;
+        public bool locomotionStop = false;
+        public bool poseControll = false;
+        public TrackingSpace tracking = TrackingSpace.Emote;
 
         public EmoteElement(Texture2D tex)
         {

@@ -116,7 +116,7 @@ namespace HhotateA.AvatarModifyTools.EmoteMotionKit
 
         private void OnGUI()
         {
-            TitleStyle("エモートモーションキットβ");
+            TitleStyle("エモートモーションキット");
             DetailStyle("アイドルアニメーションやエモートを設定するツールです．",EnvironmentGUIDs.readme);
 #if VRC_SDK_VRCSDK3
 
