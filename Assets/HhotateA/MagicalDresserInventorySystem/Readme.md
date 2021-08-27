@@ -1,8 +1,11 @@
 # マジックドレッサーインベントリ(MagicalDresserInventorySystem)
 
+![alt](./Manual/000.png)
 VRChatのアバターで，メニューからアイテムの出し入れや服の切り替えをできるようにする設定ツールです．
 簡単な設定で切り替え時にエフェクトを出すこともできます．
 
+
+![alt](./Manual/001.png)
 ## 導入方法
 1. あらかじめアバターアップロード用プロジェクトのバックアップを取っておく．
 2. VRCSDK3-AVATARを最新版に更新する．
@@ -39,11 +42,17 @@ VRChatのアバターで，メニューからアイテムの出し入れや服�
 9. ”Setup”ボタンを押す．
 10. 通常の手順でアバターをアップロードする．
 
+11. Projectウィンドウ内で，Setup時に保存したファイルをダブルクリックすることで，設定を再開できます🐈
+
 ## 使用方法
 1. AvatarのExpressionMenuから"MagicalDresserInventorySystem"を選択する．
 2. トグルメニューを選択することで，アイテムを切り替えれるฅ(＾・ω・＾ฅ)
 
-## 導入をやり直す
+## アンインストール手順
+### v1.27以降
+ 1. 本ツールのVRChatNotRecommendedオプションから"Force Revert"ボタンを押す．
+ 2. 「Status : Complete Revert」というメッセージが出れば成功
+### v1.26以前
 1. Fx_Animatorから"MDInventory_"から始まる名前のレイヤーを削除する．
 2. VRCExpressionsMenuから"MDInventory_"から始まる名前の項目を削除する．
 3. VRCExpressionParameters"MDInventory_"から始まる名前の項目を削除する．
@@ -51,6 +60,7 @@ VRChatのアバターで，メニューからアイテムの出し入れや服�
 ## 注意事項
 - アバターのfxAnimatorController,ExpressionMenu,ExpressionParametersに破壊的な変更を加えます．あらかじめ忘れずにバックアップを取ってください．
 - ExpressionParameters,ExpressionMenuの項目が上限に達していた場合，正常に導入できない場合があります．その場合は一時的に項目を減らすなどの対処をお願い致します．
+- 過去バージョンと競合してエラーが出る場合はFullPackageを試してください．
 
 ## 利用規約
 - アバターへの同梱，改良，ツールの一部，まるごと含め，二次配布可とします．
@@ -60,6 +70,8 @@ VRChatのアバターで，メニューからアイテムの出し入れや服�
 
 ## 制作者
 @HhotateA_xR
+問題報告は https://github.com/HhotateA/AvatarModifyTools へ
 
 ## 更新履歴
 2021/08/13 v1.26
+2021/08/27 v1.27

@@ -83,12 +83,13 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
         {
             TitleStyle("絵文字パーティクルセットアップ");
             DetailStyle("アバターに好きな画像の絵文字を実装する，簡単なセットアップツールです．",EnvironmentGUIDs.readme);
+
+#if VRC_SDK_VRCSDK3
             EditorGUILayout.Space();
-            
             AvatartField();
             EditorGUILayout.Space();
-            
-#if VRC_SDK_VRCSDK3
+            EditorGUILayout.Space();
+
             data.saveName = EditorGUILayout.TextField("Save Name",data.saveName);
             
             EditorGUILayout.Space();
@@ -105,11 +106,9 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
             {
                 if (GUILayout.Button("Force Revert"))
                 {
-#if VRC_SDK_VRCSDK3
                     var am = new AvatarModifyTool(avatar);
                     am.RevertByKeyword(EnvironmentGUIDs.prefix);
                     OnFinishRevert();
-#endif
                 }
             }
             EditorGUILayout.Space();
@@ -134,11 +133,10 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
                         data.saveName = fileName;
                     }
                     path = FileUtil.GetProjectRelativePath(path);
-
-                    data = Instantiate(data);
-                    AssetDatabase.CreateAsset(data, path);
                     try
                     {
+                        data = Instantiate(data);
+                        AssetDatabase.CreateAsset(data, path);
                         var modifyAsset = Setup(asset);
                         data.assets = modifyAsset;
                         AssetDatabase.AddObjectToAsset(modifyAsset, path);
@@ -154,21 +152,20 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
                         // ゴミ処理忘れずに
                         DestroyImmediate(modifyAsset.items[0].prefab);
                         AssetDatabase.SaveAssets();
+                        OnFinishSetup();
                     }
                     catch (Exception e)
                     {
                         OnError(e);
                         throw;
                     }
-                    OnFinishSetup();
                 }
                 status.Display();
             }
-            
-            Signature();
 #else
-            EditorGUILayout.LabelField("Please import VRCSDK3.0 in your project.");
+            VRCErrorLabel();
 #endif
+            Signature();
         }
 
 #if VRC_SDK_VRCSDK3

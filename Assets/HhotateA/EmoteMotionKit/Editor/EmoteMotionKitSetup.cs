@@ -17,6 +17,7 @@ using UnityEditor.Animations;
 using UnityEngine;
 using UnityEditor.Callbacks;
 using UnityEditorInternal;
+using AnimatorController = UnityEditor.Animations.AnimatorController;
 using AnimatorControllerParameterType = UnityEngine.AnimatorControllerParameterType;
 using Random = UnityEngine.Random;
 #if VRC_SDK_VRCSDK3
@@ -63,27 +64,46 @@ namespace HhotateA.AvatarModifyTools.EmoteMotionKit
                     d.name = EditorGUI.TextField(rh,"", d.name);
                     rh.y += rh.height;
                     rh.width /= 3;
-                    d.anim = (AnimationClip) EditorGUI.ObjectField(rh,"",d.anim,typeof(AnimationClip));
-                    rh.x += rh.width*3/2;
-                    d.tracking = (TrackingType) EditorGUI.EnumPopup(rh,"",d.tracking);
-                    rh.x -= rh.width*3/2;
+                    using (var check = new EditorGUI.ChangeCheckScope())
+                    {
+                        d.anim = (AnimationClip) EditorGUI.ObjectField(rh, "", d.anim, typeof(AnimationClip));
+                        if (check.changed)
+                        {
+                            wnd.SetPreviewAnimation(d.anim);
+                        }
+                    }
+                    rh.x += rh.width;
+                    rh.x += rh.width * 1 / 5;
+                    rh.width = rh.width * 4 / 5;
+                    EditorGUI.LabelField(rh,"Tracking Space");
+                    rh.width = rh.width * 5 / 4;
+                    rh.x += rh.width * 4 / 5;
+                    d.tracking = (TrackingSpace) EditorGUI.EnumPopup(rh,"",d.tracking);
+                    rh.x -= rh.width*2;
                     rh.width *= 3;
                     rh.y += rh.height;
                     rh.width /= 9;
                     rh.width *= 2;
                     d.isEmote = EditorGUI.Toggle(rh, d.isEmote);
                     EditorGUI.LabelField(rh,"     Is Emote");
-                    rh.x += rh.width*3/2;
+                    rh.x += rh.width;
+                    rh.width = rh.width * 3 / 2;
+                    rh.x += rh.width * 1 / 8;
                     d.locomotionStop = EditorGUI.Toggle(rh, d.locomotionStop);
-                    EditorGUI.LabelField(rh,"     Locomotion Stop");
-                    rh.x += rh.width*3/2;
+                    EditorGUI.LabelField(rh,"     Stop Locomotion");
+                    rh.x += rh.width;
+                    rh.x += rh.width * 1 / 8;
                     d.poseControll = EditorGUI.Toggle(rh, d.poseControll);
-                    EditorGUI.LabelField(rh,"     Pose Controll");
+                    EditorGUI.LabelField(rh,"     Enter Pose Space");
                 },
                 onAddCallback = l =>
                 {
                     var icon = AssetUtility.LoadAssetAtGuid<Texture2D>(EnvironmentGUIDs.emoteIcons[Random.Range(0, EnvironmentGUIDs.emoteIcons.Length)]);
                     saveddata.emotes.Add(new EmoteElement(icon));
+                },
+                onSelectCallback = l =>
+                {
+                    wnd.SetPreviewAnimation(saveddata.emotes[l.index].anim);
                 }
             };
         }
@@ -97,12 +117,14 @@ namespace HhotateA.AvatarModifyTools.EmoteMotionKit
         private void OnGUI()
         {
             TitleStyle("エモートモーションキットβ");
-            DetailStyle("エモートとアイドルアニメーションを設定するツールです．",EnvironmentGUIDs.readme);
+            DetailStyle("アイドルアニメーションやエモートを設定するツールです．",EnvironmentGUIDs.readme);
+#if VRC_SDK_VRCSDK3
 
             EditorGUILayout.Space();
-            
-            AvatartField();
-            
+            AvatartField("", () =>
+            {
+                SetPreviewAnimator(avatarAnim);
+            });
             EditorGUILayout.Space();
             EditorGUILayout.Space();
 
@@ -110,7 +132,11 @@ namespace HhotateA.AvatarModifyTools.EmoteMotionKit
             {
                 data.icon = (Texture2D) EditorGUILayout.ObjectField(data.icon, typeof(Texture2D), false,
                     GUILayout.Width(60), GUILayout.Height(60));
-                data.saveName = EditorGUILayout.TextField(data.saveName, GUILayout.Height(20));
+                using (new EditorGUILayout.VerticalScope())
+                {
+                    data.saveName = EditorGUILayout.TextField(data.saveName, GUILayout.Height(20));
+                    data.isSaved = EditorGUILayout.ToggleLeft("Is Saved",data.isSaved, GUILayout.Height(20));
+                }
             }
 
             EditorGUILayout.Space();
@@ -118,7 +144,18 @@ namespace HhotateA.AvatarModifyTools.EmoteMotionKit
             scroll = EditorGUILayout.BeginScrollView(scroll, false, false, GUIStyle.none, GUI.skin.verticalScrollbar, GUI.skin.scrollView);
             emoteReorderableList.DoLayoutList();
             EditorGUILayout.EndScrollView();
-            
+
+            EditorGUILayout.Space();
+            if (ShowNotRecommended())
+            {
+                if (GUILayout.Button("Force Revert"))
+                {
+                    var am = new AvatarModifyTool(avatar);
+                    am.RevertByKeyword(EnvironmentGUIDs.prefix);
+                    OnFinishRevert();
+                }
+            }
+            EditorGUILayout.Space();
             EditorGUILayout.Space();
 
             if (GUILayout.Button("Setup"))
@@ -135,22 +172,30 @@ namespace HhotateA.AvatarModifyTools.EmoteMotionKit
                     data.saveName = fileName;
                 }
                 path = FileUtil.GetProjectRelativePath(path);
-                data = ScriptableObject.Instantiate(data);
-                AssetDatabase.CreateAsset(data, path);
-                Setup(path);
-                OnFinishSetup();
+                try
+                {
+                    data = ScriptableObject.Instantiate(data);
+                    AssetDatabase.CreateAsset(data, path);
+                    Setup(path);
+                    OnFinishSetup();
+                }
+                catch (Exception e)
+                {
+                    OnError(e);
+                    throw;
+                }
             }
             status.Display();
-
-            EditorGUILayout.Space();
-            EditorGUILayout.Space();
-            
+#else
+            VRCErrorLabel();
+#endif
             Signature();
         }
 
         void Setup(string path)
         {
             string fileDir = System.IO.Path.GetDirectoryName (path);
+#if VRC_SDK_VRCSDK3
             string param = data.saveName;
             var idleAnim = new AnimationClipCreator("Idle").CreateAsset(path,true);
             var p = new ParametersCreater(param);
@@ -164,7 +209,7 @@ namespace HhotateA.AvatarModifyTools.EmoteMotionKit
                 int index = i + 1;
                 ac.AddState("Emote" + index + "_" + d.name, d.anim == null ? idleAnim : d.anim);
                 ac.AddState("Reset" + index, idleAnim);
-                ac.AddTransition("Any","Emote" + index + "_" + d.name,param,(int)index,true,false,0f,0f);
+                ac.AddTransition("Default","Emote" + index + "_" + d.name,param,(int)index,true,false,0f,0f);
                 if (d.isEmote)
                 {
                     ac.AddTransition("Emote" + index + "_" + d.name,"Reset" + index,true,1f,0f);
@@ -188,13 +233,13 @@ namespace HhotateA.AvatarModifyTools.EmoteMotionKit
                     ac.SetEnterPoseControll("Reset" + index,false,0f);
                 }
 
-                if (d.tracking == TrackingType.Animation)
+                if (d.tracking == TrackingSpace.Animation)
                 {
                     ac.SetAnimationTracking("Emote" + index + "_" + d.name,AnimatorControllerCreator.VRCTrackingMask.Haad,true);
                     ac.SetAnimationTracking("Reset" + index,AnimatorControllerCreator.VRCTrackingMask.Haad,false);
                 }
                 else
-                if(d.tracking == TrackingType.HeadTracking)
+                if(d.tracking == TrackingSpace.PC_Desktop)
                 {
                     ac.SetAnimationTracking("Emote" + index + "_" + d.name,AnimatorControllerCreator.VRCTrackingMask.LeftHand,true);
                     ac.SetAnimationTracking("Emote" + index + "_" + d.name,AnimatorControllerCreator.VRCTrackingMask.RightHand,true);
@@ -202,7 +247,7 @@ namespace HhotateA.AvatarModifyTools.EmoteMotionKit
                     ac.SetAnimationTracking("Reset" + index,AnimatorControllerCreator.VRCTrackingMask.RightHand,false);
                 }
                 else
-                if(d.tracking == TrackingType.HandTracking)
+                if(d.tracking == TrackingSpace.VR_HMD)
                 {
                     ac.SetAnimationTracking("Emote" + index + "_" + d.name,AnimatorControllerCreator.VRCTrackingMask.LeftFoot,true);
                     ac.SetAnimationTracking("Emote" + index + "_" + d.name,AnimatorControllerCreator.VRCTrackingMask.RightFoot,true);
@@ -212,7 +257,7 @@ namespace HhotateA.AvatarModifyTools.EmoteMotionKit
                     ac.SetAnimationTracking("Reset" + index,AnimatorControllerCreator.VRCTrackingMask.Hip,false);
                 }
                 else
-                if(d.tracking == TrackingType.FullTracking)
+                if(d.tracking == TrackingSpace.Tracking)
                 {
                     
                 }
@@ -234,6 +279,56 @@ namespace HhotateA.AvatarModifyTools.EmoteMotionKit
                 am.WriteDefaultOverride = true;
             }
             am.ModifyAvatar(assets,false,keepOldAsset,true,EnvironmentGUIDs.prefix);
+#endif
+        }
+
+        private void OnDestroy()
+        {
+            SetPreviewAnimator(null);
+        }
+
+        private Animator previewAnimator;
+        
+        public void SetPreviewAnimator(Animator anim)
+        {
+            if (previewAnimator != null)
+            {
+                EditorApplication.update -= UpdateAnimation;
+                previewAnimator.speed = 1f;
+                SetPreviewAnimation(null);
+                previewAnimator.Play("Reset", 0, 0f);
+                previewAnimator.Update(Time.deltaTime);
+                // previewAnimator.runtimeAnimatorController = null;
+            }
+
+            previewAnimator = anim;
+
+            if (previewAnimator != null)
+            {
+                previewAnimator.runtimeAnimatorController = AssetUtility.LoadAssetAtGuid<AnimatorController>(EnvironmentGUIDs.previewController);
+                previewAnimator.speed = 1f;
+                previewAnimator.Play("Preview", 0, 0f);
+                EditorApplication.update += UpdateAnimation;
+            }
+        }
+ 
+        private void UpdateAnimation()
+        {
+            if (previewAnimator)
+            {
+                previewAnimator.Update(Time.deltaTime);
+            }
+        }
+
+        void SetPreviewAnimation(AnimationClip anim)
+        {
+            if (anim == null)
+            {
+                anim = AssetUtility.LoadAssetAtGuid<AnimationClip>(EnvironmentGUIDs.tPoseAnimation);
+            }
+            var ac = AssetUtility.LoadAssetAtGuid<AnimatorController>(EnvironmentGUIDs.previewController);
+            var state = ac.layers[0].stateMachine.states.FirstOrDefault(s => s.state.name == "Preview").state;
+            state.motion = anim;
         }
         
         [OnOpenAssetAttribute(3)]

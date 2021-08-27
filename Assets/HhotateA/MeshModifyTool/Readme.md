@@ -89,9 +89,11 @@ VRChat用アバターの着せ替えなどを想定した，UnityのEditorで簡
 
 ## 制作者
 @HhotateA_xR
+問題報告は https://github.com/HhotateA/AvatarModifyTools へ
 
 ## 更新履歴
 2021/05/29 v1.1 リリース開始
 2021/07/08 v1.2 TextureModifyToolのリリースとAvatarModifityToolのアップデート
 2021/07/31 v1.25
 2021/08/13 v1.26
+2021/08/27 v1.27

@@ -66,10 +66,10 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserMakeupSystem
         {
             TitleStyle("マジックドレッサーメイクアップ(MDMakeup)");
             DetailStyle("VRChat上でのメニューからの色変えや，BlendShapeの切り替えを設定するツールです．",EnvironmentGUIDs.readme);
+#if VRC_SDK_VRCSDK3
+
             EditorGUILayout.Space();
-            
             AvatartField();
-            
             EditorGUILayout.Space();
             EditorGUILayout.Space();
             
@@ -128,11 +128,9 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserMakeupSystem
             {
                 if (GUILayout.Button("Force Revert"))
                 {
-#if VRC_SDK_VRCSDK3
                     var mod = new AvatarModifyTool(avatar);
                     mod.RevertByKeyword(EnvironmentGUIDs.prefix);
                     OnFinishRevert();
-#endif
                 }
             }
             EditorGUILayout.Space();
@@ -140,84 +138,104 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserMakeupSystem
             
             if (GUILayout.Button("Setup"))
             {
-                taskDone = 0;
-                taskTodo = 1;
-#if VRC_SDK_VRCSDK3
                 var path = EditorUtility.SaveFilePanel("Save", "Assets", "MagicDresser_" + makeupRenderer.name,"controller");
-                if (string.IsNullOrWhiteSpace(path)) return;
-                string fileName = System.IO.Path.GetFileNameWithoutExtension(path);
-                saveName = fileName;
-                path = FileUtil.GetProjectRelativePath(path);
-
-                string fileDir = System.IO.Path.GetDirectoryName (path);
-                
-                AnimatorControllerCreator animAsset = new AnimatorControllerCreator(fileName,false);
-                animAsset.CreateAsset(path);
-                MenuCreater menuAsset = new MenuCreater(fileName);
-                ParametersCreater paramAsset = new ParametersCreater(fileName);
-                
-                if (matMode == ColorRotateMode.Texture)
+                if (string.IsNullOrEmpty(path))
                 {
-                    SetupTexture(path, makeupRenderer,mats,
-                        ref animAsset,
-                        ref menuAsset,
-                        ref paramAsset);
+                    OnCancel();
+                    return;
                 }
-                else
-                if(matMode == ColorRotateMode.HSV)
+                try
                 {
-                    SetupHSV(path, makeupRenderer,mats,
-                        ref animAsset,
-                        ref menuAsset,
-                        ref paramAsset);
+                    Setup(path);
                 }
-                else
-                if(matMode == ColorRotateMode.RGB)
+                catch (Exception e)
                 {
-                    SetupColor(path, makeupRenderer,mats,
-                        ref animAsset,
-                        ref menuAsset,
-                        ref paramAsset);
+                    OnError(e);
+                    throw;
                 }
-
-                if (shapeMode == ShapeRotateMode.Radial)
-                {
-                    SetupBlendShapeRadial(path, makeupRenderer,shapes,
-                        ref animAsset,
-                        ref menuAsset,
-                        ref paramAsset);
-                }
-                else
-                if(shapeMode == ShapeRotateMode.Toggle)
-                {
-                    SetupBlendShapeToggle(path, makeupRenderer,shapes,
-                        ref animAsset,
-                        ref menuAsset,
-                        ref paramAsset);
-                }
-                
-                var am = new AvatarModifyTool(avatar,fileDir);
-                var assets = ScriptableObject.CreateInstance<AvatarModifyData>();
-                {
-                    assets.fx_controller = animAsset.Create();
-                    assets.menu = menuAsset.CreateAsset(path, true);
-                    assets.parameter = paramAsset.CreateAsset(path, true);
-                };
-                AssetDatabase.AddObjectToAsset(assets,path);
-                if (writeDefault)
-                {
-                    am.WriteDefaultOverride = true;
-                }
-                am.ModifyAvatar(assets,false,keepOldAsser,true,EnvironmentGUIDs.prefix);
-                taskDone += 1;
-                OnFinishSetup();
-#endif
             }
             status.Display();
             EditorGUILayout.LabelField("Task " + taskDone + " / " + taskTodo);
             EditorGUILayout.Space();
             EditorGUILayout.Space();
+#else
+            VRCErrorLabel();
+#endif
             Signature();
+        }
+        
+        void Setup(string path)
+        {
+            taskDone = 0;
+            taskTodo = 1;
+            
+#if VRC_SDK_VRCSDK3
+            string fileName = System.IO.Path.GetFileNameWithoutExtension(path);
+            saveName = fileName;
+            path = FileUtil.GetProjectRelativePath(path);
+            OnFinishSetup();
+            string fileDir = System.IO.Path.GetDirectoryName (path);
+            
+            AnimatorControllerCreator animAsset = new AnimatorControllerCreator(fileName,false);
+            animAsset.CreateAsset(path);
+            MenuCreater menuAsset = new MenuCreater(fileName);
+            ParametersCreater paramAsset = new ParametersCreater(fileName);
+            
+            if (matMode == ColorRotateMode.Texture)
+            {
+                SetupTexture(path, makeupRenderer,mats,
+                    ref animAsset,
+                    ref menuAsset,
+                    ref paramAsset);
+            }
+            else
+            if(matMode == ColorRotateMode.HSV)
+            {
+                SetupHSV(path, makeupRenderer,mats,
+                    ref animAsset,
+                    ref menuAsset,
+                    ref paramAsset);
+            }
+            else
+            if(matMode == ColorRotateMode.RGB)
+            {
+                SetupColor(path, makeupRenderer,mats,
+                    ref animAsset,
+                    ref menuAsset,
+                    ref paramAsset);
+            }
+
+            if (shapeMode == ShapeRotateMode.Radial)
+            {
+                SetupBlendShapeRadial(path, makeupRenderer,shapes,
+                    ref animAsset,
+                    ref menuAsset,
+                    ref paramAsset);
+            }
+            else
+            if(shapeMode == ShapeRotateMode.Toggle)
+            {
+                SetupBlendShapeToggle(path, makeupRenderer,shapes,
+                    ref animAsset,
+                    ref menuAsset,
+                    ref paramAsset);
+            }
+            
+            var am = new AvatarModifyTool(avatar,fileDir);
+            var assets = ScriptableObject.CreateInstance<AvatarModifyData>();
+            {
+                assets.fx_controller = animAsset.Create();
+                assets.menu = menuAsset.CreateAsset(path, true);
+                assets.parameter = paramAsset.CreateAsset(path, true);
+            };
+            AssetDatabase.AddObjectToAsset(assets,path);
+            if (writeDefault)
+            {
+                am.WriteDefaultOverride = true;
+            }
+            am.ModifyAvatar(assets,false,keepOldAsser,true,EnvironmentGUIDs.prefix);
+            taskDone += 1;
+#endif
         }
 
 #if VRC_SDK_VRCSDK3

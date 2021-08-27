@@ -32,7 +32,7 @@ namespace HhotateA.AvatarModifyTools.EmoteMotionKit
         public bool isEmote;
         public bool locomotionStop;
         public bool poseControll;
-        public TrackingType tracking;
+        public TrackingSpace tracking;
 
         public EmoteElement(Texture2D tex)
         {
@@ -40,11 +40,11 @@ namespace HhotateA.AvatarModifyTools.EmoteMotionKit
         }
     }
 
-    public enum TrackingType
+    public enum TrackingSpace
     {
-        FullTracking,
-        HandTracking,
-        HeadTracking,
+        Tracking,
+        VR_HMD,
+        PC_Desktop,
         Animation,
     }
 }

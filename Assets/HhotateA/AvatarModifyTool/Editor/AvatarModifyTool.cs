@@ -122,7 +122,7 @@ namespace HhotateA.AvatarModifyTools.Core
                 ModifyAvatarAnimatorController(VRCAvatarDescriptor.AnimLayerType.Action,assets.action_controller);
                 ModifyAvatarAnimatorController(VRCAvatarDescriptor.AnimLayerType.FX,assets.fx_controller);
                 ModifyExpressionParameter(assets.parameter,keepOriginalAsset);
-                ModifyExpressionMenu(assets.menu,false,keepOriginalAsset);
+                ModifyExpressionMenu(assets.menu,true,keepOriginalAsset);
                 AssetDatabase.SaveAssets();
             }
             else

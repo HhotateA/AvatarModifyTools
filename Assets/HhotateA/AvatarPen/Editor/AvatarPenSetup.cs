@@ -25,19 +25,21 @@ namespace HhotateA.AvatarModifyTools.AvatarPen
         {
             var wnd = GetWindow<AvatarPenSetup>();
             wnd.titleContent = new GUIContent("AvatarPenSetup");
-            wnd.maxSize = wnd.minSize = new Vector2(340, 300);
+            wnd.maxSize = wnd.minSize = new Vector2(340, 310);
         }
         private bool isLeftHand = false;
 
         private void OnGUI()
         {
-#if VRC_SDK_VRCSDK3
             TitleStyle("アバターペンセットアップ");
             DetailStyle("アバターに指ペンを実装する，簡単なセットアップツールです．",EnvironmentGUIDs.readme);
-            
-            AvatartField("Avatar");
+#if VRC_SDK_VRCSDK3
 
             EditorGUILayout.Space();
+            AvatartField("Avatar");
+            EditorGUILayout.Space();
+            EditorGUILayout.Space();
+
             isLeftHand = EditorGUILayout.Toggle("Left Hand", isLeftHand);
             EditorGUILayout.Space();
 
@@ -64,13 +66,13 @@ namespace HhotateA.AvatarModifyTools.AvatarPen
                                 mod.WriteDefaultOverride = true;
                             }
                             mod.ModifyAvatar(asset,true,keepOldAsset);
+                            OnFinishSetup();
                         }
                         catch (Exception e)
                         {
                             OnError(e);
                             throw;
                         }
-                        OnFinishSetup();
                     }
 
                     if (keepOldAsset)
@@ -87,11 +89,10 @@ namespace HhotateA.AvatarModifyTools.AvatarPen
                 }
             }
             status.Display();
-            
-            Signature();
 #else
-            EditorGUILayout.LabelField("Please import VRCSDK3.0 in your project.");
+            VRCErrorLabel();
 #endif
+            Signature();
         }
     }
 }

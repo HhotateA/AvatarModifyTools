@@ -1,4 +1,4 @@
-# TailMoverSetup
+# なでもふセットアップ(TailMoverSetup)
 
 VRChatのアバターで使用できる，尻尾や腕の動きをアニメーションとして保存するツールです．
 
@@ -34,13 +34,19 @@ VRChatのアバターで使用できる，尻尾や腕の動きをアニメー�
 1. ExpressionMenuから○○○○Idleを選択
 2. 動かすスピードを設定
 
-## 導入を取り消す
+## アンインストール手順
+### v1.27以降
+ 1. 本ツールのVRChatNotRecommendedオプションから"Force Revert"ボタンを押す．
+ 2. 「Status : Complete Revert」というメッセージが出れば成功
+### v1.26以前
 1. Fx_Animatorから"TailMover_"から始まる名前のレイヤーを削除する．
 2. VRCExpressionsMenuから"TailMover_"から始まる名前の項目を削除する．
 3. VRCExpressionParameters"TailMover_"から始まる名前の項目を削除する．
 
 ## 注意事項
 - アバターのfxAnimatorController,ExpressionMenu,ExpressionParametersに破壊的な変更を加えます．あらかじめ忘れずにバックアップを取ってください．
+- ExpressionParameters,ExpressionMenuの項目が上限に達していた場合，正常に導入できない場合があります．その場合は一時的に項目を減らすなどの対処をお願い致します．
+- 過去バージョンと競合してエラーが出る場合はFullPackageを試してください．
 
 ## 利用規約
 - アバターへの同梱，改良，ツールの一部，まるごと含め，二次配布可とします．
@@ -50,7 +56,9 @@ VRChatのアバターで使用できる，尻尾や腕の動きをアニメー�
 
 ## 制作者
 @HhotateA_xR
+問題報告は https://github.com/HhotateA/AvatarModifyTools へ
 
 ## 更新履歴
 2021/07/31 v1.25
 2021/08/13 v1.26
+2021/08/27 v1.27

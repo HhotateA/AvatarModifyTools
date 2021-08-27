@@ -1,28 +1,40 @@
-# EmojiParticleSetupTool
+# エモートモーションキット(EmoteMotionKit)
 
-VRChatのアバターで使用できる，絵文字パーティクルのセットアップツールです．
-イラストのスタンプをVRChatの
+VRChatアバターのアイドルアニメーションや，エモートを設定できるツールです．
+横になる睡眠モーションや，座りモーションをメニューから切り替えたり，
+好きなアクションエモートを好きな時に再生することができます．
 
-## 導入方法
+## 導入手順
 1. あらかじめアバターアップロード用プロジェクトのバックアップを取っておく．
 2. VRCSDK3-AVATARを最新版に更新する．
-3. EmojiParticleSetupTool.unitypackageをUnityProjectにインポートする．
-4. Unityの上部メニュー，Window/HhotateA/EmojiParticleSetupを開く.
-5. 出したい絵文字(スタンプイラスト)の画像とタイトルをすべて登録する．
-6. "Avatar"の欄にシーン上のアバターオブジェクトをドラッグ&ドロップで参照する
-7. パーティクルを出すところを(Head/LeftHand/RightHand)から選択する．
+3. EmoteMotionKit.unitypackageをUnityProjectにインポートする．
+4. Unityの上部メニュー，Window/HhotateA/EmoteMotionKitを開く.
+5. "Avatar"の欄にシーン上のアバターオブジェクトをドラッグ&ドロップで参照する
+6. アニメーションを登録する
+7. アニメーションの設定を行う
+    - TrackingSpace : （Animator Tracking Controlの設定）
+        - Tracking : Trackingを優先する
+        - VR_HMD : 足の動きをアニメーションで上書きする
+        - PC_Desktop : 頭以外の動きをアニメーションで上書きする
+        - Animation : アニメーションを優先する
+    - IsEmote : エモート(ループしないアニメーション)として設定する．
+    - Stop Locomotion : アニメーション以外での移動を禁止する（Animator Locomotion Controlの設定）
+    - Enter Pose Space : 視点をアニメーションで移動する(Animator Temporary Pose Spaceの設定)
 8. ”Setup”ボタンを押す．
 9. 通常の手順でアバターをアップロードする．
 
 ## 使用方法
-1. AvatarのExpressionMenuからEmojiParticleを選択する．
-2. Emojiを選ぶとパーティクルを出せるよーฅ(＾・ω・＾ฅ)
+1. AvatarのExpressionMenuからEmoteMotionを選択する．
+2. 任意のEmote or IdleAnimationを選択すると再生される．
+
+## アンインストール手順
+### v1.27以降
+ 1. 本ツールのVRChatNotRecommendedオプションから"Force Revert"ボタンを押す．
+ 2. 「Status : Complete Revert」というメッセージが出れば成功
 
 ## 注意事項
 - アバターのfxAnimatorController,ExpressionMenu,ExpressionParametersに破壊的な変更を加えます．あらかじめ忘れずにバックアップを取ってください．
-- ExpressionParameters,ExpressionMenuの項目が上限に達していた場合，正常に導入できない場合があります．その場合は一時的に項目を減らすなどの対処をお願い致します．
-- VRChatのミラーにパーティクルが映らないことがあります．目視またはカメラで確認してください．
-- AvatarPenSetupと競合してエラーが出る場合はFullPackageを試してください．
+- 過去バージョンと競合してエラーが出る場合はFullPackageを試してください．
 
 ## 利用規約
 - アバターへの同梱，改良，ツールの一部，まるごと含め，二次配布可とします．
@@ -32,9 +44,7 @@ VRChatのアバターで使用できる，絵文字パーティクルのセッ�
 
 ## 制作者
 @HhotateA_xR
+問題報告は https://github.com/HhotateA/AvatarModifyTools へ
 
 ## 更新履歴
-2021/04/05 v1.0
-2021/07/08 v1.2 TextureModifyToolのリリースとAvatarModifityToolのアップデート
-2021/07/31 v1.25
-2021/08/13 v1.26
+2021/08/27 v1.27β

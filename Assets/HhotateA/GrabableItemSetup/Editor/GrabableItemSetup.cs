@@ -54,6 +54,9 @@ namespace HhotateA.AvatarModifyTools.GrabableItem
             DetailStyle(
                 "アバターに付属したアイテムを，手に持ったり，ワールドに置いたりするための簡単なセットアップツールです．",
                 EnvironmentGUIDs.readme);
+#if VRC_SDK_VRCSDK3
+
+            EditorGUILayout.Space();
             AvatartField("Avatar",
                 () =>
                 {
@@ -62,7 +65,6 @@ namespace HhotateA.AvatarModifyTools.GrabableItem
                         handBone = avatarAnim.GetHumanBones()[(int) HumanBodyBones.RightHand].gameObject;
                     }
                 });
-            
             EditorGUILayout.Space();
             EditorGUILayout.Space();
 
@@ -90,12 +92,7 @@ namespace HhotateA.AvatarModifyTools.GrabableItem
                 }
 
                 EditorGUILayout.Space();
-
-                constraintMode = EditorGUILayout.Toggle("Use Constraint", constraintMode);
-                safeMode = EditorGUILayout.Toggle("Safe Original Item", safeMode);
-
-                EditorGUILayout.Space();
-
+                
                 if (constraintMode)
                 {
                     // EditorGUILayout.LabelField("：オブジェクトを置くトリガー");
@@ -111,6 +108,16 @@ namespace HhotateA.AvatarModifyTools.GrabableItem
                         dropTrigger = (Triggers) EditorGUILayout.EnumPopup("", dropTrigger);
                     }
                 }
+
+                EditorGUILayout.Space();
+
+                constraintMode = EditorGUILayout.Toggle("Use Constraint", constraintMode);
+
+                EditorGUILayout.Space();
+                
+                safeMode = EditorGUILayout.Toggle("Safe Original Item", safeMode);
+
+                EditorGUILayout.Space();
             }
 
             EditorGUILayout.Space();
@@ -118,11 +125,9 @@ namespace HhotateA.AvatarModifyTools.GrabableItem
             {
                 if (GUILayout.Button("Force Revert"))
                 {
-#if VRC_SDK_VRCSDK3
                     var am = new AvatarModifyTool(avatar);
                     am.RevertByKeyword(EnvironmentGUIDs.prefix);
                     OnFinishRevert();
-#endif
                 }
             }
             EditorGUILayout.Space();
@@ -136,25 +141,37 @@ namespace HhotateA.AvatarModifyTools.GrabableItem
                 {
                     var path = EditorUtility.SaveFilePanel("Save", "Assets", target.name + "GrabControll",
                         "controller");
-                    if (string.IsNullOrWhiteSpace(path)) return;
+                    if (string.IsNullOrEmpty(path))
+                    {
+                        OnCancel();
+                        return;
+                    }
                     saveName = System.IO.Path.GetFileNameWithoutExtension(path);
                     path = FileUtil.GetProjectRelativePath(path);
-                    if (constraintMode)
+                    try
                     {
-                        ConstraintSetup(path);
+                        if (constraintMode)
+                        {
+                            ConstraintSetup(path);
+                        }
+                        else
+                        {
+                            SimpleSetup(path);
+                        }
+                        OnFinishSetup();
                     }
-                    else
+                    catch (Exception e)
                     {
-                        SimpleSetup(path);
+                        OnError(e);
+                        throw;
                     }
                     OnFinishSetup();
                 }
             }
             status.Display();
-            
-            EditorGUILayout.Space();
-            EditorGUILayout.Space();
-
+#else
+            VRCErrorLabel();
+#endif
             Signature();
         }
 

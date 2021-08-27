@@ -252,13 +252,17 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         {
             TitleStyle("マジックドレッサーインベントリ");
             DetailStyle("アバターのメニューから，服やアイテムの入れ替えを行える設定ツールです．",EnvironmentGUIDs.readme);
+#if VRC_SDK_VRCSDK3
+
+            EditorGUILayout.Space();
             AvatartField("",()=>
             {
                 data.ApplyRoot(avatar.gameObject);
                 data.SaveGUID(avatar.gameObject);
                 LoadReorderableList();
             });
-            
+            EditorGUILayout.Space();
+            EditorGUILayout.Space();
             if (!avatar)
             {
                 GUILayout.Label("シーン上のアバターをドラッグ＆ドロップ");
@@ -272,8 +276,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
 
                 return;
             }
-
-            EditorGUILayout.Space();
+            
             var index = menuReorderableList.index;
             using (new EditorGUILayout.VerticalScope())
             {
@@ -512,11 +515,9 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                             if (GUILayout.Button("Force Revert"))
                             {
                                 RevertObjectActiveForScene();
-#if VRC_SDK_VRCSDK3
                                 var mod = new AvatarModifyTool(avatar);
                                 mod.RevertByKeyword(EnvironmentGUIDs.prefix);
                                 OnFinishRevert();
-#endif
                             }
                         }
 
@@ -543,12 +544,20 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                                         string fileName = System.IO.Path.GetFileNameWithoutExtension(path);
                                         data.saveName = fileName;
                                     }
-                                    data = ScriptableObject.Instantiate(data);
-                                    // data.ApplyPath(avatar.gameObject);
-                                    path = FileUtil.GetProjectRelativePath(path);
-                                    AssetDatabase.CreateAsset(data, path);
-                                    Setup(path);
-                                    OnFinishSetup();
+                                    try
+                                    {
+                                        data = ScriptableObject.Instantiate(data);
+                                        // data.ApplyPath(avatar.gameObject);
+                                        path = FileUtil.GetProjectRelativePath(path);
+                                        AssetDatabase.CreateAsset(data, path);
+                                        Setup(path);
+                                        OnFinishSetup();
+                                    }
+                                    catch (Exception e)
+                                    {
+                                        OnError(e);
+                                        throw;
+                                    }
                                 }
                             }
                         }
@@ -559,24 +568,34 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                             RevertObjectActiveForScene();
                             var path = EditorUtility.SaveFilePanel("Save", "Assets", data.saveName,
                                 "anim");
-                            if (string.IsNullOrWhiteSpace(path)) return;
+                            if (string.IsNullOrEmpty(path))
+                            {
+                                OnCancel();
+                                return;
+                            }
                             data.saveName = System.IO.Path.GetFileNameWithoutExtension(path);
-                            data = Instantiate(data);
-                            // data.ApplyPath(avatar.gameObject);
-                            AssetDatabase.CreateAsset(data, FileUtil.GetProjectRelativePath(path));
-                            SaveAnim(path);
-                            status.Success("Finish Export");
+                            try
+                            {
+                                data = Instantiate(data);
+                                // data.ApplyPath(avatar.gameObject);
+                                AssetDatabase.CreateAsset(data, FileUtil.GetProjectRelativePath(path));
+                                SaveAnim(path);
+                                status.Success("Finish Export");
+                            }
+                            catch (Exception e)
+                            {
+                                OnError(e);
+                                throw;
+                            }
                         }
                         status.Display();
-
-                        EditorGUILayout.Space();
+                        Signature();
                     }
-                    
-                    EditorGUILayout.Space();
                 }
             }
-
-            Signature();
+#else
+            VRCErrorLabel();
+#endif
         }
 
         bool GetLayerDefaultActive(LayerGroup layer,GameObject obj)

@@ -30,6 +30,23 @@ namespace HhotateA.AvatarModifyTools.Core
         public bool writeDefault = false;
         public bool keepOldAsset = false;
 
+        public void VRCErrorLabel()
+        {
+#if VRC_SDK_VRCSDK3
+#else
+            GUIStyle titleStyle = new GUIStyle(GUI.skin.label);
+            titleStyle.alignment = TextAnchor.MiddleCenter;
+            titleStyle.fontSize = 12;
+            titleStyle.fontStyle = FontStyle.Normal;
+            titleStyle.normal = new GUIStyleState()
+            {
+                textColor = Color.red
+            };
+            EditorGUILayout.Space();
+            EditorGUILayout.LabelField("Please import VRCSDK3.0 in your project.",titleStyle);
+#endif
+        }
+
         private StatusView _status;
         public StatusView status
         {

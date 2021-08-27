@@ -133,10 +133,11 @@ namespace HhotateA.AvatarModifyTools.TailMover
         {
             TitleStyle("なでもふセットアップ");
             DetailStyle("アバターの尻尾やケモ耳のアイドルモーションを設定したり，デスクトップモードで腕を動かす設定ができるツールです．",EnvironmentGUIDs.readme);
+#if VRC_SDK_VRCSDK3
+
             EditorGUILayout.Space();
-            
             AvatartField();
-            
+            EditorGUILayout.Space();
             EditorGUILayout.Space();
             if (!avatar)
             {
@@ -153,8 +154,6 @@ namespace HhotateA.AvatarModifyTools.TailMover
                 }
                 return;
             }
-            
-            EditorGUILayout.Space();
             
             using (new EditorGUILayout.HorizontalScope())
             {
@@ -372,11 +371,9 @@ namespace HhotateA.AvatarModifyTools.TailMover
                 {
                     if (GUILayout.Button("Force Revert"))
                     {
-#if VRC_SDK_VRCSDK3
                         var mod = new AvatarModifyTool(avatar);
                         mod.RevertByKeyword(EnvironmentGUIDs.prefix);
                         OnFinishRevert();
-#endif
                     }
                 }
                 EditorGUILayout.Space();
@@ -386,14 +383,26 @@ namespace HhotateA.AvatarModifyTools.TailMover
                 {
                     var path = EditorUtility.SaveFilePanel("Save", "Assets",  preset.ToString()+"Controll",
                         "controller");
-                    if (string.IsNullOrWhiteSpace(path)) return;
+                    if (string.IsNullOrEmpty(path))
+                    {
+                        OnCancel();
+                        return;
+                    }
                     if (String.IsNullOrWhiteSpace(dataname))
                     {
                         string fileName = System.IO.Path.GetFileNameWithoutExtension(path);
                         dataname = fileName;
                     }
-                    SaveTailAnim(path);
-                    OnFinishSetup();
+                    try
+                    {
+                        SaveTailAnim(path);
+                        OnFinishSetup();
+                    }
+                    catch (Exception e)
+                    {
+                        OnError(e);
+                        throw;
+                    }
                 }
 
                 EditorGUILayout.Space();
@@ -404,22 +413,34 @@ namespace HhotateA.AvatarModifyTools.TailMover
                     {
                         var path = EditorUtility.SaveFilePanel("Save", "Assets", preset.ToString()+"Idle",
                             "controller");
-                        if (string.IsNullOrWhiteSpace(path)) return;
+                        if (string.IsNullOrEmpty(path))
+                        {
+                            OnCancel();
+                            return;
+                        }
                         if (String.IsNullOrWhiteSpace(dataname))
                         {
                             string fileName = System.IO.Path.GetFileNameWithoutExtension(path);
                             dataname = fileName;
                         }
-                        SaveTailIdle(path);
-                        OnFinishSetup();
+                        try
+                        {
+                            SaveTailIdle(path);
+                            OnFinishSetup();
+                        }
+                        catch (Exception e)
+                        {
+                            OnError(e);
+                            throw;
+                        }
                     }
                 }
                 EditorGUILayout.Space();
                 status.Display();
-                EditorGUILayout.Space();
-                EditorGUILayout.Space();
             }
-            
+#else
+            VRCErrorLabel();
+#endif
             Signature();
         }
 
