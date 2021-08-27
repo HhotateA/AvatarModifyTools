@@ -11,6 +11,8 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
 {
     public static class EnvironmentGUIDs
     {
+        public static string prefix = "HhotateA_EP_";
+        
         public static string readme = "a0b40f9092ea1bd419ae89844c1699ed";
         public static string emojiModifyData = "7a095102f4fbaf64db6c9ed439a3e4df";
     }

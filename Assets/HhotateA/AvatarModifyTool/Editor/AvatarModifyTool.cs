@@ -96,12 +96,18 @@ namespace HhotateA.AvatarModifyTools.Core
         }
         
         public bool? WriteDefaultOverride { get; set; } = null;
+        public bool safeOriginalAsset = true;
+        public bool overrideSettings = true;
+        public bool renameParameters = false;
+        public bool autoAddNextPage = false;
         private string exportDir = "Assets/";
+        string prefix = "";
         private Dictionary<string, string> animRepathList = new Dictionary<string, string>();
-        public void ModifyAvatar(AvatarModifyData assets,bool keepOriginalAsset = true,bool keepOldAsset = false,bool renameParameters = true)
+        public void ModifyAvatar(AvatarModifyData assets,string keyword = "")
         {
+            prefix = keyword;
             if (renameParameters) assets = RenameAssetsParameters(assets);
-            if (!keepOldAsset) RevertAvatar(assets);
+            if (overrideSettings) RevertByAssets(assets);
             if (avatar != null)
             {
                 animRepathList = new Dictionary<string,string>();
@@ -119,17 +125,18 @@ namespace HhotateA.AvatarModifyTools.Core
                 ModifyAvatarAnimatorController(VRCAvatarDescriptor.AnimLayerType.Gesture,assets.gesture_controller);
                 ModifyAvatarAnimatorController(VRCAvatarDescriptor.AnimLayerType.Action,assets.action_controller);
                 ModifyAvatarAnimatorController(VRCAvatarDescriptor.AnimLayerType.FX,assets.fx_controller);
-                ModifyExpressionParameter(assets.parameter,keepOriginalAsset);
-                ModifyExpressionMenu(assets.menu,false,keepOriginalAsset);
+                ModifyExpressionParameter(assets.parameter,safeOriginalAsset);
+                ModifyExpressionMenu(assets.menu,autoAddNextPage,safeOriginalAsset);
                 AssetDatabase.SaveAssets();
             }
             else
             {
                 throw new NullReferenceException("VRCAvatarDescriptor : avatar not found");
             }
+            EditorUtility.SetDirty( avatar );
         }
 
-        public void RevertAvatar(AvatarModifyData assets)
+        public void RevertByAssets(AvatarModifyData assets)
         {
             if (avatar != null)
             {
@@ -154,8 +161,46 @@ namespace HhotateA.AvatarModifyTools.Core
             {
                 throw new NullReferenceException("VRCAvatarDescriptor : avatar not found");
             }
+            EditorUtility.SetDirty( avatar );
         }
 
+        public void RevertByKeyword(string keyword)
+        {
+            if (avatar != null)
+            {
+                DeleateInChild(avatar.transform,keyword);
+                RevertAnimator(VRCAvatarDescriptor.AnimLayerType.Base,keyword);
+                RevertAnimator(VRCAvatarDescriptor.AnimLayerType.Additive,keyword);
+                RevertAnimator(VRCAvatarDescriptor.AnimLayerType.Gesture,keyword);
+                RevertAnimator(VRCAvatarDescriptor.AnimLayerType.Action,keyword);
+                RevertAnimator(VRCAvatarDescriptor.AnimLayerType.FX,keyword);
+                RevertExpressionParameter(keyword);
+                RevertExpressionMenu(keyword);
+                AssetDatabase.SaveAssets();
+            }
+            else
+            {
+                throw new NullReferenceException("VRCAvatarDescriptor : avatar not found");
+            }
+            EditorUtility.SetDirty( avatar );
+        }
+
+        void DeleateInChild(Transform parent,string keyword)
+        {
+            for (int i = 0; i < parent.childCount;)
+            {
+                if (parent.GetChild(i).gameObject.name.StartsWith(keyword))
+                {
+                    GameObject.DestroyImmediate(parent.GetChild(i).gameObject);
+                }
+                else
+                {
+                    DeleateInChild(parent.GetChild(i),keyword);
+                    i++;
+                }
+            }
+        }
+        
         void ModifyAvatarAnimatorController(
             VRCAvatarDescriptor.AnimLayerType type,
             AnimatorController controller)
@@ -880,21 +925,21 @@ namespace HhotateA.AvatarModifyTools.Core
                 var current = parentnmenu;
                 foreach (var control in menus.controls)
                 {
-                    int menuMax = 7;
+                    int menuMax = 8;
                     while (current.controls.Count >= menuMax && autoNextPage) // 項目が上限に達していたら次ページに飛ぶ
                     {
-                        if (current.controls[menuMax].name == "NextPage" &&
-                            current.controls[menuMax].type == VRCExpressionsMenu.Control.ControlType.SubMenu &&
-                            current.controls[menuMax].subMenu != null)
+                        if (current.controls[menuMax-1].name == "NextPage" &&
+                            current.controls[menuMax-1].type == VRCExpressionsMenu.Control.ControlType.SubMenu &&
+                            current.controls[menuMax-1].subMenu != null)
                         {
-                            current = current.controls[menuMax].subMenu;
+                            current = current.controls[menuMax-1].subMenu;
                         }
                         else
                         {
                             var m = new MenuCreater("NextPage");
-                            m.AddControll(current.controls[menuMax]);
+                            m.AddControll(current.controls[menuMax-1]);
                             var submenu = m.CreateAsset(exportDir);
-                            current.controls[menuMax] = new VRCExpressionsMenu.Control()
+                            current.controls[menuMax-1] = new VRCExpressionsMenu.Control()
                             {
                                 name = "NextPage",
                                 icon = AssetUtility.LoadAssetAtGuid<Texture2D>(EnvironmentVariable.arrowIcon),
@@ -966,25 +1011,14 @@ namespace HhotateA.AvatarModifyTools.Core
         
         public void RevertAnimator(
             VRCAvatarDescriptor.AnimLayerType type,
-            string layerWord)
+            string keyword)
         {
-            if(String.IsNullOrWhiteSpace(layerWord)) return;
+            if(String.IsNullOrWhiteSpace(keyword)) return;
             if(GetAvatarAnimatorControllerExists(type))
             {
                 var current = GetAvatarAnimatorController(type);
-                var newLayers = new List<AnimatorControllerLayer>();
-                foreach (var layer in current.layers)
-                {
-                    if (layer.name.StartsWith(layerWord))
-                    {
-                        
-                    }
-                    else
-                    {
-                        newLayers.Add(layer);
-                    }
-                }
-                current.layers = newLayers.ToArray();
+                current.parameters = current.parameters.Where(p => !p.name.StartsWith(keyword)).ToArray();
+                current.layers = current.layers.Where(l => !l.name.StartsWith(keyword)).ToArray();
                 EditorUtility.SetDirty(current);
             }
         }
@@ -1014,6 +1048,17 @@ namespace HhotateA.AvatarModifyTools.Core
                     }
                 }
                 current.parameters = newParams.ToArray();
+                EditorUtility.SetDirty(current);
+            }
+        }
+        
+        void RevertExpressionParameter(string keyword)
+        {
+            if(String.IsNullOrWhiteSpace(keyword)) return;
+            if (GetExpressionParameterExist())
+            {
+                var current = GetExpressionParameter();
+                current.parameters = current.parameters.Where(p => !p.name.StartsWith(keyword)).ToArray();
                 EditorUtility.SetDirty(current);
             }
         }
@@ -1060,6 +1105,52 @@ namespace HhotateA.AvatarModifyTools.Core
                 }
             }
             
+            parentnmenu.controls = newControll.ToList();
+            EditorUtility.SetDirty(parentnmenu);
+        }
+        
+        void RevertExpressionMenu(string keyword)
+        {
+            if(String.IsNullOrWhiteSpace(keyword)) return;
+            if (GetExpressionMenuExist())
+            {
+                var parentnmenu = GetExpressionMenu();
+                RevertMenu(keyword, parentnmenu);
+                EditorUtility.SetDirty(parentnmenu);
+            }
+        }
+        void RevertMenu(string keyword, VRCExpressionsMenu parentnmenu)
+        {
+            if (parentnmenu == null) return;
+            var newControll = new List<VRCExpressionsMenu.Control>();
+            foreach (var controll in parentnmenu.controls)
+            {
+                if (controll.type == VRCExpressionsMenu.Control.ControlType.SubMenu)
+                {
+                    if(controll.subMenu!=null)
+                    {
+                        RevertMenu(keyword, controll.subMenu);
+                        if (controll.subMenu.controls.Count > 0)
+                        {
+                            newControll.Add(controll);
+                        }
+                    }
+                }
+                else
+                if(controll.parameter.name.StartsWith(keyword))
+                {
+                    
+                }
+                else
+                if(controll.subParameters.Any(p=>p.name.StartsWith(keyword)))
+                {
+                    
+                }
+                else
+                {
+                    newControll.Add(controll);
+                }
+            }
             parentnmenu.controls = newControll.ToList();
             EditorUtility.SetDirty(parentnmenu);
         }
@@ -1321,6 +1412,7 @@ namespace HhotateA.AvatarModifyTools.Core
             }).ToArray();
             anim.layers = anim.layers.Select(l =>
             {
+                l.name = GetSafeParam(l.name);
                 l.stateMachine = StateMachineParameterRename(l.stateMachine);
                 return l;
             }).ToArray();
@@ -1465,11 +1557,25 @@ namespace HhotateA.AvatarModifyTools.Core
         }
         
         // パラメータ文字列から2バイト文字の除去を行う
-        public static string GetSafeParam(string param)
+        public string GetSafeParam(string param)
         {
             if (String.IsNullOrWhiteSpace(param)) return "";
+            if (EnvironmentVariable.VRChatParams.Contains(param)) return param;
+
+            if (param.StartsWith(prefix))
+            {
+                return GetNihongoHash(param);
+            }
+            else
+            {
+                return prefix + GetNihongoHash(param);
+            }
+        }
+
+        public static string GetNihongoHash(string origin)
+        {
             StringBuilder builder = new StringBuilder();
-            foreach (char ch in param ) {
+            foreach (char ch in origin ) {
                 if ( "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHJIJKLMNOPQRSTUVWXYZ!\"#$%&'()=-~^|\\`@{[}]*:+;_?/>.<,".IndexOf(ch) >= 0 ) {
                     builder.Append(ch);
                 }
@@ -1485,6 +1591,7 @@ namespace HhotateA.AvatarModifyTools.Core
 
             return builder.ToString();
         }
+        
 #endif
     }
 }

@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 54f19976b0a054842b62f62f9137a140, type: 3}
   m_Name: EmojiParticleDataset
   m_EditorClassIdentifier: 
+  name: AvatarModifyData
   locomotion_controller: {fileID: 0}
   idle_controller: {fileID: 0}
   gesture_controller: {fileID: 0}
@@ -20,5 +21,5 @@ MonoBehaviour:
   items:
   - prefab: {fileID: 6880226074683845, guid: 1ed7af9f3244e954d83c99e2ec259025, type: 3}
     target: 0
-  parameter: {fileID: 11400000, guid: 461eebd41dcb8f64b85d931957c1e770, type: 2}
+  parameter: {fileID: 0}
   menu: {fileID: 11400000, guid: 07d50fbbad7dcb446b3a6ff5770e7f31, type: 2}

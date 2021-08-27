@@ -34,6 +34,44 @@ namespace HhotateA.AvatarModifyTools.Core
 
         public static string texturePreviewShader = "e422dd8b39cd79343b42ffba228bb53b";
         public static string texturePainterShader = "3cfd9a4da725f0c41b16979b05bd5a53";
+
+        public static string[] VRChatParams = new string[]
+        {
+            "IsLocal",
+            "Viseme",
+            "GestureLeft",
+            "GestureRight",
+            "GestureLeftWeight",
+            "GestureRightWeight",
+            "AngularY",
+            "VelocityX",
+            "VelocityY",
+            "VelocityZ",
+            "Upright",
+            "Grounded",
+            "Seated",
+            "AFK",
+            "TrackingType",
+            "VRMode",
+            "MuteSelf",
+            "InStation",
+            "Expression1",
+            "Expression2",
+            "Expression3",
+            "Expression4",
+            "Expression5",
+            "Expression6",
+            "Expression7",
+            "Expression8",
+            "Expression9",
+            "Expression10",
+            "Expression11",
+            "Expression12",
+            "Expression13",
+            "Expression14",
+            "Expression15",
+            "Expression16",
+        };
     }
 
     public static class AssetUtility
@@ -74,96 +112,34 @@ namespace HhotateA.AvatarModifyTools.Core
             return path;
         }
 
-        public static GUIStyle TitleStyle(string title = "",int fontSize = 17,int outline = 1)
+        public static string GetProjectRelativePath(string path)
         {
-            GUIStyle titleStyle = new GUIStyle(GUI.skin.label);
-            titleStyle.alignment = TextAnchor.MiddleCenter;
-            titleStyle.fontSize = fontSize;
-            titleStyle.fontStyle = FontStyle.Normal;
-            titleStyle.normal = new GUIStyleState()
+            path = path.Replace('\\', '/');
+            if (!path.StartsWith("Assets/"))
             {
-                textColor = new Color(0.9960784f,0.7254902f,0.7686275f)
-            };
-            
-            GUIStyle outlineStyle = new GUIStyle(GUI.skin.label);
-            outlineStyle.alignment = TextAnchor.MiddleCenter;
-            outlineStyle.fontSize = fontSize;
-            outlineStyle.fontStyle = FontStyle.Normal;
-            outlineStyle.normal = new GUIStyleState()
-            {
-                textColor = Color.black
-            };
-            
-            if (!String.IsNullOrWhiteSpace(title))
-            {
-                var rect = GUILayoutUtility.GetRect(new GUIContent(title), titleStyle);
-                var r = rect;
-                r.x += outline;
-                EditorGUI.LabelField(r,title,outlineStyle);
-                r = rect;
-                r.x -= outline;
-                EditorGUI.LabelField(r,title,outlineStyle);
-                r = rect;
-                r.y += outline;
-                EditorGUI.LabelField(r,title,outlineStyle);
-                r = rect;
-                r.y -= outline;
-                EditorGUI.LabelField(r,title,outlineStyle);
-                EditorGUI.LabelField(rect,title,titleStyle);
+                path = FileUtil.GetProjectRelativePath(path);
             }
-            return titleStyle;
-        }
-        
-        public static GUIStyle DetailStyle(string title = "",string readme = "")
-        {
-            GUIStyle detailStyle = new GUIStyle(GUI.skin.label);
-            detailStyle.alignment = TextAnchor.LowerCenter;
-            detailStyle.fontSize = 10;
-            detailStyle.fontStyle = FontStyle.Normal;
-            detailStyle.normal = new GUIStyleState()
-            {
-                textColor = new Color(0.9960784f,0.7254902f,0.7686275f)
-            };
 
-            using (new EditorGUILayout.HorizontalScope())
+            return path;
+        }
+        public static Transform RecursiveFindChild(this Transform parent, string childName)
+        {
+            foreach (Transform child in parent)
             {
-                if (!String.IsNullOrWhiteSpace(title))
+                if(child.name == childName)
                 {
-                    EditorGUILayout.LabelField(title,detailStyle);
+                    return child;
                 }
-                if (!String.IsNullOrWhiteSpace(readme))
+                else
                 {
-                    if (GUILayout.Button(AssetUtility.LoadAssetAtGuid<Texture>(EnvironmentVariable.linkIcon),
-                        GUILayout.Width(25),GUILayout.Height(25)))
+                    Transform found = RecursiveFindChild(child, childName);
+                    if (found != null)
                     {
-                        var md = AssetUtility.LoadAssetAtGuid<Object>(readme);
-                        Selection.objects = new Object[]{md};
+                        return found;
                     }
                 }
             }
-            EditorGUILayout.Space();
-            return detailStyle;
-        }
-
-        public static void Signature()
-        {
-            GUIStyle instructions = new GUIStyle(GUI.skin.label);
-            instructions.fontSize = 10;
-            instructions.wordWrap = true;
-            
-            GUIStyle signature = new GUIStyle(GUI.skin.label);
-            signature.alignment = TextAnchor.LowerRight;
-            signature.fontSize = 10;
-            
-            EditorGUILayout.Space();
-            EditorGUILayout.Space();
-            
-            EditorGUILayout.LabelField("ボタンを押すと，アバターのFX用AnimatorController，ExpressionParamrter，ExpressionMenuに改変を加えます．",instructions);
-            EditorGUILayout.LabelField("操作は元に戻せないので，必ずバックアップをとっていることを確認してください．",instructions);
-            
-            EditorGUILayout.Space();
-            
-            EditorGUILayout.LabelField("powered by AvatarModifyTool @HhotateA_xR",signature);
+            return null;
         }
     }
 }

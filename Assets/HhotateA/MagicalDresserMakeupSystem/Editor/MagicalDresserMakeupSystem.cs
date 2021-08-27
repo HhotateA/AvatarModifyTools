@@ -22,7 +22,7 @@ using VRC.SDK3.Avatars.Components;
 
 namespace HhotateA.AvatarModifyTools.MagicalDresserMakeupSystem
 {
-    public class MagicalDresserSetup : EditorWindow
+    public class MagicalDresserSetup : WindowBase
     {
         [MenuItem("Window/HhotateA/マジックドレッサーメイクアップ(MDMakeup)",false,7)]
         public static void ShowWindow()
@@ -31,10 +31,6 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserMakeupSystem
             wnd.titleContent = new GUIContent("マジックドレッサーメイクアップ(MDMakeup)");
             wnd.Show();
         }
-#if VRC_SDK_VRCSDK3
-        private VRCAvatarDescriptor avatar;
-#endif
-        private Animator avatarAnim;
         private Renderer makeupRenderer;
         private ColorRotateMode matMode = ColorRotateMode.Texture;
         private ShapeRotateMode shapeMode = ShapeRotateMode.None;
@@ -49,6 +45,8 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserMakeupSystem
 
         int taskDone = 0;
         int taskTodo = 0;
+
+        private string saveName = "MagicDresser";
 
         enum ColorRotateMode
         {
@@ -66,24 +64,13 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserMakeupSystem
         private float threshold = 1f / 60f;
         private void OnGUI()
         {
-            AssetUtility.TitleStyle("マジックドレッサーメイクアップ(MDMakeup)");
-            AssetUtility.DetailStyle("VRChat上でのメニューからの色変えや，BlendShapeの切り替えを設定するツールです．",EnvironmentGUIDs.readme);
+            TitleStyle("マジックドレッサーメイクアップ(MDMakeup)");
+            DetailStyle("VRChat上でのメニューからの色変えや，BlendShapeの切り替えを設定するツールです．",EnvironmentGUIDs.readme);
 #if VRC_SDK_VRCSDK3
-            var ava = EditorGUILayout.ObjectField("", avatar, typeof(VRCAvatarDescriptor), true) as VRCAvatarDescriptor;
-            if (ava != avatar)
-            {
-                if (ava == null)
-                {
-                    avatarAnim = null;
-                    ava = null;
-                }
-                var anim = ava?.GetComponent<Animator>() as Animator;
-                avatar = ava;
-                avatarAnim = anim;
-            }
-#else
-            avatarAnim = EditorGUILayout.ObjectField("", avatarAnim, typeof(Animator), true) as Animator;
-#endif
+
+            EditorGUILayout.Space();
+            AvatartField();
+            EditorGUILayout.Space();
             EditorGUILayout.Space();
             
             var rend = EditorGUILayout.ObjectField("Renderer", makeupRenderer, typeof(Renderer), true) as Renderer;
@@ -94,6 +81,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserMakeupSystem
                 {
                     mats = Enumerable.Range(0, makeupRenderer.sharedMaterials.Length).Select(_ => true).ToArray();
                     shapes = Enumerable.Range(0, makeupRenderer.GetMesh().blendShapeCount).Select(_ => false).ToArray();
+                    saveName = "MagicDresser_" + makeupRenderer.name;
                 }
             }
             
@@ -136,93 +124,114 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserMakeupSystem
             }
             
             EditorGUILayout.Space();
-            notRecommended = EditorGUILayout.Foldout(notRecommended,"VRChat Not Recommended");
-            if (notRecommended)
+            if (ShowNotRecommended())
             {
-                writeDefault = EditorGUILayout.Toggle("Write Default", writeDefault); 
-                keepOldAsser = EditorGUILayout.Toggle("Keep Old Asset", keepOldAsser);
+                if (GUILayout.Button("Force Revert"))
+                {
+                    var mod = new AvatarModifyTool(avatar);
+                    mod.RevertByKeyword(EnvironmentGUIDs.prefix);
+                    OnFinishRevert();
+                }
             }
             EditorGUILayout.Space();
             EditorGUILayout.Space();
             
             if (GUILayout.Button("Setup"))
             {
-                taskDone = 0;
-                taskTodo = 1;
-#if VRC_SDK_VRCSDK3
-                var path = EditorUtility.SaveFilePanel("Save", "Assets", "MagicDresser_"+rend.name,"controller");
-                if (string.IsNullOrWhiteSpace(path)) return;
-                path = FileUtil.GetProjectRelativePath(path);
-
-                string fileName = System.IO.Path.GetFileNameWithoutExtension(path);
-                string fileDir = System.IO.Path.GetDirectoryName (path);
-                
-                AnimatorControllerCreator animAsset = new AnimatorControllerCreator("MDMakeup_Animator",false);
-                animAsset.CreateAsset(path);
-                MenuCreater menuAsset = new MenuCreater("MDMakeup_Menu");
-                ParametersCreater paramAsset = new ParametersCreater("MDMakeup_Param");
-                
-                if (matMode == ColorRotateMode.Texture)
+                var path = EditorUtility.SaveFilePanel("Save", "Assets", "MagicDresser_" + makeupRenderer.name,"controller");
+                if (string.IsNullOrEmpty(path))
                 {
-                    SetupTexture(path, makeupRenderer,mats,
-                        ref animAsset,
-                        ref menuAsset,
-                        ref paramAsset);
+                    OnCancel();
+                    return;
                 }
-                else
-                if(matMode == ColorRotateMode.HSV)
+                try
                 {
-                    SetupHSV(path, makeupRenderer,mats,
-                        ref animAsset,
-                        ref menuAsset,
-                        ref paramAsset);
+                    Setup(path);
                 }
-                else
-                if(matMode == ColorRotateMode.RGB)
+                catch (Exception e)
                 {
-                    SetupColor(path, makeupRenderer,mats,
-                        ref animAsset,
-                        ref menuAsset,
-                        ref paramAsset);
+                    OnError(e);
+                    throw;
                 }
-
-                if (shapeMode == ShapeRotateMode.Radial)
-                {
-                    SetupBlendShapeRadial(path, makeupRenderer,shapes,
-                        ref animAsset,
-                        ref menuAsset,
-                        ref paramAsset);
-                }
-                else
-                if(shapeMode == ShapeRotateMode.Toggle)
-                {
-                    SetupBlendShapeToggle(path, makeupRenderer,shapes,
-                        ref animAsset,
-                        ref menuAsset,
-                        ref paramAsset);
-                }
-                
-                var am = new AvatarModifyTool(avatar,fileDir);
-                var assets = ScriptableObject.CreateInstance<AvatarModifyData>();
-                {
-                    assets.fx_controller = animAsset.Create();
-                    assets.menu = menuAsset.CreateAsset(path, true);
-                    assets.parameter = paramAsset.CreateAsset(path, true);
-                };
-                AssetDatabase.AddObjectToAsset(assets,path);
-                if (writeDefault)
-                {
-                    am.WriteDefaultOverride = true;
-                }
-                am.ModifyAvatar(assets,false);
-                taskDone += 1;
-#endif
             }
-            EditorGUILayout.Space();
+            status.Display();
             EditorGUILayout.LabelField("Task " + taskDone + " / " + taskTodo);
             EditorGUILayout.Space();
             EditorGUILayout.Space();
-            AssetUtility.Signature();
+#else
+            VRCErrorLabel();
+#endif
+            Signature();
+        }
+        
+        void Setup(string path)
+        {
+            taskDone = 0;
+            taskTodo = 1;
+            
+#if VRC_SDK_VRCSDK3
+            string fileName = System.IO.Path.GetFileNameWithoutExtension(path);
+            saveName = fileName;
+            path = FileUtil.GetProjectRelativePath(path);
+            OnFinishSetup();
+            string fileDir = System.IO.Path.GetDirectoryName (path);
+            
+            AnimatorControllerCreator animAsset = new AnimatorControllerCreator(fileName,false);
+            animAsset.CreateAsset(path);
+            MenuCreater menuAsset = new MenuCreater(fileName);
+            ParametersCreater paramAsset = new ParametersCreater(fileName);
+            
+            if (matMode == ColorRotateMode.Texture)
+            {
+                SetupTexture(path, makeupRenderer,mats,
+                    ref animAsset,
+                    ref menuAsset,
+                    ref paramAsset);
+            }
+            else
+            if(matMode == ColorRotateMode.HSV)
+            {
+                SetupHSV(path, makeupRenderer,mats,
+                    ref animAsset,
+                    ref menuAsset,
+                    ref paramAsset);
+            }
+            else
+            if(matMode == ColorRotateMode.RGB)
+            {
+                SetupColor(path, makeupRenderer,mats,
+                    ref animAsset,
+                    ref menuAsset,
+                    ref paramAsset);
+            }
+
+            if (shapeMode == ShapeRotateMode.Radial)
+            {
+                SetupBlendShapeRadial(path, makeupRenderer,shapes,
+                    ref animAsset,
+                    ref menuAsset,
+                    ref paramAsset);
+            }
+            else
+            if(shapeMode == ShapeRotateMode.Toggle)
+            {
+                SetupBlendShapeToggle(path, makeupRenderer,shapes,
+                    ref animAsset,
+                    ref menuAsset,
+                    ref paramAsset);
+            }
+            
+            var mod = new AvatarModifyTool(avatar,fileDir);
+            var assets = ScriptableObject.CreateInstance<AvatarModifyData>();
+            {
+                assets.fx_controller = animAsset.Create();
+                assets.menu = menuAsset.CreateAsset(path, true);
+                assets.parameter = paramAsset.CreateAsset(path, true);
+            };
+            AssetDatabase.AddObjectToAsset(assets,path);
+            ApplySettings(mod).ModifyAvatar(assets,EnvironmentGUIDs.prefix);
+            taskDone += 1;
+#endif
         }
 
 #if VRC_SDK_VRCSDK3
@@ -231,12 +240,9 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserMakeupSystem
             ref MenuCreater menuAsset,
             ref ParametersCreater paramAsset)
         {
-            string fileName = System.IO.Path.GetFileNameWithoutExtension(path);
-            string fileDir = System.IO.Path.GetDirectoryName (path);
-
-            var paramH = "MDMakeup_" + fileName + "_H";
-            var paramS = "MDMakeup_" + fileName + "_S";
-            var paramV = "MDMakeup_" + fileName + "_V";
+            var paramH = saveName + "_H";
+            var paramS = saveName + "_S";
+            var paramV = saveName + "_V";
             
             animAsset.AddParameter(paramH,0.5f);
             animAsset.AddParameter(paramS,0.5f);
@@ -246,12 +252,12 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserMakeupSystem
             paramAsset.AddParam(paramS,0.5f,true);
             paramAsset.AddParam(paramV,0.5f,true);
             
-            var idleAnim = new AnimationClipCreator(fileName+"_Idle",avatarAnim.gameObject).CreateAsset(path,true);
-            var activateAnim = new AnimationClipCreator(fileName+"_ChangeMaterial",avatarAnim.gameObject);
-            var inactivateAnim = new AnimationClipCreator(fileName+"_RevertMaterial",avatarAnim.gameObject);
-            var rotateHAnim = new AnimationClipCreator(fileName+"_RotateH",avatarAnim.gameObject);
-            var rotateSAnim = new AnimationClipCreator(fileName+"_RotateS",avatarAnim.gameObject);
-            var rotateVAnim = new AnimationClipCreator(fileName+"_RotateV",avatarAnim.gameObject);
+            var idleAnim = new AnimationClipCreator(saveName+"_Idle",avatarAnim.gameObject).CreateAsset(path,true);
+            var activateAnim = new AnimationClipCreator(saveName+"_ChangeMaterial",avatarAnim.gameObject);
+            var inactivateAnim = new AnimationClipCreator(saveName+"_RevertMaterial",avatarAnim.gameObject);
+            var rotateHAnim = new AnimationClipCreator(saveName+"_RotateH",avatarAnim.gameObject);
+            var rotateSAnim = new AnimationClipCreator(saveName+"_RotateS",avatarAnim.gameObject);
+            var rotateVAnim = new AnimationClipCreator(saveName+"_RotateV",avatarAnim.gameObject);
 
             var filterMat = new Material(AssetUtility.LoadAssetAtGuid<Shader>(EnvironmentGUIDs.filterShader));
             var clippingMat = new Material(AssetUtility.LoadAssetAtGuid<Shader>(EnvironmentGUIDs.clippingShader));
@@ -261,11 +267,11 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserMakeupSystem
             AssetDatabase.AddObjectToAsset(clippingMat,path);
             
             // フィルターオブジェクトの作成
-            var clone = rend.transform.FindInChildren(rend.name + "(clone)_" + fileName + "_Filter")?.gameObject;
+            var clone = rend.transform.FindInChildren(rend.name + "(clone)_" + saveName + "_Filter")?.gameObject;
             if (clone == null)
             {
                 clone = Instantiate(rend.gameObject, rend.transform);
-                clone.name = rend.name + "(clone)_" + fileName + "_Filter";
+                clone.name = rend.name + "(clone)_" + saveName + "_Filter";
                 foreach (Transform child in clone.transform)
                 {
                     DestroyImmediate(child.gameObject);
@@ -288,7 +294,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserMakeupSystem
             rotateVAnim.AddKeyframe_MaterialParam(0f,cloneRend,"_V",0f);
             rotateVAnim.AddKeyframe_MaterialParam(256f/60f,cloneRend,"_V",1f);
 
-            animAsset.CreateLayer("MDMakeup_" + fileName);
+            animAsset.CreateLayer(saveName);
             animAsset.AddDefaultState("Idle");
             animAsset.AddState("Activate", activateAnim.CreateAsset(path,true));
             animAsset.AddState("Inactive", inactivateAnim.CreateAsset(path,true));
@@ -350,12 +356,12 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserMakeupSystem
             animAsset.SetStateTime("Controll",paramV);
             animAsset.SetStateSpeed("Controll",threshold);
             
-            var menu = new MenuCreater("MDMakeup_" + fileName);
+            var menu = new MenuCreater(saveName);
             menu.AddRadial("色相",AssetUtility.LoadAssetAtGuid<Texture2D>(EnvironmentGUIDs.rotateHIcon),paramH);
             menu.AddRadial("彩度",AssetUtility.LoadAssetAtGuid<Texture2D>(EnvironmentGUIDs.rotateSIcon),paramS);
             menu.AddRadial("明度",AssetUtility.LoadAssetAtGuid<Texture2D>(EnvironmentGUIDs.rotateVIcon),paramV);
             
-            menuAsset.AddSubMenu(menu.CreateAsset(path, true),"MDMakeup_" + rend.name + "Color",AssetUtility.LoadAssetAtGuid<Texture2D>(EnvironmentGUIDs.dresserIcon));
+            menuAsset.AddSubMenu(menu.CreateAsset(path, true),rend.name + "Color",AssetUtility.LoadAssetAtGuid<Texture2D>(EnvironmentGUIDs.dresserIcon));
         }
         
         void SetupColor(string path,Renderer rend, bool[] mat,
@@ -366,9 +372,9 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserMakeupSystem
             string fileName = System.IO.Path.GetFileNameWithoutExtension(path);
             string fileDir = System.IO.Path.GetDirectoryName (path);
 
-            var paramR = "MDMakeup_" + fileName + "_R";
-            var paramG = "MDMakeup_" + fileName + "_G";
-            var paramB = "MDMakeup_" + fileName + "_B";
+            var paramR = fileName + "_R";
+            var paramG = fileName + "_G";
+            var paramB = fileName + "_B";
             
             animAsset.AddParameter(paramR,0f);
             animAsset.AddParameter(paramG,0f);
@@ -430,7 +436,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserMakeupSystem
                 inactivateAnim.AddKeyframe_MaterialParam(1f, rend, param.ToString()+".b", current.b);*/
             }
             
-            animAsset.CreateLayer("MDMakeup_" + fileName);
+            animAsset.CreateLayer(fileName);
             animAsset.AddDefaultState("Idle");
             animAsset.AddState("Activate", activateAnim.CreateAsset(path,true));
             animAsset.AddState("Inactive", inactivateAnim.CreateAsset(path,true));
@@ -482,7 +488,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserMakeupSystem
             m.AddRadial("緑",AssetUtility.LoadAssetAtGuid<Texture2D>(EnvironmentGUIDs.rotateGIcon),paramG);
             m.AddRadial("青",AssetUtility.LoadAssetAtGuid<Texture2D>(EnvironmentGUIDs.rotateBIcon),paramB);
             m.CreateAsset(path, true);
-            menuAsset.AddSubMenu(m.Create(),"MDMakeup_" + rend.name + "Color",AssetUtility.LoadAssetAtGuid<Texture2D>(EnvironmentGUIDs.dresserIcon));
+            menuAsset.AddSubMenu(m.Create(),rend.name + "Color",AssetUtility.LoadAssetAtGuid<Texture2D>(EnvironmentGUIDs.dresserIcon));
         }
 
         public void SetupTexture(string path,Renderer rend, bool[] mat,
@@ -493,7 +499,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserMakeupSystem
             string fileName = System.IO.Path.GetFileNameWithoutExtension(path);
             string fileDir = System.IO.Path.GetDirectoryName (path);
             
-            var param = "MDMakeup_" + fileName + "_RotationColor";
+            var param = fileName + "_RotationColor";
             
             var idleAnim = new AnimationClipCreator(fileName+"_Idle",avatarAnim.gameObject).CreateAsset(path,true);
             var controllAnim = new AnimationClipCreator(fileName+"_Controll",avatarAnim.gameObject);
@@ -532,7 +538,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserMakeupSystem
                 }
             }
             
-            animAsset.CreateLayer("MDMakeup_" + fileName);
+            animAsset.CreateLayer(fileName);
             animAsset.AddDefaultState("Idle",idleAnim);
             animAsset.AddState("Controll", controllAnim.CreateAsset(path, true));
             animAsset.AddTransition("Idle","Controll",param,threshold,true);
@@ -542,7 +548,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserMakeupSystem
             animAsset.Create();
             
             paramAsset.AddParam(param,0f,true);
-            menuAsset.AddRadial("MDMakeup_" + rend.name + "Color",AssetUtility.LoadAssetAtGuid<Texture2D>(EnvironmentGUIDs.dresserIcon),param);
+            menuAsset.AddRadial(rend.name + "Color",AssetUtility.LoadAssetAtGuid<Texture2D>(EnvironmentGUIDs.dresserIcon),param);
         }
 
         void SetupBlendShapeRadial(string path, Renderer rend, bool[] shape,
@@ -554,7 +560,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserMakeupSystem
             string fileName = System.IO.Path.GetFileNameWithoutExtension(path);
             string fileDir = System.IO.Path.GetDirectoryName (path);
             
-            var param = "MDMakeup_" + fileName + "_BlendShape";
+            var param = fileName + "_BlendShape";
             var idleAnim = new AnimationClipCreator(fileName+"_Idle",avatarAnim.gameObject).CreateAsset(path,true);
             var controllAnim = new AnimationClipCreator(fileName+"_Controll",avatarAnim.gameObject);
             for (int i = 0; i < shape.Length; i++)
@@ -564,7 +570,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserMakeupSystem
                 controllAnim.AddKeyframe(256f/60f,rend, "blendShape."+rend.GetMesh().GetBlendShapeName(i) , 100f);
             }
             
-            animAsset.CreateLayer("MDMakeup_" + fileName);
+            animAsset.CreateLayer(fileName);
             animAsset.AddDefaultState("Idle",idleAnim);
             animAsset.AddState("Controll", controllAnim.CreateAsset(path, true));
             animAsset.AddTransition("Idle","Controll",param,threshold,true);
@@ -574,7 +580,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserMakeupSystem
             animAsset.Create();
             
             paramAsset.AddParam(param,0f,true);
-            menuAsset.AddRadial("MDMakeup_" + rend.name + "_Shape",AssetUtility.LoadAssetAtGuid<Texture2D>(EnvironmentGUIDs.blendShapeIcon),param);
+            menuAsset.AddRadial(rend.name + "_Shape",AssetUtility.LoadAssetAtGuid<Texture2D>(EnvironmentGUIDs.blendShapeIcon),param);
         }
         
         void SetupBlendShapeToggle(string path, Renderer rend, bool[] shape,
@@ -589,7 +595,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserMakeupSystem
             for (int i = 0; i < shape.Length; i++)
             {
                 if(shape[i] == false) continue;
-                var param = "MDMakeup_" + fileName + "_BlendShapeToggle_" + rend.GetMesh().GetBlendShapeName(i);
+                var param = fileName + "_BlendShapeToggle_" + rend.GetMesh().GetBlendShapeName(i);
                 
                 var idleAnim = new AnimationClipCreator(fileName+"_Idle",avatarAnim.gameObject).CreateAsset(path,true);
                 var activateAnim = new AnimationClipCreator(fileName+"_Activate_"+rend.GetMesh().GetBlendShapeName(i),avatarAnim.gameObject);
@@ -600,7 +606,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserMakeupSystem
                 inactivateAnim.AddKeyframe(0f,rend, "blendShape."+rend.GetMesh().GetBlendShapeName(i) , 0f);
                 inactivateAnim.AddKeyframe(1f/60f,rend, "blendShape."+rend.GetMesh().GetBlendShapeName(i) , 0f);
             
-                animAsset.CreateLayer("MDMakeup_" + fileName + "_" + i.ToString() + rend.GetMesh().GetBlendShapeName(i));
+                animAsset.CreateLayer( fileName + "_" + i.ToString() + rend.GetMesh().GetBlendShapeName(i));
                 animAsset.AddDefaultState("Idle",idleAnim);
                 animAsset.AddState("Active",idleAnim);
                 animAsset.AddState("Inactive",idleAnim);
@@ -616,7 +622,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserMakeupSystem
                 animAsset.Create();
             
                 paramAsset.AddParam(param,false,true);
-                menuAsset.AddToggle("MDMakeup_" + rend.GetMesh().GetBlendShapeName(i),AssetUtility.LoadAssetAtGuid<Texture2D>(EnvironmentGUIDs.blendShapeIcon),param);
+                menuAsset.AddToggle(rend.GetMesh().GetBlendShapeName(i),AssetUtility.LoadAssetAtGuid<Texture2D>(EnvironmentGUIDs.blendShapeIcon),param);
             }
         }
 #endif

@@ -426,6 +426,20 @@ namespace HhotateA.AvatarModifyTools.Core
                 return asset.layers[layer].stateMachine.states.FirstOrDefault(s => s.state.name == name).state;
             }
         }
+
+        public void SetEditLayer(int value)
+        {
+            Debug.Log(value);
+            if (value >= 0)
+            {
+                editLayer = value;
+            }
+        }
+
+        public int GetEditLayer(string name)
+        {
+            return asset.layers.ToList().FindIndex(l => l.name == name);
+        }
         
         /// <summary>
         /// 新たなレイヤーを作る
@@ -446,7 +460,7 @@ namespace HhotateA.AvatarModifyTools.Core
                         name = layerName,
                         stateMachine = new AnimatorStateMachine(),
                     });
-                editLayer++;
+                editLayer = asset.layers.Length - 1;
             }
             return asset;
         }
@@ -794,6 +808,7 @@ namespace HhotateA.AvatarModifyTools.Core
         public void EditStateMachineBehaviour <T>(string stateName,Action<T> edit,bool asNew = false) where T : StateMachineBehaviour 
         {
             var state = GetState(stateName);
+            if (state == null) return;
             var bs = state.behaviours.ToList();
             T behaviour;
             if (asNew)
@@ -905,11 +920,20 @@ namespace HhotateA.AvatarModifyTools.Core
             },true);
         }
         
-        public void SetLayerLocomotion(string stateName,bool active)
+        public void SetLocomotionControll(string stateName,bool active)
         {
             EditStateMachineBehaviour<VRCAnimatorLocomotionControl>(stateName, (controll) =>
             {
                 controll.disableLocomotion = !active;
+            },false);
+        }
+        public void SetEnterPoseControll(string stateName,bool active,float delay = 0f)
+        {
+            EditStateMachineBehaviour<VRCAnimatorTemporaryPoseSpace>(stateName, (controll) =>
+            {
+                controll.enterPoseSpace = active;
+                controll.fixedDelay = true;
+                controll.delayTime = delay;
             },false);
         }
         
@@ -924,6 +948,22 @@ namespace HhotateA.AvatarModifyTools.Core
                     value = value ?? 0f,
                     valueMin = 0f,
                     valueMax = value ?? 1f,
+                    name = param
+                });
+                controll.localOnly = local;
+            },false);
+        }
+        
+        public void ParameterDriver(string stateName,string param,float from,float to,float chance = 0f,bool local = false)
+        {
+            EditStateMachineBehaviour<VRCAvatarParameterDriver>(stateName, (controll) =>
+            {
+                controll.parameters.Add(new VRC_AvatarParameterDriver.Parameter()
+                {
+                    type = VRC_AvatarParameterDriver.ChangeType.Random,
+                    value = 0f,
+                    valueMin = from,
+                    valueMax = to,
                     name = param
                 });
                 controll.localOnly = local;

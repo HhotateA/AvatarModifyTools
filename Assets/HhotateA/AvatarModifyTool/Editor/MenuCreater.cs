@@ -101,11 +101,6 @@ namespace HhotateA.AvatarModifyTools.Core
                 AddControll(SubMenuControl(name,icon,subMenu));
             }
         }
-        
-        public void AddSubMenu(MenuCreater subMenu, string name = "", Texture2D icon = null)
-        {
-            AddControll(SubMenuControl(name,icon,subMenu.CreateAsset()));
-        }
 
         public void AddButton(string name,Texture2D icon,string param,float val)
         {
@@ -280,7 +275,7 @@ namespace HhotateA.AvatarModifyTools.Core
                     foreach (var menu in menus)
                     {
                         AssetDatabase.AddObjectToAsset(menu,path);
-                        SaveSubMenus(menu,path);
+                        //SaveSubMenus(menu,path);
                     }
                 }
                 else
@@ -296,7 +291,7 @@ namespace HhotateA.AvatarModifyTools.Core
                     AssetDatabase.CreateAsset(asset,path);
                     foreach (var menu in menus)
                     {
-                        SaveSubMenus(menu,path);
+                        //SaveSubMenus(menu,path);
                     }
                 }
             }

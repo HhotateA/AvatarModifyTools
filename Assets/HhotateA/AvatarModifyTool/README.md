@@ -79,8 +79,8 @@ public class TestSetupTool : EditorWindow
 - VRChatやUnity等の仕様変更により本ツールの機能が使えなくなった場合、製作者は責任を負いません。
 
 ## 動作確認環境
-- Unity 2018.4.20f1
-- VRCSDK3-AVATAR-2021.06.03.14.57_Public
+- Unity2019.4.24f1
+- VRCSDK3-AVATAR-2021.08.11.15.16_Public
 
 ## 更新履歴
 
