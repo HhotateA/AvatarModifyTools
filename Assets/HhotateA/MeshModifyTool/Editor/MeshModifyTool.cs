@@ -392,16 +392,20 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
                             }
                             using (new EditorGUILayout.HorizontalScope())
                             {
-                                GUILayout.Label("CombineMesh", GUILayout.Width(100));
-                                if (GUILayout.Button("ActiveMesh",GUILayout.Width(90)))
+                                // GUILayout.Label("CombineMesh", GUILayout.Width(100));
+                                if (GUILayout.Button("CombineMesh",GUILayout.Width(95)))
                                 {
                                     CombineMesh();
                                 }
                                 using (new EditorGUI.DisabledScope(editMeshCreater==null && !isSaveAll))
                                 {
-                                    if (GUILayout.Button("Material",GUILayout.Width(90)))
+                                    if (GUILayout.Button("CombineMaterial",GUILayout.Width(105)))
                                     {
-                                        SaveAll(CombineMaterial);
+                                        CombineMaterial();
+                                    }
+                                    if (GUILayout.Button("TextureAtlas",GUILayout.Width(85)))
+                                    {
+                                        SaveAll(TextureAtlas);
                                     }
                                 }
                             }
@@ -866,7 +870,7 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
             if (string.IsNullOrWhiteSpace(path)) return;
             path = FileUtil.GetProjectRelativePath(path);
             var dir = Path.GetDirectoryName(path);
-            var file = Path.GetFileName(path).Split('.')[0];
+            var file = System.IO.Path.GetFileNameWithoutExtension(path);
             
             if (rends.FirstOrDefault(r => r.name == file))
             {
@@ -893,14 +897,47 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
             // editmeshCreaterの切り替え
             AddRend(smsm);
         }
-
         void CombineMaterial()
+        {
+            var path = EditorUtility.SaveFilePanel("Save", "Assets", "CombineMesh", "mesh");
+            if (string.IsNullOrWhiteSpace(path)) return;
+            path = FileUtil.GetProjectRelativePath(path);
+            var dir = Path.GetDirectoryName(path);
+            var file = System.IO.Path.GetFileNameWithoutExtension(path);
+            
+            if (rends.FirstOrDefault(r => r.name == file))
+            {
+                for (int i = 0; i < 999; i++)
+                {
+                    var n = file + "_" + i;
+                    if (rends.FirstOrDefault(r => r.name == n) == null)
+                    {
+                        file = n;
+                        break;
+                    }
+                }
+            }
+            editMeshCreater.CombineMesh();
+            var m = editMeshCreater.Save(Path.Combine(dir, file + ".mesh"));
+                
+            var sm = editMeshCreater.ToSkinMesh(file,avatar.transform);
+            
+            sm.transform.position = rends[0].transform.position;
+            sm.transform.rotation = rends[0].transform.rotation;
+            
+            var smsm = sm.GetComponent<SkinnedMeshRenderer>();
+            smsm.SetMesh(m);
+            // editmeshCreaterの切り替え
+            AddRend(smsm);
+        }
+
+        void TextureAtlas()
         {
             var path = EditorUtility.SaveFilePanel("Save", "Assets", "CombineMaterial", "png");
             if (string.IsNullOrWhiteSpace(path)) return;
             path = FileUtil.GetProjectRelativePath(path);
             var dir = Path.GetDirectoryName(path);
-            var file = Path.GetFileName(path).Split('.')[0];
+            var file = System.IO.Path.GetFileNameWithoutExtension(path);
             
             if (rends.FirstOrDefault(r => r.name == file))
             {

@@ -150,7 +150,6 @@ VRChat用アバターの色改変などを想定した，UnityのEditorで簡単
 ![alt](./Manual/014.png)
 ![alt](./Manual/015.png)
 
-
 ## 制作者
 @HhotateA_xR
 問題報告は https://github.com/HhotateA/AvatarModifyTools へ

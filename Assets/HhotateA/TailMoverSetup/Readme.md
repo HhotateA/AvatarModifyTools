@@ -54,6 +54,10 @@ VRChatのアバターで使用できる，尻尾や腕の動きをアニメー�
 - 本ツールを使用して発生した問題に対しては製作者は一切の責任を負いません.
 - VRChatやUnity等の仕様変更により本ツールの機能が使えなくなった場合、製作者は責任を負いません。
 
+## 動作確認環境
+- Unity2019.4.24f1
+- VRCSDK3-AVATAR-2021.08.11.15.16_Public
+
 ## 制作者
 @HhotateA_xR
 問題報告は https://github.com/HhotateA/AvatarModifyTools へ
