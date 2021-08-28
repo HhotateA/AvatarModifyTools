@@ -1,0 +1,17 @@
+{
+    "name": "AvatarModifyToos.GrabableItem",
+    "references": [
+        "GUID:da064cea972f4f14ca989fb5260467a6"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
