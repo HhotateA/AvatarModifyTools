@@ -1,0 +1,15 @@
+{
+    "name": "AvatarModifyTools.MagicDresserInventorySystem",
+    "references": [
+        "GUID:ec8e8747048cb7341bdf54d6b103766a"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

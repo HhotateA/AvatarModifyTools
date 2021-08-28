@@ -1,5 +1,11 @@
 {
   "dependencies": {
+    "com.hhotatea.avatar_modify_tools": {
+      "version": "file:AvatarModifyTools",
+      "depth": 0,
+      "source": "embedded",
+      "dependencies": {}
+    },
     "com.unity.collab-proxy": {
       "version": "1.6.0",
       "depth": 0,
