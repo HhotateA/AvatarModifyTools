@@ -10,18 +10,26 @@ VRChatアバターのアイドルアニメーションや，エモートを設�
 3. EmoteMotionKit.unitypackageをUnityProjectにインポートする．
 4. Unityの上部メニュー，Window/HhotateA/EmoteMotionKitを開く.
 5. "Avatar"の欄にシーン上のアバターオブジェクトをドラッグ&ドロップで参照する
-6. アニメーションを登録する
-7. アニメーションの設定を行う
+6. レイヤーの設定をする．
+    - EmoteLayer : EmoteMotionを追加するレイヤー
+        - Base : Locomotionレイヤーに登録する．
+        - Action : Actionレイヤーに登録する．（VRChatのエモートと同じ設定）
+        - Additive : Idleレイヤーに登録する．（アイドルに加算されるアニメーション）
+    - Use FX : FXレイヤーにアニメーションをコピーする．（表情などの合成用）
+    - Is Saved : エモートの状態を保存する
+7. アニメーションを登録する
+8. アニメーションの設定を行う
     - TrackingSpace : （Animator Tracking Controlの設定）
-        - Tracking : Trackingを優先する
-        - VR_HMD : 足の動きをアニメーションで上書きする
-        - PC_Desktop : 頭以外の動きをアニメーションで上書きする
-        - Animation : アニメーションを優先する
+        - TrackingBase : Trackingを優先する
+        - FootAnimation : 足の動きをアニメーションで上書きする
+        - BodyAnimation : 頭以外の動きをアニメーションで上書きする
+        - AnimationBase : アニメーションを優先する
+        - Emote : アニメーションで上書きする
     - IsEmote : エモート(ループしないアニメーション)として設定する．
     - Stop Locomotion : アニメーション以外での移動を禁止する（Animator Locomotion Controlの設定）
     - Enter Pose Space : 視点をアニメーションで移動する(Animator Temporary Pose Spaceの設定)
-8. ”Setup”ボタンを押す．
-9. 通常の手順でアバターをアップロードする．
+9. ”Setup”ボタンを押す．
+10. 通常の手順でアバターをアップロードする．
 
 ## 使用方法
 1. AvatarのExpressionMenuからEmoteMotionを選択する．

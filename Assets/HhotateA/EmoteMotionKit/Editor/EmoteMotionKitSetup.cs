@@ -116,7 +116,7 @@ namespace HhotateA.AvatarModifyTools.EmoteMotionKit
 
         private void OnGUI()
         {
-            TitleStyle("エモートモーションキットβ");
+            TitleStyle("エモートモーションキット");
             DetailStyle("アイドルアニメーションやエモートを設定するツールです．",EnvironmentGUIDs.readme);
 #if VRC_SDK_VRCSDK3
 
@@ -135,7 +135,23 @@ namespace HhotateA.AvatarModifyTools.EmoteMotionKit
                 using (new EditorGUILayout.VerticalScope())
                 {
                     data.saveName = EditorGUILayout.TextField(data.saveName, GUILayout.Height(20));
-                    data.isSaved = EditorGUILayout.ToggleLeft("Is Saved",data.isSaved, GUILayout.Height(20));
+
+                    using (new EditorGUILayout.HorizontalScope())
+                    {
+                        EditorGUILayout.LabelField("Layer Setting", GUILayout.Width(75),GUILayout.Height(20));
+                        data.emoteLayer =
+                            (EmoteLayer) EditorGUILayout.EnumPopup( data.emoteLayer, GUILayout.Width(100),GUILayout.Height(20));
+                        EditorGUILayout.LabelField(" ", GUILayout.Width(20),GUILayout.Height(20));
+                        data.copyToFXLayer = EditorGUILayout.Toggle(data.copyToFXLayer,GUILayout.Width(20),GUILayout.Height(20));
+                        EditorGUILayout.LabelField("Use FX", GUILayout.Width(50),GUILayout.Height(20));
+                    }
+                    
+                    using (new EditorGUILayout.HorizontalScope())
+                    {
+                        EditorGUILayout.LabelField(" ", GUILayout.Width(200),GUILayout.Height(20));
+                        data.isSaved = EditorGUILayout.Toggle(data.isSaved,GUILayout.Width(20),GUILayout.Height(20));
+                        EditorGUILayout.LabelField("Is Saved", GUILayout.Width(50),GUILayout.Height(20));
+                    }
                 }
             }
 
@@ -233,21 +249,10 @@ namespace HhotateA.AvatarModifyTools.EmoteMotionKit
                     ac.SetEnterPoseControll("Reset" + index,false,0f);
                 }
 
-                if (d.tracking == TrackingSpace.Animation)
-                {
-                    ac.SetAnimationTracking("Emote" + index + "_" + d.name,AnimatorControllerCreator.VRCTrackingMask.Haad,true);
-                    ac.SetAnimationTracking("Reset" + index,AnimatorControllerCreator.VRCTrackingMask.Haad,false);
-                }
-                else
-                if(d.tracking == TrackingSpace.PC_Desktop)
-                {
-                    ac.SetAnimationTracking("Emote" + index + "_" + d.name,AnimatorControllerCreator.VRCTrackingMask.LeftHand,true);
-                    ac.SetAnimationTracking("Emote" + index + "_" + d.name,AnimatorControllerCreator.VRCTrackingMask.RightHand,true);
-                    ac.SetAnimationTracking("Reset" + index,AnimatorControllerCreator.VRCTrackingMask.LeftHand,false);
-                    ac.SetAnimationTracking("Reset" + index,AnimatorControllerCreator.VRCTrackingMask.RightHand,false);
-                }
-                else
-                if(d.tracking == TrackingSpace.VR_HMD)
+                if (d.tracking == TrackingSpace.AnimationBase ||
+                    d.tracking == TrackingSpace.BodyAnimation ||
+                    d.tracking == TrackingSpace.FootAnimation ||
+                    d.tracking == TrackingSpace.Emote)
                 {
                     ac.SetAnimationTracking("Emote" + index + "_" + d.name,AnimatorControllerCreator.VRCTrackingMask.LeftFoot,true);
                     ac.SetAnimationTracking("Emote" + index + "_" + d.name,AnimatorControllerCreator.VRCTrackingMask.RightFoot,true);
@@ -256,11 +261,35 @@ namespace HhotateA.AvatarModifyTools.EmoteMotionKit
                     ac.SetAnimationTracking("Reset" + index,AnimatorControllerCreator.VRCTrackingMask.RightFoot,false);
                     ac.SetAnimationTracking("Reset" + index,AnimatorControllerCreator.VRCTrackingMask.Hip,false);
                 }
-                else
-                if(d.tracking == TrackingSpace.Tracking)
+                if (d.tracking == TrackingSpace.AnimationBase ||
+                    d.tracking == TrackingSpace.BodyAnimation ||
+                    d.tracking == TrackingSpace.Emote)
                 {
-                    
+                    ac.SetAnimationTracking("Emote" + index + "_" + d.name,AnimatorControllerCreator.VRCTrackingMask.LeftHand,true);
+                    ac.SetAnimationTracking("Emote" + index + "_" + d.name,AnimatorControllerCreator.VRCTrackingMask.RightHand,true);
+                    ac.SetAnimationTracking("Reset" + index,AnimatorControllerCreator.VRCTrackingMask.LeftHand,false);
+                    ac.SetAnimationTracking("Reset" + index,AnimatorControllerCreator.VRCTrackingMask.RightHand,false);
                 }
+                if (d.tracking == TrackingSpace.AnimationBase ||
+                    d.tracking == TrackingSpace.Emote)
+                {
+                    ac.SetAnimationTracking("Emote" + index + "_" + d.name,AnimatorControllerCreator.VRCTrackingMask.Haad,true);
+                    ac.SetAnimationTracking("Reset" + index,AnimatorControllerCreator.VRCTrackingMask.Haad,false);
+                }
+                if (d.tracking == TrackingSpace.Emote)
+                {
+                    ac.SetAnimationTracking("Emote" + index + "_" + d.name,AnimatorControllerCreator.VRCTrackingMask.RightFingers,true);
+                    ac.SetAnimationTracking("Emote" + index + "_" + d.name,AnimatorControllerCreator.VRCTrackingMask.LeftFingers,true);
+                    ac.SetAnimationTracking("Reset" + index,AnimatorControllerCreator.VRCTrackingMask.RightFingers,false);
+                    ac.SetAnimationTracking("Reset" + index,AnimatorControllerCreator.VRCTrackingMask.LeftFingers,false);
+                }
+
+                if (data.emoteLayer == EmoteLayer.Action)
+                {
+                    ac.SetLayerControll("Emote" + index + "_" + d.name,AnimatorControllerCreator.VRCLayers.Action,1f,0f);
+                    ac.SetLayerControll("Reset" + index,AnimatorControllerCreator.VRCLayers.Action,0f,0f);
+                }
+
                 m.AddToggle(d.name,d.icon,param,index);
             }
 
@@ -269,9 +298,25 @@ namespace HhotateA.AvatarModifyTools.EmoteMotionKit
             var mod = new AvatarModifyTool(avatar,fileDir);
             var assets = CreateInstance<AvatarModifyData>();
             {
-                assets.locomotion_controller = ac.CreateAsset(path, true);
                 assets.parameter = p.CreateAsset(path, true);
                 assets.menu = pm.CreateAsset(path,true);
+                if (data.emoteLayer == EmoteLayer.Base)
+                {
+                    assets.locomotion_controller = ac.CreateAsset(path, true);
+                }
+                else if (data.emoteLayer == EmoteLayer.Action)
+                {
+                    assets.action_controller = ac.CreateAsset(path, true);
+                }
+                else if (data.emoteLayer == EmoteLayer.Additive)
+                {
+                    assets.idle_controller = ac.CreateAsset(path, true);
+                }
+
+                if (data.isSaved)
+                {
+                    assets.fx_controller = ac.Create();
+                }
             }
             AssetDatabase.AddObjectToAsset(assets,path);
             ApplySettings(mod).ModifyAvatar(assets,EnvironmentGUIDs.prefix);
