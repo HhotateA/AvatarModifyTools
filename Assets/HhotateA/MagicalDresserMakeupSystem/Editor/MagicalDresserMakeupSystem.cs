@@ -28,7 +28,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserMakeupSystem
         public static void ShowWindow()
         {
             var wnd = GetWindow<MagicalDresserSetup>();
-            wnd.titleContent = new GUIContent("マジックドレッサーメイクアップ(MDMakeup)");
+            wnd.titleContent = new GUIContent("マジックドレッサーメイクアップ(MDMakeupSystem)");
             wnd.Show();
         }
         private Renderer makeupRenderer;
@@ -64,7 +64,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserMakeupSystem
         private float threshold = 1f / 60f;
         private void OnGUI()
         {
-            TitleStyle("マジックドレッサーメイクアップ(MDMakeup)");
+            TitleStyle("マジックドレッサーメイクアップ(MDMakeupSystem)");
             DetailStyle("VRChat上でのメニューからの色変えや，BlendShapeの切り替えを設定するツールです．",EnvironmentGUIDs.readme);
 #if VRC_SDK_VRCSDK3
 

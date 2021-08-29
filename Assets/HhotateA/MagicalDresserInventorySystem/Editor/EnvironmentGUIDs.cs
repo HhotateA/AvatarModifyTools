@@ -29,7 +29,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         public static string disolveMaterial = "79650062e00167142bb836514625fe1e";
         public static string drawMaterial = "017d0a0b0ddf0c046bbe290c84c0dd65";
         public static string explosionMaterial = "08f87be101e8e7e4da69e7a0e142fd93";
-        public static string feedMaterial = "0e14a8d4cf1b1ec4d933491cd88c971a";
+        public static string fadeMaterial = "0e14a8d4cf1b1ec4d933491cd88c971a";
         public static string geomMaterial = "98e109c75ff9c9343b303e265782bc9e";
         public static string mosaicMaterial = "a11be4ed561409145abb1c0f078b973f";
         public static string polygonMaterial = "ce45276e3ac089040ad343e55065f3ed";
@@ -39,7 +39,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         public static string disolveShader = "12a86566e20249d40b32388e77e7e0c6";
         public static string drawShader = "314480800490e2b44a10a30094ef168a";
         public static string explosionShader = "9b35198496885c347b312ed908cb2ae8";
-        public static string feedShader = "c58a1e24adf2de1458ffc4bcc8a566b8";
+        public static string fadeShader = "c58a1e24adf2de1458ffc4bcc8a566b8";
         public static string geomShader = "d966e1d37c5d75f4582740d758f460eb";
         public static string mosaicShader = "888b701ea95e12840aed945e326e56de";
         public static string polygonShader = "f1b444e311b5188499942ce6ccac13eb";

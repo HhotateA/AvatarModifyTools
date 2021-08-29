@@ -43,7 +43,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         private bool idleOverride = true;
         private bool materialOverride = true;
         
-        Dictionary<Shader,Dictionary<Material, Material>> matlist = new Dictionary<Shader,Dictionary<Material, Material>>();
+        Dictionary<Material,Dictionary<Material, Material>> matlist = new Dictionary<Material,Dictionary<Material, Material>>();
         Dictionary<GameObject,bool> defaultActive = new Dictionary<GameObject, bool>();
 
         Dictionary<MaterialReference, Material> defaultMaterials = new Dictionary<MaterialReference, Material>();
@@ -63,31 +63,31 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         Vector2 scrollLeft = Vector2.zero;
         Vector2 scrollRight = Vector2.zero;
         
-        Material GetAnimationMaterial(Material origin,Shader shader)
+        Material GetAnimationMaterial(Material origin,Material animMat)
         {
-            if (!matlist.ContainsKey(shader))
+            if (!matlist.ContainsKey(animMat))
             {
-                matlist.Add(shader,new Dictionary<Material,Material>());
+                matlist.Add(animMat,new Dictionary<Material,Material>());
             }
-            if (!matlist[shader].ContainsKey(origin))
+            if (!matlist[animMat].ContainsKey(origin))
             {
-                if (shader.GetTypeByShader() != FeedType.None)
+                if (animMat.GetTypeByMaterial() != FeedType.None)
                 {
-                    var mat = shader.GetTypeByShader().GetMaterialByType();
+                    var mat = animMat.GetTypeByMaterial().GetMaterialByType();
                     mat = Instantiate(mat);
                     if(origin.mainTexture) mat.mainTexture = origin.mainTexture;
-                    matlist[shader].Add(origin,mat);
+                    matlist[animMat].Add(origin,mat);
                 }
                 else
                 {
-                    var mat = new Material(origin);
-                    mat.name = origin.name + "_" + shader.name;
-                    mat.shader = shader;
-                    matlist[shader].Add(origin,mat);
+                    var mat = new Material(animMat);
+                    mat.name = origin.name + "_" + animMat.name;
+                    mat.mainTexture = origin.mainTexture;
+                    matlist[animMat].Add(origin,mat);
                 }
             }
 
-            return matlist[shader][origin];
+            return matlist[animMat][origin];
         }
 
         public static void OpenSavedWindow(MagicalDresserInventorySaveData saveddata = null)
@@ -673,8 +673,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                         if (item.type == FeedType.Shader)
                         {
                             item.type = (FeedType) EditorGUILayout.EnumPopup("", item.type,
-                                GUILayout.Width(50));
-                            item.animationShader = (Shader) EditorGUILayout.ObjectField("", item.animationShader,typeof(Shader),true, GUILayout.Width(50));
+                                GUILayout.Width(100));
                         }
                         else
                         {
@@ -689,6 +688,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                     }
                 }
             }
+            item.animationMaterial = (Material) EditorGUILayout.ObjectField("", item.animationMaterial,typeof(Material),true, GUILayout.Width(50));
 
             if (item.extendOption && optionEdit)
             {
@@ -1207,12 +1207,12 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             else
             if(element.type == FeedType.Shader)
             {
-                ShaderAnimation(transitionAnim, element.obj, element.delay, element.duration, element.animationShader, element.animationParam,0f,1f);
+                ShaderAnimation(transitionAnim, element.obj, element.delay, element.duration, element.animationMaterial, element.animationParam,0f,1f);
             }
             else
             {
                 ShaderAnimation(transitionAnim, element.obj, element.delay, element.duration,
-                    element.type.GetShaderByType(), "_AnimationTime",
+                    element.type.GetMaterialByType(), "_AnimationTime",
                     0f,1f);
                 ChangeMaterialDefault(transitionAnim,element.obj,element.delay+element.duration+1f/60f);
             }
@@ -1266,12 +1266,12 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             else
             if(element.type == FeedType.Shader)
             {
-                ShaderAnimation(transitionAnim, element.obj,element.delay,element.duration, element.animationShader, element.animationParam,1f,0f);
+                ShaderAnimation(transitionAnim, element.obj,element.delay,element.duration, element.animationMaterial, element.animationParam,1f,0f);
             }
             else
             {
                 ShaderAnimation(transitionAnim, element.obj, element.delay, element.duration,
-                    element.type.GetShaderByType(), "_AnimationTime",
+                    element.type.GetMaterialByType(), "_AnimationTime",
                     1f,0f);
                 ActiveAnimation(transitionAnim,element.obj,false,element.delay+element.duration+1f/60f);
                 ChangeMaterialDefault(transitionAnim,element.obj,element.delay+element.duration+2f/60f);
@@ -1307,10 +1307,10 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         }
         
         AnimationClipCreator ShaderAnimation(AnimationClipCreator anim,GameObject obj,float delay = 0f , float duration = 1f,
-            Shader shader = null,string param = "",float from = 0f, float to = 1f)
+            Material mat = null,string param = "",float from = 0f, float to = 1f)
         {
             anim.AddKeyframe_Gameobject(obj,delay,true);
-            ChangeMaterialShader(anim,obj,shader,delay);
+            ChangeMaterialShader(anim,obj,mat,delay);
             foreach (Renderer rend in obj.GetComponentsInChildren<Renderer>())
             {
                 anim.AddKeyframe_MaterialParam(delay, rend, param, from);
@@ -1345,7 +1345,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             }
         }
 
-        void ChangeMaterialShader(AnimationClipCreator anim,GameObject obj, Shader shader,float time = 0f)
+        void ChangeMaterialShader(AnimationClipCreator anim,GameObject obj, Material shader,float time = 0f)
         {
             foreach (Renderer rend in obj.GetComponentsInChildren<Renderer>())
             {
@@ -1375,7 +1375,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                     }
                 }
             }
-            matlist = new Dictionary<Shader, Dictionary<Material, Material>>();
+            matlist = new Dictionary<Material, Dictionary<Material, Material>>();
         }
 
         // メニューで設定されている状態に，シーンのアクティブ，マテリアル，BlendShapeを反映する
@@ -1626,7 +1626,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                         item.delay = inactiveItem.delay;
                         item.duration = inactiveItem.duration;
                         item.type = inactiveItem.type;
-                        item.animationShader = inactiveItem.animationShader;
+                        item.animationMaterial = inactiveItem.animationMaterial;
                         item.animationParam = inactiveItem.path;
                     }
                 }

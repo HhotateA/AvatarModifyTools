@@ -213,7 +213,8 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         public float delay = 0f;
         public float duration = 1f;
 
-        public Shader animationShader;
+        //public Shader animationShader;
+        public Material animationMaterial;
         public string animationParam = "_AnimationTime";
 
         public bool extendOption = false;
@@ -238,7 +239,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                 type = type,
                 delay = delay,
                 duration = duration,
-                animationShader = animationShader,
+                animationMaterial = animationMaterial,
                 animationParam = animationParam,
                 rendOptions = rendOptions.Select(r=>r.Clone(obj,invert)).ToList(),
             };
@@ -397,7 +398,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
 
     public static class AssetLink
     {
-        public static Shader GetShaderByType(this FeedType type)
+        /*public static Shader GetShaderByType(this FeedType type)
         {
             if (type == FeedType.Feed)
             {
@@ -437,12 +438,13 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             }
 
             return null;
-        }
+        }*/
+        
         public static Material GetMaterialByType(this FeedType type)
         {
-            if (type == FeedType.Feed)
+            if (type == FeedType.Fade)
             {
-                return AssetUtility.LoadAssetAtGuid<Material>(EnvironmentGUIDs.feedMaterial);
+                return AssetUtility.LoadAssetAtGuid<Material>(EnvironmentGUIDs.fadeMaterial);
             }
             if (type == FeedType.Crystallize)
             {
@@ -480,42 +482,42 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             return null;
         }
 
-        public static FeedType GetTypeByShader(this Shader shader)
+        public static FeedType GetTypeByMaterial(this Material mat)
         {
-            var guid = AssetUtility.GetAssetGuid(shader);
-            if (guid == EnvironmentGUIDs.feedShader)
+            var guid = AssetUtility.GetAssetGuid(mat);
+            if (guid == EnvironmentGUIDs.fadeMaterial)
             {
-                return FeedType.Feed;
+                return FeedType.Fade;
             }
-            if (guid == EnvironmentGUIDs.crystallizeShader)
+            if (guid == EnvironmentGUIDs.crystallizeMaterial)
             {
                 return FeedType.Crystallize;
             }
-            if (guid == EnvironmentGUIDs.disolveShader)
+            if (guid == EnvironmentGUIDs.disolveMaterial)
             {
                 return FeedType.Dissolve;
             }
-            if (guid == EnvironmentGUIDs.drawShader)
+            if (guid == EnvironmentGUIDs.drawMaterial)
             {
                 return FeedType.Draw;
             }
-            if (guid == EnvironmentGUIDs.explosionShader)
+            if (guid == EnvironmentGUIDs.explosionMaterial)
             {
                 return FeedType.Explosion;
             }
-            if (guid == EnvironmentGUIDs.geomShader)
+            if (guid == EnvironmentGUIDs.geomMaterial)
             {
                 return FeedType.Geom;
             }
-            if (guid == EnvironmentGUIDs.mosaicShader)
+            if (guid == EnvironmentGUIDs.mosaicMaterial)
             {
                 return FeedType.Mosaic;
             }
-            if (guid == EnvironmentGUIDs.polygonShader)
+            if (guid == EnvironmentGUIDs.polygonMaterial)
             {
                 return FeedType.Polygon;
             }
-            if (guid == EnvironmentGUIDs.scaleShader)
+            if (guid == EnvironmentGUIDs.scaleMaterial)
             {
                 return FeedType.Bounce;
             }
@@ -530,7 +532,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         None,
         Scale,
         Shader,
-        Feed,
+        Fade,
         Crystallize,
         Dissolve,
         Draw,
