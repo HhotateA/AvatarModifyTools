@@ -271,7 +271,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserMakeupSystem
             if (clone == null)
             {
                 clone = Instantiate(rend.gameObject, rend.transform);
-                clone.name = rend.name + "(clone)_" + saveName + "_Filter";
+                clone.name = EnvironmentGUIDs.prefix + rend.name + "(clone)_" + saveName + "_Filter";
                 foreach (Transform child in clone.transform)
                 {
                     DestroyImmediate(child.gameObject);

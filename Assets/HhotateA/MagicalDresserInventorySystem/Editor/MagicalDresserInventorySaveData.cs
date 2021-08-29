@@ -272,16 +272,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                 obj = null;
                 return;
             }
-            var cs = path.Split('/');
-            foreach (var c in cs)
-            {
-                if (!root)
-                {
-                    obj = null;
-                    return;
-                }
-                root = root.FindInChildren(c);
-            }
+            root = root.Find(path);
 
             obj = root.gameObject;
             foreach (var rendOption in rendOptions)
@@ -380,16 +371,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         {
             if (!String.IsNullOrWhiteSpace(path))
             {
-                var cs = path.Split('/');
-                foreach (var c in cs)
-                {
-                    if (!root)
-                    {
-                        rend = null;
-                        return;
-                    }
-                    root = root.FindInChildren(c);
-                }
+                root = root.Find(path);
             }
 
             rend = root.gameObject.GetComponent<Renderer>();
