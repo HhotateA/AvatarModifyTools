@@ -15,6 +15,7 @@ Shader "HhotateA/DimensionalStorage/pARTICLE"
 		_Color("Color", Color) = (1.,1.,1.,1.)
 		_ColorCull("ColorCull", Color) = (0.2,0.2,0.2,1.)
     	_ParticleTex("ParticleTex", 2D) = "white" {}
+    	_ParticleSize("_ParticleSize",float)=0.1
     	_AnimationTime ("_AnimationTime",range(0.,1.)) = 0.
     	_Distance ("_Distance",float) = 15
     	_Center ("_Center",vector) = (0.0,0.0,0.0,0.0)
@@ -26,11 +27,14 @@ Shader "HhotateA/DimensionalStorage/pARTICLE"
     	_Scale ("_Scale",float) = 1.0
     	_Rotation ("_Rotation",float) = 1.0
     	_Move ("_Move",float) = 1.0
+    	_Grabity ("_Grabity",vector) = (0.0,-1.0,0.0,0.0)
+    	_AnimationVec ("_AnimationVec",vector) = (0.0,-1.0,0.0,0.0)
     }
     SubShader
     {
-        Tags { "RenderType"="Opaque" }
+        Tags { "RenderType"="Transparent" "Queue"="Transparent+50"}
     	Cull Off
+    	Blend SrcAlpha OneMinusSrcAlpha
 
         Pass
         {
@@ -49,7 +53,7 @@ Shader "HhotateA/DimensionalStorage/pARTICLE"
             struct v2f
             {
                 float2 uv : TEXCOORD0;
-                float2 uv2 : TEXCOORD1;
+                float3 uv2 : TEXCOORD1;
                 float4 vertex : SV_POSITION;
             };
 
@@ -58,18 +62,21 @@ Shader "HhotateA/DimensionalStorage/pARTICLE"
             float4 _MainTex_ST;
             fixed4 _Color, _ColorCull;
             sampler2D _ParticleTex;
-            float4 __ParticleTex_ST;
+            float4 _ParticleTex_ST;
+            float _ParticleSize;
             float _AnimationTime;
             float _Distance;
             float4 _Center,_Extent;
             float _Factor;
             float _ScaleNoise, _RotationNoise, _MoveNoise;
             float _Scale, _Rotation, _Move;
+            float4 _Grabity;
+            float4 _AnimationVec;
             
 			static float2 particleOffset[4] = {
 				float2(-1.0,-1.0),
-				float2( 1.0,-1.0),
 				float2(-1.0, 1.0),
+				float2( 1.0,-1.0),
 				float2( 1.0, 1.0),
 			};
 
@@ -84,29 +91,35 @@ Shader "HhotateA/DimensionalStorage/pARTICLE"
                 v2f o;
 				float4 vec = (v[0].vertex+v[1].vertex+v[2].vertex)/3.0;
 				float3 height = saturate(((vec - _Center) / _Extent) * 0.5 + 0.5);
-            	float animationTime = saturate((1.0-_AnimationTime)*(1.0+_Factor) + height.y * _Factor - _Factor);
+            	float animationTime = saturate((1.0-_AnimationTime)*(1.0+_Factor) - dot( _AnimationVec.xyz, height.xyz) * _Factor - _Factor);
             	float3 noise = randomvec(vec);
             	float3 phase = float3(
             		(animationTime+animationTime*noise.x*_ScaleNoise)*_Scale,
             		(animationTime+animationTime*noise.y*_RotationNoise)*_Rotation,
             		(animationTime+animationTime*noise.z*_MoveNoise)*_Move
             		);
-				float3 wpos = mul(UNITY_MATRIX_M,vec);
-				float3 axis = mul(inverse(UNITY_MATRIX_M),normalize(cross(wpos-stereocamerapos(),wpos-mul(UNITY_MATRIX_M,_Center.xyz))));
-            	/*for(int i = 0; i < 3; i++){
-					v[i].vertex.xyz -= vec;
-					v[i].vertex.xyz *= saturate(1.0-phase.x);
-					v[i].vertex.xyz = norqrot(axis,phase.y,v[i].vertex);
-					v[i].vertex.xyz += normalize(vec-_Center.xyz + randomvec(vec)*0.1)*phase.z;
-					v[i].vertex.xyz += vec;
-				}*/
+            	
+	            float4 wwp = mul(UNITY_MATRIX_M,vec);
+            	wwp.xyz = norqrot(float3(0,1,0),phase.x,wwp);
+            	wwp.xyz += noise*phase.z + _Grabity.xyz*animationTime;
+	            float4 vwp = mul(UNITY_MATRIX_V,wwp);
+            	for(int i = 0; i < 3; i++)
+            	{
+            		v[i].vertex = mul(UNITY_MATRIX_M,v[i].vertex);
+            		v[i].vertex.xyz = norqrot(float3(0,1,0),phase.x,v[i].vertex);
+            		v[i].vertex = mul(UNITY_MATRIX_V,v[i].vertex);
+            	}
 
-	            float4 vwp = mul(UNITY_MATRIX_MV,vec);
             	for(int i = 0; i < 4; i++)
             	{
 	                // o.vertex = UnityObjectToClipPos(v[i].vertex);
-	                o.vertex = mul(UNITY_MATRIX_P,vwp + float4(particleOffset[i] * _AnimationTime*0.01,0.,0.));
-	                o.uv = TRANSFORM_TEX(v[1].uv, _MainTex);
+            		float4 sqr = float4(particleOffset[i] * _ParticleSize,0.,1.);
+            		sqr.xyz = norqrot(float3(0,0,1),phase.y,sqr);
+	                float4 ppos = mul(UNITY_MATRIX_P,vwp + float4(sqr.xyz,1.));
+	                float4 opos = mul(UNITY_MATRIX_P,v[min(i,2)].vertex);
+            		o.vertex = lerp(opos,ppos,saturate((phase.x-0.1)*2.));
+	                o.uv = TRANSFORM_TEX(v[min(i,2)].uv, _MainTex);
+            		o.uv2 = float3(particleOffset[i]*0.5+0.5,animationTime);
 					tristream.Append(o);
             	}
 				tristream.RestartStrip();
@@ -115,7 +128,9 @@ Shader "HhotateA/DimensionalStorage/pARTICLE"
             fixed4 frag (v2f i,fixed facing : VFACE) : SV_Target
             {
                 fixed4 col = tex2D(_MainTex, i.uv);
-                return  facing > 0 ? col * _Color : col * _ColorCull;
+                fixed4 pcol = tex2D(_ParticleTex, i.uv2);
+            	col = lerp(facing > 0 ? col * _Color : col * _ColorCull,col * pcol,i.uv2.z);
+                return  col;
             }
             ENDCG
 			CGINCLUDE
