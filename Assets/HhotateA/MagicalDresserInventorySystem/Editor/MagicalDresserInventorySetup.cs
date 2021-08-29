@@ -526,38 +526,36 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
 
                         using (new EditorGUI.DisabledScope(avatar == null))
                         {
-                            using (new EditorGUILayout.HorizontalScope())
+                            if (GUILayout.Button("Setup"))
                             {
-                                if (GUILayout.Button("Setup"))
+                                RevertObjectActiveForScene();
+                                var path = EditorUtility.SaveFilePanel("Save", "Assets",
+                                    String.IsNullOrWhiteSpace(data.saveName) ? "MagicalDresserInventorySaveData" : data.saveName,
+                                    "asset");
+                                if (string.IsNullOrEmpty(path))
                                 {
-                                    RevertObjectActiveForScene();
-                                    var path = EditorUtility.SaveFilePanel("Save", "Assets",
-                                        String.IsNullOrWhiteSpace(data.saveName) ? "MagicalDresserInventorySaveData" : data.saveName,
-                                        "asset");
-                                    if (string.IsNullOrEmpty(path))
-                                    {
-                                        OnCancel();
-                                        return;
-                                    }
-                                    if (String.IsNullOrWhiteSpace(data.saveName))
-                                    {
-                                        string fileName = System.IO.Path.GetFileNameWithoutExtension(path);
-                                        data.saveName = fileName;
-                                    }
-                                    try
-                                    {
-                                        data = ScriptableObject.Instantiate(data);
-                                        // data.ApplyPath(avatar.gameObject);
-                                        path = FileUtil.GetProjectRelativePath(path);
-                                        AssetDatabase.CreateAsset(data, path);
-                                        Setup(path);
-                                        OnFinishSetup();
-                                    }
-                                    catch (Exception e)
-                                    {
-                                        OnError(e);
-                                        throw;
-                                    }
+                                    OnCancel();
+                                    return;
+                                }
+                                if (String.IsNullOrWhiteSpace(data.saveName))
+                                {
+                                    string fileName = System.IO.Path.GetFileNameWithoutExtension(path);
+                                    data.saveName = fileName;
+                                }
+                                try
+                                {
+                                    data = Instantiate(data);
+                                    LoadReorderableList();
+                                    // data.ApplyPath(avatar.gameObject);
+                                    path = FileUtil.GetProjectRelativePath(path);
+                                    AssetDatabase.CreateAsset(data, path);
+                                    Setup(path);
+                                    OnFinishSetup();
+                                }
+                                catch (Exception e)
+                                {
+                                    OnError(e);
+                                    throw;
                                 }
                             }
                         }
@@ -577,6 +575,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                             try
                             {
                                 data = Instantiate(data);
+                                LoadReorderableList();
                                 // data.ApplyPath(avatar.gameObject);
                                 AssetDatabase.CreateAsset(data, FileUtil.GetProjectRelativePath(path));
                                 SaveAnim(path);
@@ -588,6 +587,46 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                                 throw;
                             }
                         }
+                        EditorGUILayout.Space();
+
+                        using (new EditorGUILayout.HorizontalScope())
+                        {
+                            if (GUILayout.Button("Save Settings"))
+                            {
+                                var path = EditorUtility.SaveFilePanel("Save", "Assets", data.saveName,"asset");
+                                if (string.IsNullOrEmpty(path))
+                                {
+                                    OnCancel();
+                                    return;
+                                }
+                                data = Instantiate(data);
+                                LoadReorderableList();
+                                AssetDatabase.CreateAsset(data, FileUtil.GetProjectRelativePath(path));
+                                status.Success("Saved");
+                            }
+                            if (GUILayout.Button("Load Settings"))
+                            {
+                                var path = EditorUtility.OpenFilePanel("Load", "Assets", "asset");
+                                if (string.IsNullOrEmpty(path))
+                                {
+                                    OnCancel();
+                                    return;
+                                }
+                                var d = AssetDatabase.LoadAssetAtPath<MagicalDresserInventorySaveData>(FileUtil.GetProjectRelativePath(path));
+                                if (d == null)
+                                {
+                                    status.Warning("Load Failure");
+                                    return;
+                                }
+                                else
+                                {
+                                    data = d;
+                                    LoadReorderableList();
+                                }
+                                status.Success("Loaded");
+                            }
+                        }
+
                         status.Display();
                         Signature();
                     }
