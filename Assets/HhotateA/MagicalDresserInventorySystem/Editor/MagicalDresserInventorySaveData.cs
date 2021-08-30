@@ -291,8 +291,10 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         public Renderer rend;
         public bool extendMaterialOption = false;
         public bool extendBlendShapeOption = false;
-        public List<Material> changeMaterialsOption = new List<Material>();
-        public List<float> changeBlendShapeOption = new List<float>();
+        public List<MaterialOption> changeMaterialsOptions = new List<MaterialOption>();
+        public List<BlendShapeOption> changeBlendShapeOptions = new List<BlendShapeOption>();
+        [FormerlySerializedAs("changeMaterialsOption")] [SerializeField] private List<Material> compatibility_changeMaterialsOption = null;
+        [FormerlySerializedAs("changeBlendShapeOption")] [SerializeField] private List<float> compatibility_changeBlendShapeOption = null;
 
         public RendererOption(Renderer r, GameObject root)
         {
@@ -300,11 +302,11 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             GetRelativePath(root);
             if (r)
             {
-                changeMaterialsOption =
-                    Enumerable.Range(0, r.sharedMaterials.Length).Select(_ => (Material) null).ToList();
+                changeMaterialsOptions = r.sharedMaterials.Select(m => new MaterialOption(m)).ToList();
                 if (r is SkinnedMeshRenderer)
                 {
-                    changeBlendShapeOption = Enumerable.Range(0, r.GetMesh().blendShapeCount).Select(_ => -1f).ToList();
+                    changeBlendShapeOptions = Enumerable.Range(0, r.GetMesh().blendShapeCount).Select(i =>
+                        new BlendShapeOption((r as SkinnedMeshRenderer).GetBlendShapeWeight(i))).ToList();
                 }
             }
         }
@@ -312,34 +314,20 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         public RendererOption Clone(GameObject root,bool invert = false)
         {
             var clone = new RendererOption(rend, root);
-            clone.changeMaterialsOption = changeMaterialsOption.ToList();
-            clone.changeBlendShapeOption = changeBlendShapeOption.ToList();
+            clone.changeMaterialsOptions = changeMaterialsOptions.Select(e => e.Clone()).ToList();
+            clone.changeBlendShapeOptions = changeBlendShapeOptions.Select(e=> e.Clone()).ToList();
             if (invert)
             {
-                for (int i = 0; i < changeMaterialsOption.Count; i++)
+                for (int i = 0; i < changeMaterialsOptions.Count; i++)
                 {
-                    if (changeMaterialsOption[i] == null)
-                    {
-                        clone.changeMaterialsOption[i] = null;
-                    }
-                    else
-                    {
-                        clone.changeMaterialsOption[i] = rend.sharedMaterials[i];
-                    }
+                    clone.changeMaterialsOptions[i].material = rend.sharedMaterials[i];
                 }
 
                 if (rend is SkinnedMeshRenderer)
                 {
-                    for (int i = 0; i < changeBlendShapeOption.Count; i++)
+                    for (int i = 0; i < changeBlendShapeOptions.Count; i++)
                     {
-                        if (changeBlendShapeOption[i] < 0)
-                        {
-                            clone.changeBlendShapeOption[i] = -1f;
-                        }
-                        else
-                        {
-                            clone.changeBlendShapeOption[i] = (rend as SkinnedMeshRenderer)?.GetBlendShapeWeight(i) ?? -1f;
-                        }
+                        clone.changeBlendShapeOptions[i].weight = (rend as SkinnedMeshRenderer).GetBlendShapeWeight(i);
                     }
                 }
             }
@@ -375,6 +363,68 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             }
 
             rend = root.gameObject.GetComponent<Renderer>();
+        }
+
+        public void ReplaceMaterialOption()
+        {
+            if (compatibility_changeMaterialsOption.Count > 0)
+            {
+                changeMaterialsOptions = compatibility_changeMaterialsOption
+                    .Select(m => new MaterialOption(m)).ToList();
+                compatibility_changeMaterialsOption = new List<Material>();
+            }
+            if (compatibility_changeBlendShapeOption.Count > 0)
+            {
+                changeBlendShapeOptions = compatibility_changeBlendShapeOption
+                    .Select(m =>  new BlendShapeOption(m)).ToList();
+                compatibility_changeBlendShapeOption = new List<float>();
+            }
+        }
+    }
+
+    [Serializable]
+    public class MaterialOption
+    {
+        public bool change = false;
+        public Material material;
+        public float delay = -1f;
+        // public float duration = 1f;
+
+        public MaterialOption(Material mat)
+        {
+            material = mat;
+        }
+
+        public MaterialOption Clone()
+        {
+            var clone = new MaterialOption(material);
+            clone.change = change;
+            clone.delay = delay;
+            // clone.duration = duration;
+            return clone;
+        }
+    }
+
+    [Serializable]
+    public class BlendShapeOption
+    {
+        public bool change = false;
+        public float weight;
+        public float delay = -1f;
+        public float duration = 1f;
+
+        public BlendShapeOption(float w)
+        {
+            weight = w;
+        }
+        
+        public BlendShapeOption Clone()
+        {
+            var clone = new BlendShapeOption(weight);
+            clone.change = change;
+            clone.delay = delay;
+            clone.duration = duration;
+            return clone;
         }
     }
 

@@ -342,6 +342,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                                         displayItemMode ? tabstyleDisable : tabstyleActive))
                                     {
                                         displayItemMode = true;
+                                        SetObjectActiveForScene(menuElements[index]);
                                     }
 
                                     rect.x += rect.width;
@@ -349,6 +350,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                                         displayItemMode ? tabstyleActive : tabstyleDisable))
                                     {
                                         displayItemMode = false;
+                                        SetObjectActiveForScene(menuElements[index]);
                                     }
                                 }
 
@@ -398,28 +400,37 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                                     }
                                     else
                                     {
-                                        foreach (var item in menuElements[index].SafeInactiveItems())
+                                        using (var check = new EditorGUI.ChangeCheckScope())
                                         {
-                                            ItemElementDisplay(item, true, true, true, true, true);
-
-                                            if (!item.obj)
+                                            foreach (var item in menuElements[index].SafeInactiveItems())
                                             {
-                                                menuElements[index].inactiveItems.Remove(item);
-                                                return;
-                                            }
-                                        }
+                                                ItemElementDisplay(item, true, true, true, true, true);
 
-                                        foreach (var item in ComputeLayerInactiveItems(menuElements[index]))
-                                        {
-                                            using (var add = new EditorGUI.ChangeCheckScope())
-                                            {
-                                                ItemElementDisplay(item, false, false, true, true, false);
-
-                                                if (add.changed)
+                                                if (!item.obj)
                                                 {
-                                                    menuElements[index].inactiveItems.Add(item);
+                                                    menuElements[index].inactiveItems.Remove(item);
                                                     return;
                                                 }
+                                            }
+
+                                            foreach (var item in ComputeLayerInactiveItems(menuElements[index]))
+                                            {
+                                                using (var add = new EditorGUI.ChangeCheckScope())
+                                                {
+                                                    ItemElementDisplay(item, false, false, true, true, false);
+
+                                                    if (add.changed)
+                                                    {
+                                                        menuElements[index].inactiveItems.Add(item);
+                                                        return;
+                                                    }
+                                                }
+                                            }
+                                            
+                                            if (check.changed)
+                                            {
+                                                SetObjectActiveForScene(menuElements[index]);
+                                                SyncItemActive(menuElements[index].inactiveItems, menuElements[index].activeItems, true);
                                             }
                                         }
                                     }
@@ -727,7 +738,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                     }
                 }
             }
-            item.animationMaterial = (Material) EditorGUILayout.ObjectField("", item.animationMaterial,typeof(Material),true, GUILayout.Width(50));
+            // item.animationMaterial = (Material) EditorGUILayout.ObjectField("", item.animationMaterial,typeof(Material),true, GUILayout.Width(50));
 
             if (item.extendOption && optionEdit)
             {
@@ -750,13 +761,13 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
 
             if (rendOption.extendMaterialOption)
             {
-                for (int i = 0; i < rendOption.changeMaterialsOption.Count; i++)
+                for (int i = 0; i < rendOption.changeMaterialsOptions.Count; i++)
                 {
                     using (new EditorGUILayout.HorizontalScope())
                     {
                         EditorGUILayout.LabelField("",GUILayout.Width(30));
-                        var toggle = EditorGUILayout.Toggle("", rendOption.changeMaterialsOption[i] != null, GUILayout.Width(25));
-                        if (toggle != (rendOption.changeMaterialsOption[i] != null))
+                        var toggle = EditorGUILayout.Toggle("", rendOption.changeMaterialsOptions[i].change, GUILayout.Width(25));
+                        if (toggle != rendOption.changeMaterialsOptions[i].change)
                         {
                             // 変更があった場合レイヤー内に伝播
                             if (menuElements[menuReorderableList.index].isToggle)
@@ -768,24 +779,29 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                                 ToggleMaterialOption(menuElements[menuReorderableList.index].layer,rendOption.rend,i,toggle);
                             }
                         }
+                        
                         EditorGUILayout.LabelField(rendOption.rend.sharedMaterials[i].name,  GUILayout.Width(150));
-                        if (toggle)
+                        if (!rendOption.changeMaterialsOptions[i].change)
                         {
-                            if (rendOption.changeMaterialsOption[i] == null)
-                            {
-                                rendOption.changeMaterialsOption[i] = rendOption.rend.sharedMaterials[i];
-                            }
-
-                            rendOption.changeMaterialsOption[i] = (Material) EditorGUILayout.ObjectField("",
-                                rendOption.changeMaterialsOption[i], typeof(Material), false,GUILayout.Width(200));
+                            EditorGUILayout.LabelField("",  GUILayout.Width(50));
                         }
                         else
                         {
-                            rendOption.changeMaterialsOption[i] = null;
+                            rendOption.changeMaterialsOptions[i].delay = EditorGUILayout.FloatField("", rendOption.changeMaterialsOptions[i].delay, GUILayout.Width(50));
+                        }
+                        
+                        if (toggle)
+                        {
+                            rendOption.changeMaterialsOptions[i].material = (Material) EditorGUILayout.ObjectField("",
+                                rendOption.changeMaterialsOptions[i].material, typeof(Material), false,GUILayout.Width(150));
+                        }
+                        else
+                        {
+                            rendOption.changeMaterialsOptions[i].material = rendOption.rend.sharedMaterials[i];
                             using (new EditorGUI.DisabledScope(true))
                             {
                                 EditorGUILayout.ObjectField("",
-                                    new Material(Shader.Find("Unlit/Color")){name = "No Change"}, typeof(Object), false,GUILayout.Width(200));
+                                    new Material(Shader.Find("Unlit/Color")){name = "No Change"}, typeof(Object), false,GUILayout.Width(150));
                             }
                         }
                     }
@@ -801,13 +817,13 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
 
             if (rendOption.extendBlendShapeOption)
             {
-                for (int i = 0; i < rendOption.changeBlendShapeOption.Count; i++)
+                for (int i = 0; i < rendOption.changeBlendShapeOptions.Count; i++)
                 {
                     using (new EditorGUILayout.HorizontalScope())
                     {
                         EditorGUILayout.LabelField("",GUILayout.Width(30));
-                        var toggle = EditorGUILayout.Toggle("", rendOption.changeBlendShapeOption[i] >= 0, GUILayout.Width(25));
-                        if (toggle != (rendOption.changeBlendShapeOption[i] >= 0))
+                        var toggle = EditorGUILayout.Toggle("", rendOption.changeBlendShapeOptions[i].change, GUILayout.Width(25));
+                        if (toggle != rendOption.changeBlendShapeOptions[i].change)
                         {
                             // 変更があった場合レイヤー内に伝播
                             if (menuElements[menuReorderableList.index].isToggle)
@@ -816,29 +832,41 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                             }
                             else
                             {
-                                ToggleBlendshapeOption(menuElements[menuReorderableList.index].layer,rendOption.rend as SkinnedMeshRenderer, i,toggle);
+                                ToggleBlendshapeOption(menuElements[menuReorderableList.index].layer,rendOption.rend as SkinnedMeshRenderer, i, toggle);
                             }
                         }
+                        rendOption.changeBlendShapeOptions[i].change = toggle;
+                        
                         EditorGUILayout.LabelField(rendOption.rend.GetMesh().GetBlendShapeName(i),  GUILayout.Width(150));
-                        if (toggle)
+                        if (!rendOption.changeBlendShapeOptions[i].change)
                         {
-                            if (rendOption.changeBlendShapeOption[i] < 0)
-                            {
-                                rendOption.changeBlendShapeOption[i] = (rendOption.rend as SkinnedMeshRenderer)?.GetBlendShapeWeight(i) ?? 0f;
-                            }
-
-                            rendOption.changeBlendShapeOption[i] =
-                                EditorGUILayout.Slider(rendOption.changeBlendShapeOption[i], 0f, 100f,GUILayout.Width(200));
+                            EditorGUILayout.LabelField("",  GUILayout.Width(100));
                         }
                         else
                         {
-                            rendOption.changeBlendShapeOption[i] = -1f;
+                            rendOption.changeBlendShapeOptions[i].delay = EditorGUILayout.FloatField("", rendOption.changeBlendShapeOptions[i].delay, GUILayout.Width(50));
+                            using (new EditorGUI.DisabledScope(rendOption.changeBlendShapeOptions[i].delay<0))
+                            {
+                                rendOption.changeBlendShapeOptions[i].duration = EditorGUILayout.FloatField("", rendOption.changeBlendShapeOptions[i].duration, GUILayout.Width(50));
+                            }
+                        }
+
+                        if (toggle)
+                        {
+                            rendOption.changeBlendShapeOptions[i].weight =
+                                GUILayout.HorizontalSlider(rendOption.changeBlendShapeOptions[i].weight, 0f, 100f,GUILayout.Width(50));
+                            rendOption.changeBlendShapeOptions[i].weight =
+                                EditorGUILayout.FloatField(rendOption.changeBlendShapeOptions[i].weight,GUILayout.Width(25));
+                        }
+                        else
+                        {
+                            rendOption.changeBlendShapeOptions[i].weight = GetDefaultBlendshape(rendOption.rend as SkinnedMeshRenderer, i);
                             using (new EditorGUI.DisabledScope(true))
                             {
                                 var noChange =
                                     GUILayout.HorizontalSlider
-                                        (-1f, 0f, 100f,GUILayout.Width(140));
-                                EditorGUILayout.LabelField("NoChange",GUILayout.Width(60));
+                                        (-1f, 0f, 100f,GUILayout.Width(50));
+                                EditorGUILayout.LabelField("NoChange",GUILayout.Width(25));
                             }
                         }
                     }
@@ -913,6 +941,22 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                     
                     var activeItems = menuElement.SafeActiveItems();
                     activeItems.AddRange(ComputeLayerAnotherItems(menuElement));
+                    
+                    var inactiveItems = menuElement.SafeInactiveItems();
+                    inactiveItems.AddRange(ComputeLayerInactiveItems(menuElement));
+
+                    // rend option (material,blend shapeの変更適応)
+                    foreach (var activeItem in activeItems)
+                    {
+                        var inactiveItem = inactiveItems.FirstOrDefault(e => activeItem.obj == e.obj);
+                        if (inactiveItem != null)
+                        {
+                            RendererOptionTransition(inactiveItem,activeItem,activateAnim);
+                            RendererOptionTransition(activeItem,inactiveItem,inactivateAnim);
+                        }
+                    }
+                    
+                    // On時のTransitionとIdle
                     foreach (var item in activeItems)
                     {
                         if (item.active)
@@ -923,10 +967,9 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                         {
                             SaveElementInactive(item,activateAnim,activeAnim);
                         }
+                        
                     }
-                    
-                    var inactiveItems = menuElement.SafeInactiveItems();
-                    inactiveItems.AddRange(ComputeLayerInactiveItems(menuElement));
+                    // Off時のTransitionとIdle
                     foreach (var item in inactiveItems)
                     {
                         if (item.active)
@@ -938,7 +981,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                             SaveElementInactive(item,inactivateAnim,inactiveAnim);
                         }
                     }
-
+                    
                     c.AddState("Active", activeAnim.CreateAsset(path,true));
                     c.AddState("Activate", activateAnim.CreateAsset(path,true));
                     c.AddState("Inactive", inactiveAnim.CreateAsset(path,true));
@@ -1003,12 +1046,12 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                         // option処理
                         foreach (var rendOption in item.rendOptions)
                         {
-                            for (int j = 0; j < rendOption.changeMaterialsOption.Count; j++)
+                            for (int j = 0; j < rendOption.changeMaterialsOptions.Count; j++)
                             {
-                                if (rendOption.changeMaterialsOption[j] != null)
+                                if (rendOption.changeMaterialsOptions[j].change)
                                 {
-                                    activeAnim.AddKeyframe_Material(rendOption.rend,rendOption.changeMaterialsOption[j],0f,j);
-                                    activeAnim.AddKeyframe_Material(rendOption.rend,rendOption.changeMaterialsOption[j],1f/60f,j);
+                                    activeAnim.AddKeyframe_Material(rendOption.rend,rendOption.changeMaterialsOptions[j].material,0f,j);
+                                    activeAnim.AddKeyframe_Material(rendOption.rend,rendOption.changeMaterialsOptions[j].material,1f/60f,j);
                                 }
                                 else
                                 if(materialOverride)
@@ -1020,13 +1063,13 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                                 activeAnim.AddKeyframe_MaterialParam(0f, rendOption.rend, "_AnimationTime", 1f);
                                 activeAnim.AddKeyframe_MaterialParam(1f/60f, rendOption.rend, "_AnimationTime", 1f);
                             }
-                            for (int j = 0; j < rendOption.changeBlendShapeOption.Count; j++)
+                            for (int j = 0; j < rendOption.changeBlendShapeOptions.Count; j++)
                             {
-                                if (rendOption.changeBlendShapeOption[j] >= 0f)
+                                if (rendOption.changeBlendShapeOptions[j].change)
                                 {
                                     var rs = rendOption.rend as SkinnedMeshRenderer;
-                                    activeAnim.AddKeyframe(0f, rs, "blendShape."+rs.GetMesh().GetBlendShapeName(j) , rendOption.changeBlendShapeOption[j]);
-                                    activeAnim.AddKeyframe(1f/60f, rs, "blendShape."+rs.GetMesh().GetBlendShapeName(j) , rendOption.changeBlendShapeOption[j]);
+                                    activeAnim.AddKeyframe(0f, rs, "blendShape."+rs.GetMesh().GetBlendShapeName(j) , rendOption.changeBlendShapeOptions[j].weight);
+                                    activeAnim.AddKeyframe(1f/60f, rs, "blendShape."+rs.GetMesh().GetBlendShapeName(j) , rendOption.changeBlendShapeOptions[j].weight);
                                 }
                             }
                         }
@@ -1069,8 +1112,11 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                             }
                             else
                             {
+                                // rend option (material,blend shapeの変更適応)
+                                RendererOptionTransition(fromItem,toItem,transitionAnim);
                                 if (fromItem.active != toItem.active)
                                 {
+                                    // transition animation
                                     SaveElementTransition(toItem,transitionAnim);
                                 }
                             }
@@ -1197,7 +1243,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         }
 
         void SaveElementActive(ItemElement element,
-            AnimationClipCreator transitionAnim, AnimationClipCreator setAnim = null)
+            AnimationClipCreator transitionAnim = null, AnimationClipCreator setAnim = null)
         {
             if (setAnim != null)
             {
@@ -1206,12 +1252,12 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                 // option処理
                 foreach (var rendOption in element.rendOptions)
                 {
-                    for (int i = 0; i < rendOption.changeMaterialsOption.Count; i++)
+                    for (int i = 0; i < rendOption.changeMaterialsOptions.Count; i++)
                     {
-                        if (rendOption.changeMaterialsOption[i] != null)
+                        if (rendOption.changeMaterialsOptions[i].change)
                         {
-                            setAnim.AddKeyframe_Material(rendOption.rend,rendOption.changeMaterialsOption[i],0f,i);
-                            setAnim.AddKeyframe_Material(rendOption.rend,rendOption.changeMaterialsOption[i],1f/60f,i);
+                            setAnim.AddKeyframe_Material(rendOption.rend,rendOption.changeMaterialsOptions[i].material,0f,i);
+                            setAnim.AddKeyframe_Material(rendOption.rend,rendOption.changeMaterialsOptions[i].material,1f/60f,i);
                         }
                         else
                         if(materialOverride)
@@ -1223,41 +1269,45 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                         setAnim.AddKeyframe_MaterialParam(0f, rendOption.rend, "_AnimationTime", 1f);
                         setAnim.AddKeyframe_MaterialParam(1f/60f, rendOption.rend, "_AnimationTime", 1f);
                     }
-                    for (int i = 0; i < rendOption.changeBlendShapeOption.Count; i++)
+                    for (int i = 0; i < rendOption.changeBlendShapeOptions.Count; i++)
                     {
-                        if (rendOption.changeBlendShapeOption[i] >= 0f)
+                        if (rendOption.changeBlendShapeOptions[i].change)
                         {
                             var rs = rendOption.rend as SkinnedMeshRenderer;
-                            setAnim.AddKeyframe(0f, rs, "blendShape."+rs.GetMesh().GetBlendShapeName(i) , rendOption.changeBlendShapeOption[i]);
-                            setAnim.AddKeyframe(1f/60f, rs, "blendShape."+rs.GetMesh().GetBlendShapeName(i) , rendOption.changeBlendShapeOption[i]);
+                            setAnim.AddKeyframe(0f, rs, "blendShape."+rs.GetMesh().GetBlendShapeName(i) , rendOption.changeBlendShapeOptions[i].weight);
+                            setAnim.AddKeyframe(1f/60f, rs, "blendShape."+rs.GetMesh().GetBlendShapeName(i) , rendOption.changeBlendShapeOptions[i].weight);
                         }
                     }
                 }
             }
-            if (element.type == FeedType.None)
+
+            if (transitionAnim != null)
             {
-                ActiveAnimation(transitionAnim,element.obj,true,element.delay);
-            }
-            else
-            if(element.type == FeedType.Scale)
-            {
-                ScaleAnimation(transitionAnim, element.obj, element.delay, element.duration, true);
-            }
-            else
-            if(element.type == FeedType.Shader)
-            {
-                ShaderAnimation(transitionAnim, element.obj, element.delay, element.duration, element.animationMaterial, element.animationParam,0f,1f);
-            }
-            else
-            {
-                ShaderAnimation(transitionAnim, element.obj, element.delay, element.duration,
-                    element.type.GetMaterialByType(), "_AnimationTime",
-                    0f,1f);
-                ChangeMaterialDefault(transitionAnim,element.obj,element.delay+element.duration+1f/60f);
+                if (element.type == FeedType.None)
+                {
+                    ActiveAnimation(transitionAnim,element.obj,true,element.delay);
+                }
+                else
+                if(element.type == FeedType.Scale)
+                {
+                    ScaleAnimation(transitionAnim, element.obj, element.delay, element.duration, true);
+                }
+                else
+                if(element.type == FeedType.Shader)
+                {
+                    ShaderAnimation(transitionAnim, element.obj, element.delay, element.duration, element.animationMaterial, element.animationParam,0f,1f);
+                }
+                else
+                {
+                    ShaderAnimation(transitionAnim, element.obj, element.delay, element.duration,
+                        element.type.GetMaterialByType(), "_AnimationTime",
+                        0f,1f);
+                    ChangeMaterialDefault(transitionAnim,element.obj,element.delay+element.duration+1f/60f);
+                }
             }
         }
         void SaveElementInactive(ItemElement element,
-            AnimationClipCreator transitionAnim, AnimationClipCreator setAnim = null)
+            AnimationClipCreator transitionAnim = null, AnimationClipCreator setAnim = null)
         {
             if (setAnim != null)
             {
@@ -1266,9 +1316,9 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                 // option処理
                 foreach (var rendOption in element.rendOptions)
                 {
-                    for (int i = 0; i < rendOption.changeMaterialsOption.Count; i++)
+                    for (int i = 0; i < rendOption.changeMaterialsOptions.Count; i++)
                     {
-                        if (rendOption.changeMaterialsOption[i] != null)
+                        if (rendOption.changeMaterialsOptions[i].change)
                         {
                             setAnim.AddKeyframe_Material(rendOption.rend,rendOption.rend.sharedMaterials[i],0f,i);
                             setAnim.AddKeyframe_Material(rendOption.rend,rendOption.rend.sharedMaterials[i],1f/60f,i);
@@ -1282,9 +1332,9 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                         /*setAnim.AddKeyframe_MaterialParam(0f, rendOption.rend, "_AnimationTime", 0f);
                         setAnim.AddKeyframe_MaterialParam(1f/60f, rendOption.rend, "_AnimationTime", 0f);*/
                     }
-                    for (int i = 0; i < rendOption.changeBlendShapeOption.Count; i++)
+                    for (int i = 0; i < rendOption.changeBlendShapeOptions.Count; i++)
                     {
-                        if (rendOption.changeBlendShapeOption[i] >= 0f)
+                        if (rendOption.changeBlendShapeOptions[i].change)
                         {
                             var rs = rendOption.rend as SkinnedMeshRenderer;
                             setAnim.AddKeyframe(0f, rs, "blendShape."+rendOption.rend.GetMesh().GetBlendShapeName(i) , rs.GetBlendShapeWeight(i));
@@ -1293,27 +1343,83 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                     }
                 }
             }
-            if (element.type == FeedType.None)
+            if(transitionAnim != null)
             {
-                ActiveAnimation(transitionAnim,element.obj,false,element.delay);
+                if (element.type == FeedType.None)
+                {
+                    ActiveAnimation(transitionAnim,element.obj,false,element.delay);
+                }
+                else
+                if(element.type == FeedType.Scale)
+                {
+                    ScaleAnimation(transitionAnim, element.obj, element.delay, element.duration, false);
+                }
+                else
+                if(element.type == FeedType.Shader)
+                {
+                    ShaderAnimation(transitionAnim, element.obj,element.delay,element.duration, element.animationMaterial, element.animationParam,1f,0f);
+                }
+                else
+                {
+                    ShaderAnimation(transitionAnim, element.obj, element.delay, element.duration,
+                        element.type.GetMaterialByType(), "_AnimationTime",
+                        1f,0f);
+                    ActiveAnimation(transitionAnim,element.obj,false,element.delay+element.duration+1f/60f);
+                    ChangeMaterialDefault(transitionAnim,element.obj,element.delay+element.duration+2f/60f);
+                }
             }
-            else
-            if(element.type == FeedType.Scale)
+        }
+
+        void RendererOptionTransition(ItemElement fromElement,ItemElement toElement, AnimationClipCreator transitionAnim)
+        {
+            foreach (var rendOpt in toElement.rendOptions)
             {
-                ScaleAnimation(transitionAnim, element.obj, element.delay, element.duration, false);
-            }
-            else
-            if(element.type == FeedType.Shader)
-            {
-                ShaderAnimation(transitionAnim, element.obj,element.delay,element.duration, element.animationMaterial, element.animationParam,1f,0f);
-            }
-            else
-            {
-                ShaderAnimation(transitionAnim, element.obj, element.delay, element.duration,
-                    element.type.GetMaterialByType(), "_AnimationTime",
-                    1f,0f);
-                ActiveAnimation(transitionAnim,element.obj,false,element.delay+element.duration+1f/60f);
-                ChangeMaterialDefault(transitionAnim,element.obj,element.delay+element.duration+2f/60f);
+                var rend = rendOpt.rend;
+                var to = toElement.rendOptions.FirstOrDefault(r => r.rend == rend);
+                if(to==null) return;
+                var from = fromElement.rendOptions.FirstOrDefault(r => r.rend == rend);
+                if(from==null) return;
+                for (int i = 0; i < to.changeMaterialsOptions.Count; i++)
+                {
+                    if (to.changeMaterialsOptions[i].change)
+                    {
+                        if(to.changeMaterialsOptions[i].material == null) continue;
+                        if(from.changeMaterialsOptions[i].material == to.changeMaterialsOptions[i].material) continue;
+                        if (to.changeMaterialsOptions[i].delay < 0)
+                        {
+                        
+                        }
+                        else
+                        {
+                            if(to.changeMaterialsOptions[i].delay < 1f/60f)transitionAnim.AddKeyframe_Material(rend,GetDefaultMaterial(rend,i),0f,i);
+                            transitionAnim.AddKeyframe_Material(rend,to.changeMaterialsOptions[i].material,to.changeMaterialsOptions[i].delay,i);
+                        }
+                    }
+                }
+                for (int i = 0; i < from.changeBlendShapeOptions.Count; i++)
+                {
+                    if (to.changeBlendShapeOptions[i].change)
+                    {
+                        if(0f > to.changeBlendShapeOptions[i].weight && to.changeBlendShapeOptions[i].weight > 100f) continue;
+                        if(Mathf.Abs(from.changeBlendShapeOptions[i].weight - to.changeBlendShapeOptions[i].weight)<1f) continue;
+                        if (to.changeBlendShapeOptions[i].delay < 0)
+                        {
+                        
+                        }
+                        else
+                        {
+                            //transitionAnim.AddKeyframe_Material(rend.rend,rend.changeBlendShapeOptions[i].weight);
+                            transitionAnim.AddKeyframe(to.changeBlendShapeOptions[i].delay, rend as SkinnedMeshRenderer, 
+                                "blendShape."+rend.GetMesh().GetBlendShapeName(i) , 
+                                from.changeBlendShapeOptions[i].change ?
+                                    from.changeBlendShapeOptions[i].weight :
+                                    (rend as SkinnedMeshRenderer).GetBlendShapeWeight(i));
+                            transitionAnim.AddKeyframe(to.changeBlendShapeOptions[i].delay + to.changeBlendShapeOptions[i].duration, rend as SkinnedMeshRenderer, 
+                                "blendShape."+rend.GetMesh().GetBlendShapeName(i) , 
+                                to.changeBlendShapeOptions[i].weight);
+                        } 
+                    }
+                }
             }
         }
 
@@ -1421,7 +1527,16 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         void SetObjectActiveForScene(MenuElement menu,bool active = true, bool material = true, bool blendShape = true)
         {
             RevertObjectActiveForScene(active,material,blendShape);
-            foreach (var item in menu.SafeActiveItems())
+
+            var activeItems = menu.SafeActiveItems();
+            activeItems.AddRange(ComputeLayerAnotherItems(menu));
+                    
+            var inactiveItems = menu.SafeInactiveItems();
+            inactiveItems.AddRange(ComputeLayerInactiveItems(menu));
+            
+            var items = displayItemMode ? activeItems : inactiveItems;
+            
+            foreach (var item in items)
             {
                 if (active)
                 {
@@ -1432,59 +1547,24 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                 {
                     if (material)
                     {
-                        for (int i = 0; i < option.changeMaterialsOption.Count; i++)
+                        for (int i = 0; i < option.changeMaterialsOptions.Count; i++)
                         {
-                            if (option.changeMaterialsOption[i])
+                            if (option.changeMaterialsOptions[i] != null)
                             {
                                 GetDefaultMaterial(option.rend, i);
-                                option.rend.sharedMaterials[i] = option.changeMaterialsOption[i];
+                                option.rend.sharedMaterials[i] = option.changeMaterialsOptions[i].material;
                             }
                         }
                     }
 
                     if (blendShape)
                     {
-                        for (int i = 0; i < option.changeBlendShapeOption.Count; i++)
+                        for (int i = 0; i < option.changeBlendShapeOptions.Count; i++)
                         {
-                            if (option.changeBlendShapeOption[i]>=0f)
+                            if (option.changeBlendShapeOptions[i].change)
                             {
                                 GetDefaultBlendshape(option.rend as SkinnedMeshRenderer, i);
-                                (option.rend as SkinnedMeshRenderer)?.SetBlendShapeWeight(i,option.changeBlendShapeOption[i]);
-                            }
-                        }
-                    }
-                }
-            }
-            foreach (var item in ComputeLayerAnotherItems(menu))
-            {
-                if (active)
-                {
-                    GetDefaultActive(item.obj);
-                    item.obj.SetActive(item.active);
-                }
-                foreach (var option in item.rendOptions)
-                {
-                    if (material)
-                    {
-                        for (int i = 0; i < option.changeMaterialsOption.Count; i++)
-                        {
-                            if (option.changeMaterialsOption[i])
-                            {
-                                GetDefaultMaterial(option.rend, i);
-                                option.rend.sharedMaterials[i] = option.changeMaterialsOption[i];
-                            }
-                        }
-                    }
-
-                    if (blendShape)
-                    {
-                        for (int i = 0; i < option.changeBlendShapeOption.Count; i++)
-                        {
-                            if (option.changeBlendShapeOption[i] >= 0f)
-                            {
-                                GetDefaultBlendshape(option.rend as SkinnedMeshRenderer, i);
-                                (option.rend as SkinnedMeshRenderer)?.SetBlendShapeWeight(i,
-                                    option.changeBlendShapeOption[i]);
+                                (option.rend as SkinnedMeshRenderer)?.SetBlendShapeWeight(i,option.changeBlendShapeOptions[i].weight);
                             }
                         }
                     }
@@ -1573,8 +1653,8 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         bool IsModifyRendererOption(ItemElement item)
         {
             return item.rendOptions.Any(ro =>
-                ro.changeMaterialsOption.Any(e => e != null) ||
-                ro.changeBlendShapeOption.Any(e => e >= 0f));
+                ro.changeMaterialsOptions.Any(e => e.change) ||
+                ro.changeBlendShapeOptions.Any(e => e.change));
 
 
         }
@@ -1589,12 +1669,45 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                 {
                     if (checkOptions)
                     {
-                        if(IsModifyRendererOption(dst) || IsModifyRendererOption(src)) continue;
+                        if(!RendOptionEqual(src,dst)) continue;
+                        // if(IsModifyRendererOption(dst) || IsModifyRendererOption(src)) continue;
                     }
                     dst.active = invert ? !src.active : src.active;
                 }
-                
             }
+        }
+
+        bool RendOptionEqual(ItemElement srcs, ItemElement dsts)
+        {
+            foreach (var src in srcs.rendOptions)
+            {
+                var dst = dsts.rendOptions.FirstOrDefault(d => d.rend == src.rend);
+                if (src != null && dst != null)
+                {
+                    for (int i = 0; i < src.changeMaterialsOptions.Count &&  i < dst.changeMaterialsOptions.Count; i++)
+                    {
+                        if (src.changeMaterialsOptions[i].change && dst.changeMaterialsOptions[i].change)
+                        {
+                            if (src.changeMaterialsOptions[i].material != dst.changeMaterialsOptions[i].material)
+                            {
+                                return false;
+                            }
+                        }
+                    }
+                    for (int i = 0; i < src.changeBlendShapeOptions.Count &&  i < dst.changeBlendShapeOptions.Count; i++)
+                    {
+                        if (src.changeBlendShapeOptions[i].change && dst.changeBlendShapeOptions[i].change)
+                        {
+                            if (Mathf.Abs(src.changeBlendShapeOptions[i].weight - dst.changeBlendShapeOptions[i].weight)<1f)
+                            {
+                                return false;
+                            }
+                        }
+                    }
+                }
+            }
+
+            return true;
         }
 
         List<ItemElement> ComputeLayerInactiveItems(MenuElement menu)
@@ -1631,22 +1744,29 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                                 if (rendOption.rend == another.rend)
                                 {
                                     // Material設定の上書き
-                                    for (int i = 0; i < rendOption.changeMaterialsOption.Count; i++)
+                                    for (int i = 0; i < rendOption.changeMaterialsOptions.Count; i++)
                                     {
-                                        if (rendOption.changeMaterialsOption[i] != null) break;
-                                        if (another.changeMaterialsOption[i] != null)
+                                        if (rendOption.changeMaterialsOptions[i] != null) break;
+                                        if (another.changeMaterialsOptions[i] != null)
                                         {
-                                            rendOption.changeMaterialsOption[i] = rendOption.rend.sharedMaterials[i];
+                                            rendOption.changeMaterialsOptions[i] =
+                                                new MaterialOption(rendOption.rend.sharedMaterials[i])
+                                                {
+                                                    change = true
+                                                };
                                         }
                                     }
                                     // BlendShapel設定の上書き
-                                    for (int i = 0; i < rendOption.changeBlendShapeOption.Count; i++)
+                                    for (int i = 0; i < rendOption.changeBlendShapeOptions.Count; i++)
                                     {
-                                        if (rendOption.changeBlendShapeOption[i] >= 0f) break;
-                                        if (another.changeBlendShapeOption[i] >= 0f)
+                                        if (rendOption.changeBlendShapeOptions[i].change) break;
+                                        if (another.changeBlendShapeOptions[i].change)
                                         {
-                                            rendOption.changeBlendShapeOption[i] =
-                                                (rendOption.rend as SkinnedMeshRenderer)?.GetBlendShapeWeight(i) ?? 0f;
+                                            rendOption.changeBlendShapeOptions[i] =
+                                                new BlendShapeOption((rendOption.rend as SkinnedMeshRenderer)?.GetBlendShapeWeight(i) ?? 0f)
+                                                {
+                                                    change = true
+                                                };
                                         }
                                     }
                                     
@@ -1761,8 +1881,11 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             {
                 if (r.rend == rend)
                 {
-                    r.changeMaterialsOption[index] = 
-                        val ? rend.sharedMaterials[index] : null;
+                    if (!r.changeMaterialsOptions[index].change)
+                    {
+                        r.changeMaterialsOptions[index].material = rend.sharedMaterials[index];
+                    }
+                    r.changeMaterialsOptions[index].change = val;
                 }
             }
         }
@@ -1776,8 +1899,11 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                 {
                     if (ro.rend == rend)
                     {
-                        ro.changeMaterialsOption[index] = 
-                            val ? rend.sharedMaterials[index] : null;
+                        if (!ro.changeMaterialsOptions[index].change)
+                        {
+                            ro.changeMaterialsOptions[index].material = rend.sharedMaterials[index];
+                        }
+                        ro.changeMaterialsOptions[index].change = val;
                     }
                 }
             }
@@ -1787,8 +1913,11 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                 {
                     if (ro.rend == rend)
                     {
-                        ro.changeMaterialsOption[index] = 
-                            val ? rend.sharedMaterials[index] : null;
+                        if (!ro.changeMaterialsOptions[index].change)
+                        {
+                            ro.changeMaterialsOptions[index].material = rend.sharedMaterials[index];
+                        }
+                        ro.changeMaterialsOptions[index].change = val;
                     }
                 }
             }
@@ -1804,8 +1933,11 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             {
                 if (r.rend == rend)
                 {
-                    r.changeBlendShapeOption[index] = 
-                        val ? rend.GetBlendShapeWeight(index) : -1f;
+                    if (!r.changeBlendShapeOptions[index].change)
+                    {
+                        r.changeBlendShapeOptions[index] = new BlendShapeOption(GetDefaultBlendshape(rend,index));
+                    }
+                    r.changeBlendShapeOptions[index].change = val;
                 }
             }
         }
@@ -1819,8 +1951,11 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                 {
                     if (ro.rend == rend)
                     {
-                        ro.changeBlendShapeOption[index] = 
-                            val ? rend.GetBlendShapeWeight(index) : -1f;
+                        if (!ro.changeBlendShapeOptions[index].change)
+                        {
+                            ro.changeBlendShapeOptions[index] = new BlendShapeOption(GetDefaultBlendshape(rend,index));
+                        }
+                        ro.changeBlendShapeOptions[index].change = val;
                     }
                 }
             }
@@ -1830,8 +1965,11 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                 {
                     if (ro.rend == rend)
                     {
-                        ro.changeBlendShapeOption[index] = 
-                            val ? rend.GetBlendShapeWeight(index) : -1f;
+                        if (!ro.changeBlendShapeOptions[index].change)
+                        {
+                            ro.changeBlendShapeOptions[index] = new BlendShapeOption(GetDefaultBlendshape(rend,index));
+                        }
+                        ro.changeBlendShapeOptions[index].change = val;
                     }
                 }
             }
