@@ -97,22 +97,24 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             wnd.minSize = new Vector2(825, 500);
             wnd.maxSize = new Vector2(825,2000);
 
-            if (saveddata)
+            if (saveddata == null)
             {
-                wnd.data = saveddata;
-                
-                wnd.LoadReorderableList();
-                
-                var root = wnd.data.GetRoot();
-                if (root)
-                {
+                saveddata = CreateInstance<MagicalDresserInventorySaveData>();
+                saveddata.icon = AssetUtility.LoadAssetAtGuid<Texture2D>(EnvironmentGUIDs.itemboxIcon);
+            }
+            wnd.data = Instantiate(saveddata);
+            
+            wnd.LoadReorderableList();
+            
+            var root = wnd.data.GetRoot();
+            if (root)
+            {
 #if VRC_SDK_VRCSDK3
-                    wnd.avatar = root.GetComponent<VRCAvatarDescriptor>();
+                wnd.avatar = root.GetComponent<VRCAvatarDescriptor>();
 #endif
-                    if (wnd.avatar)
-                    {
-                        wnd.data.ApplyRoot(wnd.avatar.gameObject);
-                    }
+                if (wnd.avatar)
+                {
+                    wnd.data.ApplyRoot(wnd.avatar.gameObject);
                 }
             }
             wnd.LoadReorderableList();
@@ -120,11 +122,6 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
 
         void LoadReorderableList()
         {
-            if (!data)
-            {
-                data = CreateInstance<MagicalDresserInventorySaveData>();
-                data.icon = AssetUtility.LoadAssetAtGuid<Texture2D>(EnvironmentGUIDs.itemboxIcon);
-            }
             menuReorderableList = new ReorderableList(menuElements, typeof(MenuElement))
             {
                 drawHeaderCallback = r =>
@@ -540,7 +537,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                             if (GUILayout.Button("Setup"))
                             {
                                 RevertObjectActiveForScene();
-                                var path = EditorUtility.SaveFilePanel("Save", "Assets",
+                                var path = EditorUtility.SaveFilePanel("Save", data.GetAssetDir(),
                                     String.IsNullOrWhiteSpace(data.saveName) ? "MagicalDresserInventorySaveData" : data.saveName,
                                     "asset");
                                 if (string.IsNullOrEmpty(path))
@@ -575,7 +572,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                         if (GUILayout.Button("Export Animation"))
                         {
                             RevertObjectActiveForScene();
-                            var path = EditorUtility.SaveFilePanel("Save", "Assets", data.saveName,
+                            var path = EditorUtility.SaveFilePanel("Save", data.GetAssetDir(), data.saveName,
                                 "anim");
                             if (string.IsNullOrEmpty(path))
                             {
@@ -604,7 +601,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                         {
                             if (GUILayout.Button("Save Settings"))
                             {
-                                var path = EditorUtility.SaveFilePanel("Save", "Assets", data.saveName,"asset");
+                                var path = EditorUtility.SaveFilePanel("Save", data.GetAssetDir(), data.saveName,"asset");
                                 if (string.IsNullOrEmpty(path))
                                 {
                                     OnCancel();
@@ -617,7 +614,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                             }
                             if (GUILayout.Button("Load Settings"))
                             {
-                                var path = EditorUtility.OpenFilePanel("Load", "Assets", "asset");
+                                var path = EditorUtility.OpenFilePanel("Load", data.GetAssetDir(), "asset");
                                 if (string.IsNullOrEmpty(path))
                                 {
                                     OnCancel();

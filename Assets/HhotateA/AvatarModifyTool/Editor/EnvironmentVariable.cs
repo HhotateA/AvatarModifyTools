@@ -141,5 +141,14 @@ namespace HhotateA.AvatarModifyTools.Core
             }
             return null;
         }
+        public static string GetAssetDir(this ScriptableObject asset)
+        {
+            var path = AssetDatabase.GetAssetPath(asset);
+            if (String.IsNullOrWhiteSpace(path))
+            {
+                return "Assets";
+            }
+            return System.IO.Path.GetDirectoryName (path);
+        }
     }
 }

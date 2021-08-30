@@ -44,7 +44,7 @@ namespace HhotateA.AvatarModifyTools.EmoteMotionKit
                 saveddata = CreateInstance<EmoteMotionKitSaveData>();
                 saveddata.icon = AssetUtility.LoadAssetAtGuid<Texture2D>(EnvironmentGUIDs.emotesIcon);
             }
-            wnd.data = saveddata;
+            wnd.data = Instantiate(saveddata);
             wnd.LoadReorderableList();
         }
 
@@ -181,7 +181,7 @@ namespace HhotateA.AvatarModifyTools.EmoteMotionKit
 
             if (GUILayout.Button("Setup"))
             {
-                var path = EditorUtility.SaveFilePanel("Save", "Assets",String.IsNullOrWhiteSpace(data.saveName) ? "EmojiSetupData" : data.saveName , "asset");
+                var path = EditorUtility.SaveFilePanel("Save", data.GetAssetDir(),String.IsNullOrWhiteSpace(data.saveName) ? "EmojiSetupData" : data.saveName , "asset");
                 if (string.IsNullOrEmpty(path))
                 {
                     OnCancel();
@@ -212,7 +212,7 @@ namespace HhotateA.AvatarModifyTools.EmoteMotionKit
             {
                 if (GUILayout.Button("Save Settings"))
                 {
-                    var path = EditorUtility.SaveFilePanel("Save", "Assets", data.saveName,"asset");
+                    var path = EditorUtility.SaveFilePanel("Save", data.GetAssetDir(), data.saveName,"asset");
                     if (string.IsNullOrEmpty(path))
                     {
                         OnCancel();
@@ -225,7 +225,7 @@ namespace HhotateA.AvatarModifyTools.EmoteMotionKit
                 }
                 if (GUILayout.Button("Load Settings"))
                 {
-                    var path = EditorUtility.OpenFilePanel("Load", "Assets", "asset");
+                    var path = EditorUtility.OpenFilePanel("Load", data.GetAssetDir(), "asset");
                     if (string.IsNullOrEmpty(path))
                     {
                         OnCancel();
