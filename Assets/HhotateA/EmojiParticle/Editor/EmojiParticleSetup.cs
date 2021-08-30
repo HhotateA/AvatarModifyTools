@@ -41,7 +41,8 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
             {
                 saveddata = CreateInstance<EmojiSaveData>();
             }
-            wnd.data = Instantiate(saveddata);
+            // wnd.data = Instantiate(saveddata);
+            wnd.data = saveddata;
             wnd.LoadReorderableList();
         }
         private Target target;

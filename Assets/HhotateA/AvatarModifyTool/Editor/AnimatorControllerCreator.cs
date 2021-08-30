@@ -11,6 +11,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using UnityEditor;
 using UnityEditor.Animations;
 using UnityEngine;
@@ -424,6 +425,18 @@ namespace HhotateA.AvatarModifyTools.Core
             else
             {
                 return asset.layers[layer].stateMachine.states.FirstOrDefault(s => s.state.name == name).state;
+            }
+        }
+        
+        public string[] GetStates(string regular, int layer = -1)
+        {
+            if (layer == -1)
+            {
+                return GetStateMachine().states.Where(s=>Regex.IsMatch(s.state.name,@regular)).Select(s=>s.state.name).ToArray();
+            }
+            else
+            {
+                return asset.layers[layer].stateMachine.states.Where(s=>Regex.IsMatch(s.state.name,@regular)).Select(s=>s.state.name).ToArray();
             }
         }
 

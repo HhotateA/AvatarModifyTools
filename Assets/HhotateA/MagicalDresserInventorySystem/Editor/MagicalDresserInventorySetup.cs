@@ -102,8 +102,8 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                 saveddata = CreateInstance<MagicalDresserInventorySaveData>();
                 saveddata.icon = AssetUtility.LoadAssetAtGuid<Texture2D>(EnvironmentGUIDs.itemboxIcon);
             }
-            wnd.data = Instantiate(saveddata);
-            
+            // wnd.data = Instantiate(saveddata);
+            wnd.data = saveddata;
             wnd.LoadReorderableList();
             
             var root = wnd.data.GetRoot();
@@ -452,7 +452,9 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                                     using (new EditorGUILayout.HorizontalScope())
                                     {
                                         displaySyncTransition = EditorGUILayout.Foldout(displaySyncTransition, "Sync Elements");
-                                        EditorGUILayout.LabelField("",GUILayout.Width(50));
+                                        EditorGUILayout.LabelField(" ",GUILayout.Width(40),GUILayout.ExpandWidth(true));
+                                        EditorGUILayout.LabelField("Delay",GUILayout.Width(50));
+                                        EditorGUILayout.LabelField("",GUILayout.Width(10));
                                         EditorGUILayout.LabelField("On",GUILayout.Width(25));
                                         EditorGUILayout.LabelField("Off",GUILayout.Width(25));
                                     }
@@ -469,37 +471,87 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                                                         EditorGUILayout.LabelField(" ",GUILayout.Width(50),GUILayout.ExpandWidth(true));
                                                         EditorGUILayout.LabelField(menuElement.name,GUILayout.Width(100));
 
-                                                        var syncOnElements = displayItemMode ? menuElements[index].activeSyncOnElements : menuElements[index].inactiveSyncOnElements;
-                                                        var syncOffElements = displayItemMode ? menuElements[index].activeSyncOffElements : menuElements[index].inactiveSyncOffElements;
-                                                        if (EditorGUILayout.Toggle("",
-                                                            syncOnElements.Contains(menuElement.guid),GUILayout.Width(25)))
+                                                        var syncElement = displayItemMode ? 
+                                                            menuElements[index].activeSyncElements.FirstOrDefault(e => e.guid == menuElement.guid):
+                                                            menuElements[index].inactiveSyncElements.FirstOrDefault(e => e.guid == menuElement.guid);
+                                                        //var syncOffElements = displayItemMode ? menuElements[index].activeSyncOffElements : menuElements[index].inactiveSyncOffElements;
+                                                        if (syncElement == null)
                                                         {
-                                                            if (!syncOnElements.Contains(menuElement.guid))
+                                                            using (var check = new EditorGUI.ChangeCheckScope())
                                                             {
-                                                                syncOnElements.Add(menuElement.guid);
+                                                                syncElement = new SyncElement(menuElement.guid);
+                                                                if (EditorGUILayout.Toggle("", syncElement.delay>=0, GUILayout.Width(25)))
+                                                                {
+                                                                    syncElement.delay = 0f;
+                                                                }
+                                                                else
+                                                                {
+                                                                    syncElement.delay = -1f;
+                                                                }
+
+                                                                using (new EditorGUI.DisabledScope(true))
+                                                                {
+                                                                    syncElement.delay = EditorGUILayout.FloatField("", syncElement.delay, GUILayout.Width(50));
+                                                                }
+
+                                                                EditorGUILayout.LabelField("",GUILayout.Width(15));
+                                                                syncElement.syncOn = EditorGUILayout.Toggle("", syncElement.syncOn, GUILayout.Width(25));
+                                                                syncElement.syncOff = EditorGUILayout.Toggle("", syncElement.syncOff, GUILayout.Width(25));
+                                                                if (check.changed)
+                                                                {
+                                                                    if (displayItemMode)
+                                                                    {
+                                                                        menuElements[index].activeSyncElements.Add(syncElement);
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        menuElements[index].inactiveSyncElements.Add(syncElement);
+                                                                    }
+                                                                }
                                                             }
                                                         }
                                                         else
                                                         {
-                                                            if (syncOnElements.Contains(menuElement.guid))
+                                                            if (EditorGUILayout.Toggle("", syncElement.delay>=0, GUILayout.Width(25)))
                                                             {
-                                                                syncOnElements.Remove(menuElement.guid);
+                                                                syncElement.delay = 0f;
                                                             }
-                                                        }
-                                                        
-                                                        if (EditorGUILayout.Toggle("",
-                                                            syncOffElements.Contains(menuElement.guid),GUILayout.Width(25)))
-                                                        {
-                                                            if (!syncOffElements.Contains(menuElement.guid))
+                                                            else
                                                             {
-                                                                syncOffElements.Add(menuElement.guid);
+                                                                syncElement.delay = -1f;
                                                             }
-                                                        }
-                                                        else
-                                                        {
-                                                            if (syncOffElements.Contains(menuElement.guid))
+
+                                                            using (new EditorGUI.DisabledScope(true))
                                                             {
-                                                                syncOffElements.Remove(menuElement.guid);
+                                                                syncElement.delay = EditorGUILayout.FloatField("", syncElement.delay, GUILayout.Width(50));
+                                                            }
+                                                            
+                                                            EditorGUILayout.LabelField("",GUILayout.Width(15));
+                                                            if (EditorGUILayout.Toggle("", syncElement.syncOn, GUILayout.Width(25)))
+                                                            {
+                                                                if (!syncElement.syncOn)
+                                                                {
+                                                                    // 重複防止
+                                                                    syncElement.syncOn = true;
+                                                                    syncElement.syncOff = false;
+                                                                }
+                                                            }
+                                                            else
+                                                            {
+                                                                syncElement.syncOn = false;
+                                                            }
+                                                            if(EditorGUILayout.Toggle("", syncElement.syncOff, GUILayout.Width(25)))
+                                                            {
+                                                                if (!syncElement.syncOff)
+                                                                {
+                                                                    // 重複防止
+                                                                    syncElement.syncOff = true;
+                                                                    syncElement.syncOn = false;
+                                                                }
+                                                            }
+                                                            else
+                                                            {
+                                                                syncElement.syncOff = false;
                                                             }
                                                         }
                                                     }
@@ -773,18 +825,37 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                             }
                             else
                             {
-                                ToggleMaterialOption(menuElements[menuReorderableList.index].layer,rendOption.rend,i,toggle);
+                                ToggleMaterialOption(menuElements[menuReorderableList.index].layer, rendOption.rend, i, toggle);
                             }
                         }
                         
-                        EditorGUILayout.LabelField(rendOption.rend.sharedMaterials[i].name,  GUILayout.Width(150));
+                        EditorGUILayout.LabelField(rendOption.rend.sharedMaterials[i].name,  GUILayout.Width(125));
                         if (!rendOption.changeMaterialsOptions[i].change)
                         {
-                            EditorGUILayout.LabelField("",  GUILayout.Width(50));
+                            EditorGUILayout.LabelField("",  GUILayout.Width(75));
                         }
                         else
                         {
-                            rendOption.changeMaterialsOptions[i].delay = EditorGUILayout.FloatField("", rendOption.changeMaterialsOptions[i].delay, GUILayout.Width(50));
+                            if (EditorGUILayout.Toggle("", rendOption.changeMaterialsOptions[i].delay < 0, GUILayout.Width(25)))
+                            {
+                                if (rendOption.changeMaterialsOptions[i].delay >= 0)
+                                {
+                                    rendOption.changeMaterialsOptions[i].delay = -1f;
+                                }
+                            }
+                            else
+                            {
+                                if (rendOption.changeMaterialsOptions[i].delay < 0)
+                                {
+                                    rendOption.changeMaterialsOptions[i].delay = 0f;
+                                }
+                            }
+
+                            using (new EditorGUI.DisabledScope(rendOption.changeMaterialsOptions[i].delay < 0))
+                            {
+                                rendOption.changeMaterialsOptions[i].delay = EditorGUILayout.FloatField("",
+                                    rendOption.changeMaterialsOptions[i].delay, GUILayout.Width(50));
+                            }
                         }
                         
                         if (toggle)
@@ -797,8 +868,9 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                             rendOption.changeMaterialsOptions[i].material = rendOption.rend.sharedMaterials[i];
                             using (new EditorGUI.DisabledScope(true))
                             {
-                                EditorGUILayout.ObjectField("",
-                                    new Material(Shader.Find("Unlit/Color")){name = "No Change"}, typeof(Object), false,GUILayout.Width(150));
+                                /*EditorGUILayout.ObjectField("",
+                                    new Material(Shader.Find("Unlit/Color")){name = "No Change"}, typeof(Object), false,GUILayout.Width(150));*/
+                                EditorGUILayout.LabelField("NoChange",GUILayout.Width(150));
                             }
                         }
                     }
@@ -829,21 +901,35 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                             }
                             else
                             {
-                                ToggleBlendshapeOption(menuElements[menuReorderableList.index].layer,rendOption.rend as SkinnedMeshRenderer, i, toggle);
+                                ToggleBlendshapeOption(menuElements[menuReorderableList.index].layer, rendOption.rend as SkinnedMeshRenderer, i, toggle);
                             }
                         }
                         rendOption.changeBlendShapeOptions[i].change = toggle;
                         
-                        EditorGUILayout.LabelField(rendOption.rend.GetMesh().GetBlendShapeName(i),  GUILayout.Width(150));
+                        EditorGUILayout.LabelField(rendOption.rend.GetMesh().GetBlendShapeName(i),  GUILayout.Width(125));
                         if (!rendOption.changeBlendShapeOptions[i].change)
                         {
-                            EditorGUILayout.LabelField("",  GUILayout.Width(100));
+                            EditorGUILayout.LabelField("",  GUILayout.Width(125));
                         }
                         else
                         {
-                            rendOption.changeBlendShapeOptions[i].delay = EditorGUILayout.FloatField("", rendOption.changeBlendShapeOptions[i].delay, GUILayout.Width(50));
+                            if (EditorGUILayout.Toggle("", rendOption.changeBlendShapeOptions[i].delay < 0, GUILayout.Width(25)))
+                            {
+                                if (rendOption.changeBlendShapeOptions[i].delay >= 0)
+                                {
+                                    rendOption.changeBlendShapeOptions[i].delay = -1f;
+                                }
+                            }
+                            else
+                            {
+                                if (rendOption.changeBlendShapeOptions[i].delay < 0)
+                                {
+                                    rendOption.changeBlendShapeOptions[i].delay = 0f;
+                                }
+                            }
                             using (new EditorGUI.DisabledScope(rendOption.changeBlendShapeOptions[i].delay<0))
                             {
+                                rendOption.changeBlendShapeOptions[i].delay = EditorGUILayout.FloatField("", rendOption.changeBlendShapeOptions[i].delay, GUILayout.Width(50));
                                 rendOption.changeBlendShapeOptions[i].duration = EditorGUILayout.FloatField("", rendOption.changeBlendShapeOptions[i].duration, GUILayout.Width(50));
                             }
                         }
@@ -999,6 +1085,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                         c.ParameterDriver("Default",param,0,1,0.5f);
                     }
                     menuElement.param = param;
+                    menuElement.value = 1;
                 }
             }
 
@@ -1144,52 +1231,64 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             // パラメーターシンク
             foreach (var menuElement in menuElements)
             {
-                foreach (var syncParamGUID in menuElement.activeSyncOnElements)
+                foreach (var syncElement in menuElement.activeSyncElements)
                 {
-                    var syncParam = menuElements.FirstOrDefault(e => e.guid == syncParamGUID);
+                    if (!syncElement.syncOn && !syncElement.syncOff) continue;
+                    var syncParam = menuElements.FirstOrDefault(e => e.guid == syncElement.guid);
                     if (syncParam!=null)
                     {
-                        c.SetEditLayer(c.GetEditLayer(menuElement.param));
-                        c.ParameterDriver(menuElement.isToggle ? 
-                                "Active" :
-                                menuElement.value.ToString() + "_Active",
-                            syncParam.param,syncParam.isToggle ? 1 : syncParam.value);
+                        if (syncElement.delay < 0)
+                        {
+                            c.SetEditLayer(c.GetEditLayer(menuElement.param));
+                            if (menuElement.isToggle)
+                            {
+                                c.ParameterDriver( "Active" , syncParam.param, syncElement.syncOn ? syncParam.value : 0f);
+                            }
+                            else
+                            {
+                                c.ParameterDriver( menuElement.value.ToString() + "_Active", syncParam.param, syncElement.syncOn ? syncParam.value : 0f);
+                            }
+                        }
+                        else
+                        {
+                            c.SetEditLayer(c.GetEditLayer(menuElement.param));
+                            if (menuElement.isToggle)
+                            {
+                                c.ParameterDriver( "Activate" , syncParam.param, syncElement.syncOn ? syncParam.value : 0f);
+                            }
+                            else
+                            {
+                                Debug.Log(".*" + "to" + menuElement.value.ToString() + "_Transition");
+                                var states = c.GetStates(".*" + "to" + syncParam.value.ToString() + "_Transition");
+                                foreach (var state in states)
+                                {
+                                    c.ParameterDriver( state,syncParam.param, syncElement.syncOn ? syncParam.value : 0f);
+                                }
+                            }
+                            
+                        }
                     }
                 }
-                foreach (var syncParamGUID in menuElement.activeSyncOffElements)
+
+                if (menuElement.isToggle)
                 {
-                    var syncParam = menuElements.FirstOrDefault(e => e.guid == syncParamGUID);
-                    if (syncParam.isToggle)
+                    foreach (var syncElement in menuElement.inactiveSyncElements)
                     {
-                        c.SetEditLayer(c.GetEditLayer(menuElement.param));
-                        c.ParameterDriver(menuElement.isToggle ? 
-                                "Active" :
-                                menuElement.value.ToString() + "_Active",
-                            syncParam.param,0); 
-                    }
-                }
-                foreach (var syncParamGUID in menuElement.inactiveSyncOnElements)
-                {
-                    var syncParam = menuElements.FirstOrDefault(e => e.guid == syncParamGUID);
-                    if (syncParam!=null)
-                    {
-                        c.SetEditLayer(c.GetEditLayer(menuElement.param));
-                        c.ParameterDriver(menuElement.isToggle ? 
-                                "Inactive" :
-                                menuElement.value.ToString() + "_Inactive",
-                            syncParam.param,syncParam.isToggle ? 1 : syncParam.value);
-                    }
-                }
-                foreach (var syncParamGUID in menuElement.inactiveSyncOffElements)
-                {
-                    var syncParam = menuElements.FirstOrDefault(e => e.guid == syncParamGUID);
-                    if (syncParam.isToggle)
-                    {
-                        c.SetEditLayer(c.GetEditLayer(menuElement.param));
-                        c.ParameterDriver(menuElement.isToggle ? 
-                                "Inactive" :
-                                menuElement.value.ToString() + "_InActive",
-                            syncParam.param,0); 
+                        if (!syncElement.syncOn && !syncElement.syncOff) continue;
+                        var syncParam = menuElements.FirstOrDefault(e => e.guid == syncElement.guid);
+                        if (syncParam!=null)
+                        {
+                            if (syncElement.delay < 0)
+                            {
+                                c.SetEditLayer(c.GetEditLayer(menuElement.param));
+                                c.ParameterDriver( "Inactive" , syncParam.param, syncElement.syncOn ? syncParam.value : 0f);
+                            }
+                            else
+                            {
+                                c.SetEditLayer(c.GetEditLayer(menuElement.param));
+                                c.ParameterDriver( "Inactivate" , syncParam.param, syncElement.syncOn ? syncParam.value : 0f);
+                            }
+                        }
                     }
                 }
             }
@@ -1734,10 +1833,8 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                         item.active = GetDefaultActive(item.obj);
                         foreach (var rendOption in item.rendOptions)
                         {
-                            Debug.Log("a"+rendOption.rend.name);
                             foreach (var another in items.SelectMany(e=>e.rendOptions))
                             {
-                                Debug.Log("b"+another.rend.name);
                                 if (rendOption.rend == another.rend)
                                 {
                                     // Material設定の上書き
@@ -1894,6 +1991,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             {
                 foreach (var ro in ie.rendOptions)
                 {
+                    if (ro.rend == null) continue;
                     if (ro.rend == rend)
                     {
                         if (!ro.changeMaterialsOptions[index].change)
@@ -1910,6 +2008,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                 {
                     if (ro.rend == rend)
                     {
+                        if (ro.rend == null) continue;
                         if (!ro.changeMaterialsOptions[index].change)
                         {
                             ro.changeMaterialsOptions[index].material = rend.sharedMaterials[index];
@@ -1928,6 +2027,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                 SelectMany(m=>m.SafeActiveItems()).
                 SelectMany(i=>i.rendOptions))
             {
+                if (r.rend == null) continue;
                 if (r.rend == rend)
                 {
                     if (!r.changeBlendShapeOptions[index].change)
@@ -1946,6 +2046,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             {
                 foreach (var ro in ie.rendOptions)
                 {
+                    if (ro.rend == null) continue;
                     if (ro.rend == rend)
                     {
                         if (!ro.changeBlendShapeOptions[index].change)
@@ -1960,6 +2061,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             {
                 foreach (var ro in ie.rendOptions)
                 {
+                    if (ro.rend == null) continue;
                     if (ro.rend == rend)
                     {
                         if (!ro.changeBlendShapeOptions[index].change)

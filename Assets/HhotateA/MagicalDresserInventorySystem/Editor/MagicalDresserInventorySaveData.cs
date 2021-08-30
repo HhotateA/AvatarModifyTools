@@ -51,10 +51,8 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             var root = GameObject.Find(avatarName);
             if (root)
             {
-                Debug.Log(root.GetInstanceID());
                 if (root.GetInstanceID() == avatarGUID)
                 {
-                    Debug.Log(root.GetInstanceID());
                     return root;
                 }
             }
@@ -148,10 +146,13 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         public int value = 0;
         public string guid;
         
-        public List<string> activeSyncOnElements = new List<string>();
+        public List<SyncElement> activeSyncElements = new List<SyncElement>();
+        public List<SyncElement> inactiveSyncElements = new List<SyncElement>();
+        // 別に互換性いいかな．．．？
+        /*public List<string> activeSyncOnElements = new List<string>();
         public List<string> activeSyncOffElements = new List<string>();
         public List<string> inactiveSyncOnElements = new List<string>();
-        public List<string> inactiveSyncOffElements = new List<string>();
+        public List<string> inactiveSyncOffElements = new List<string>();*/
 
         public MenuElement()
         {
@@ -200,6 +201,23 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             {
                 layer = l;
             }
+        }
+    }
+
+    [Serializable]
+    public class SyncElement
+    {
+        public string guid;
+        public float delay;
+        public bool syncOn;
+        public bool syncOff;
+
+        public SyncElement(string id)
+        {
+            guid = id;
+            delay = -1f;
+            syncOn = false;
+            syncOff = false;
         }
     }
     
@@ -275,12 +293,31 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             root = root.Find(path);
 
             obj = root.gameObject;
-            foreach (var rendOption in rendOptions)
+            
+            /*foreach (var rendOption in rendOptions)
             {
                 rendOption.GetRelativeGameobject(obj.transform);
+            }*/
+            var currentRendOptions = rendOptions;
+            var newRendOptions = obj.GetComponentsInChildren<Renderer>().Select(r => new RendererOption(r, obj)).ToList();
+            for (int i = 0; i < newRendOptions.Count; i++)
+            {
+                var currentRendOption = currentRendOptions.FirstOrDefault(r => r.path == newRendOptions[i].path);
+                if (currentRendOption!=null)
+                {
+                    // 設定飛んでそうだったら，破棄
+                    currentRendOption.GetRelativeGameobject(obj.transform);
+                    if (currentRendOption.rend == newRendOptions[i].rend &&
+                        currentRendOption.changeMaterialsOptions.Count ==
+                        newRendOptions[i].changeMaterialsOptions.Count &&
+                        currentRendOption.changeBlendShapeOptions.Count ==
+                        newRendOptions[i].changeBlendShapeOptions.Count)
+                    {
+                        newRendOptions[i] = currentRendOption;
+                    }
+                }
             }
-
-            rendOptions = rendOptions.Where(r => r.rend != null).ToList();
+            rendOptions = newRendOptions;
         }
     }
 
@@ -310,7 +347,6 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                 }
             }
         }
-        
         public RendererOption Clone(GameObject root,bool invert = false)
         {
             var clone = new RendererOption(rend, root);
@@ -363,21 +399,29 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             }
 
             rend = root.gameObject.GetComponent<Renderer>();
+            ReplaceMaterialOption();
         }
 
         public void ReplaceMaterialOption()
         {
-            if (compatibility_changeMaterialsOption.Count > 0)
+            if (compatibility_changeMaterialsOption!=null)
             {
-                changeMaterialsOptions = compatibility_changeMaterialsOption
-                    .Select(m => new MaterialOption(m)).ToList();
-                compatibility_changeMaterialsOption = new List<Material>();
+                if (compatibility_changeMaterialsOption.Count > 0)
+                {
+                    changeMaterialsOptions = compatibility_changeMaterialsOption
+                        .Select(m => new MaterialOption(m)).ToList();
+                    compatibility_changeMaterialsOption = new List<Material>();
+                }
             }
-            if (compatibility_changeBlendShapeOption.Count > 0)
+
+            if (compatibility_changeBlendShapeOption != null)
             {
-                changeBlendShapeOptions = compatibility_changeBlendShapeOption
-                    .Select(m =>  new BlendShapeOption(m)).ToList();
-                compatibility_changeBlendShapeOption = new List<float>();
+                if (compatibility_changeBlendShapeOption.Count > 0)
+                {
+                    changeBlendShapeOptions = compatibility_changeBlendShapeOption
+                        .Select(m => new BlendShapeOption(m)).ToList();
+                    compatibility_changeBlendShapeOption = new List<float>();
+                }
             }
         }
     }
