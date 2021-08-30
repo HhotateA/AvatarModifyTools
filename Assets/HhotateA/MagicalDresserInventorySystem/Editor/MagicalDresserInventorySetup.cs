@@ -854,9 +854,9 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                         if (toggle)
                         {
                             rendOption.changeBlendShapeOptions[i].weight =
-                                GUILayout.HorizontalSlider(rendOption.changeBlendShapeOptions[i].weight, 0f, 100f,GUILayout.Width(50));
+                                GUILayout.HorizontalSlider(rendOption.changeBlendShapeOptions[i].weight, 0f, 100f,GUILayout.Width(40));
                             rendOption.changeBlendShapeOptions[i].weight =
-                                EditorGUILayout.FloatField(rendOption.changeBlendShapeOptions[i].weight,GUILayout.Width(25));
+                                EditorGUILayout.FloatField(rendOption.changeBlendShapeOptions[i].weight,GUILayout.Width(30));
                         }
                         else
                         {
@@ -865,8 +865,8 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                             {
                                 var noChange =
                                     GUILayout.HorizontalSlider
-                                        (-1f, 0f, 100f,GUILayout.Width(50));
-                                EditorGUILayout.LabelField("NoChange",GUILayout.Width(25));
+                                        (-1f, 0f, 100f,GUILayout.Width(40));
+                                EditorGUILayout.LabelField("NoChange",GUILayout.Width(30));
                             }
                         }
                     }
@@ -1060,8 +1060,8 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                                     activeAnim.AddKeyframe_Material(rendOption.rend,rendOption.rend.sharedMaterials[j],0f,j);
                                     activeAnim.AddKeyframe_Material(rendOption.rend,rendOption.rend.sharedMaterials[j],1f/60f,j);
                                 }
-                                activeAnim.AddKeyframe_MaterialParam(0f, rendOption.rend, "_AnimationTime", 1f);
-                                activeAnim.AddKeyframe_MaterialParam(1f/60f, rendOption.rend, "_AnimationTime", 1f);
+                                /*activeAnim.AddKeyframe_MaterialParam(0f, rendOption.rend, "_AnimationTime", 1f);
+                                activeAnim.AddKeyframe_MaterialParam(1f/60f, rendOption.rend, "_AnimationTime", 1f);*/
                             }
                             for (int j = 0; j < rendOption.changeBlendShapeOptions.Count; j++)
                             {
@@ -1266,8 +1266,8 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                             setAnim.AddKeyframe_Material(rendOption.rend,rendOption.rend.sharedMaterials[i],0f,i);
                             setAnim.AddKeyframe_Material(rendOption.rend,rendOption.rend.sharedMaterials[i],1f/60f,i);
                         }
-                        setAnim.AddKeyframe_MaterialParam(0f, rendOption.rend, "_AnimationTime", 1f);
-                        setAnim.AddKeyframe_MaterialParam(1f/60f, rendOption.rend, "_AnimationTime", 1f);
+                        /*setAnim.AddKeyframe_MaterialParam(0f, rendOption.rend, "_AnimationTime", 1f);
+                        setAnim.AddKeyframe_MaterialParam(1f/60f, rendOption.rend, "_AnimationTime", 1f);*/
                     }
                     for (int i = 0; i < rendOption.changeBlendShapeOptions.Count; i++)
                     {

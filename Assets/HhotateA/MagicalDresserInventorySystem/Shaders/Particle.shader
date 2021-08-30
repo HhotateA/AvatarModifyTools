@@ -7,7 +7,7 @@ Copyright (c) 2021 @HhotateA_xR
 This software is released under the MIT License.
 http://opensource.org/licenses/mit-license.php
 */
-Shader "HhotateA/DimensionalStorage/pARTICLE"
+Shader "HhotateA/DimensionalStorage/Particle"
 {
     Properties
     {
@@ -17,24 +17,24 @@ Shader "HhotateA/DimensionalStorage/pARTICLE"
     	_ParticleTex("ParticleTex", 2D) = "white" {}
     	_ParticleSize("_ParticleSize",float)=0.1
     	_AnimationTime ("_AnimationTime",range(0.,1.)) = 0.
-    	_Distance ("_Distance",float) = 15
     	_Center ("_Center",vector) = (0.0,0.0,0.0,0.0)
     	_Extent ("_Center",vector) = (0.5,0.5,0.5,0.5)
     	_Factor ("_Factor",float) = 0.5
-    	_ScaleNoise ("_ScaleNoise",float) = 1.0
-    	_RotationNoise ("_RotationNoise",float) = 1.0
-    	_MoveNoise ("_MoveNoise",float) = 1.0
-    	_Scale ("_Scale",float) = 1.0
-    	_Rotation ("_Rotation",float) = 1.0
-    	_Move ("_Move",float) = 1.0
+    	_VortexFactor ("_VortexFactor",float) = 1.0
+    	_MoveFactor ("_MoveFactor",float) = 1.0
+    	_ParticleFactor ("_ParticleFactor",float) = 0.05
+    	_ColorFactor ("_ColorFactor",float) = 0.10
+    	_AlphaFactor ("_AlphaFactor",float) = 0.20
+    	_ClipFactor("_ClipFactor",float) = 0.5
+    	_PidFactor("_PidFactor",int) = 3
     	_Grabity ("_Grabity",vector) = (0.0,-1.0,0.0,0.0)
-    	_AnimationVec ("_AnimationVec",vector) = (0.0,-1.0,0.0,0.0)
     }
     SubShader
     {
         Tags { "RenderType"="Transparent" "Queue"="Transparent+50"}
-    	Cull Off
+    	//Cull Off
     	Blend SrcAlpha OneMinusSrcAlpha
+    	// ZTest Greater
 
         Pass
         {
@@ -53,7 +53,7 @@ Shader "HhotateA/DimensionalStorage/pARTICLE"
             struct v2f
             {
                 float2 uv : TEXCOORD0;
-                float3 uv2 : TEXCOORD1;
+                float4 uv2 : TEXCOORD1;
                 float4 vertex : SV_POSITION;
             };
 
@@ -65,13 +65,11 @@ Shader "HhotateA/DimensionalStorage/pARTICLE"
             float4 _ParticleTex_ST;
             float _ParticleSize;
             float _AnimationTime;
-            float _Distance;
             float4 _Center,_Extent;
             float _Factor;
-            float _ScaleNoise, _RotationNoise, _MoveNoise;
-            float _Scale, _Rotation, _Move;
+            float _VortexFactor,_MoveFactor,_ParticleFactor,_ColorFactor,_AlphaFactor,_ClipFactor;
             float4 _Grabity;
-            float4 _AnimationVec;
+            uint _PidFactor;
             
 			static float2 particleOffset[4] = {
 				float2(-1.0,-1.0),
@@ -86,27 +84,23 @@ Shader "HhotateA/DimensionalStorage/pARTICLE"
             }
             
 			[maxvertexcount(4)]
-			void geom(triangle appdata v[3], inout TriangleStream<v2f> tristream)
+			void geom(triangle appdata v[3],uint pid : SV_PrimitiveID, inout TriangleStream<v2f> tristream)
 			{
                 v2f o;
 				float4 vec = (v[0].vertex+v[1].vertex+v[2].vertex)/3.0;
 				float3 height = saturate(((vec - _Center) / _Extent) * 0.5 + 0.5);
-            	float animationTime = saturate((1.0-_AnimationTime)*(1.0+_Factor) - dot( _AnimationVec.xyz, height.xyz) * _Factor - _Factor);
+            	float animationTime = saturate((1.0-_AnimationTime)*(1.0+_Factor) + height.y * _Factor - _Factor);
             	float3 noise = randomvec(vec);
-            	float3 phase = float3(
-            		(animationTime+animationTime*noise.x*_ScaleNoise)*_Scale,
-            		(animationTime+animationTime*noise.y*_RotationNoise)*_Rotation,
-            		(animationTime+animationTime*noise.z*_MoveNoise)*_Move
-            		);
             	
 	            float4 wwp = mul(UNITY_MATRIX_M,vec);
-            	wwp.xyz = norqrot(float3(0,1,0),phase.x,wwp);
-            	wwp.xyz += noise*phase.z + _Grabity.xyz*animationTime;
+            	wwp.xyz = norqrot(float3(0,1,0),animationTime*_VortexFactor,wwp);
+            	wwp.xyz += noise*animationTime*_MoveFactor + _Grabity.xyz*animationTime;
 	            float4 vwp = mul(UNITY_MATRIX_V,wwp);
             	for(int i = 0; i < 3; i++)
             	{
             		v[i].vertex = mul(UNITY_MATRIX_M,v[i].vertex);
-            		v[i].vertex.xyz = norqrot(float3(0,1,0),phase.x,v[i].vertex);
+            		v[i].vertex.xyz = norqrot(float3(0,1,0),animationTime*_VortexFactor,v[i].vertex);
+            		wwp.xyz += noise*animationTime*_MoveFactor + _Grabity.xyz*animationTime;
             		v[i].vertex = mul(UNITY_MATRIX_V,v[i].vertex);
             	}
 
@@ -114,12 +108,18 @@ Shader "HhotateA/DimensionalStorage/pARTICLE"
             	{
 	                // o.vertex = UnityObjectToClipPos(v[i].vertex);
             		float4 sqr = float4(particleOffset[i] * _ParticleSize,0.,1.);
-            		sqr.xyz = norqrot(float3(0,0,1),phase.y,sqr);
+            		sqr.xyz = norqrot(float3(0,0,1),noise.x*10.0,sqr);
 	                float4 ppos = mul(UNITY_MATRIX_P,vwp + float4(sqr.xyz,1.));
+            		if(pid%_PidFactor!=0)
+            		{
+            			ppos = float4(0,0,0,1);
+            		}
 	                float4 opos = mul(UNITY_MATRIX_P,v[min(i,2)].vertex);
-            		o.vertex = lerp(opos,ppos,saturate((phase.x-0.1)*2.));
+            		o.vertex = lerp(opos,ppos,NormalizeValue(animationTime,_ParticleFactor,_ColorFactor));
 	                o.uv = TRANSFORM_TEX(v[min(i,2)].uv, _MainTex);
-            		o.uv2 = float3(particleOffset[i]*0.5+0.5,animationTime);
+            		o.uv2 = float4(particleOffset[i]*0.5+0.5,
+            			NormalizeValue(animationTime,_ColorFactor,_AlphaFactor),
+            			NormalizeValue(animationTime,_AlphaFactor,1.0f));
 					tristream.Append(o);
             	}
 				tristream.RestartStrip();
@@ -130,6 +130,10 @@ Shader "HhotateA/DimensionalStorage/pARTICLE"
                 fixed4 col = tex2D(_MainTex, i.uv);
                 fixed4 pcol = tex2D(_ParticleTex, i.uv2);
             	col = lerp(facing > 0 ? col * _Color : col * _ColorCull,col * pcol,i.uv2.z);
+            	//col.a -= NormalizeValue(i.uv2.w,_PolyNoise.z)*_PolyNoise.w);
+            	col.a = saturate(col.a-i.uv2.w);
+            	clip(col.a-_ClipFactor);
+            	//col = float4(i.uv2.w*0.5,0,0,1);
                 return  col;
             }
             ENDCG
@@ -214,6 +218,10 @@ Shader "HhotateA/DimensionalStorage/pARTICLE"
 					#undef minor
 					return transpose(cofactors) / determinant(input);
 				}
+				float NormalizeValue(float x,float min,float max)
+	            {
+		            return saturate((saturate(x)-min)*(1.0/(max-min)));
+	            }
 			ENDCG
         }
     }

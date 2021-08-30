@@ -24,6 +24,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         public static string stripeAlpha = "c2b9b1e3f94efb849a4aac2312afcb10";
         public static string syutyusenAlpha = "11921a05eead25d40894ee443973b8ea";
         public static string uzuAlpha = "0ad80d54313449745af61a3b5b01c0eb";
+        public static string leafAlpha = "df72dfab05fb5db4ab2d9537c10e4986";
         
         public static string crystallizeMaterial = "3b369fb3507ff0648ae6fe66900cd01b";
         public static string disolveMaterial = "79650062e00167142bb836514625fe1e";
@@ -34,6 +35,8 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         public static string mosaicMaterial = "a11be4ed561409145abb1c0f078b973f";
         public static string polygonMaterial = "ce45276e3ac089040ad343e55065f3ed";
         public static string scaleMaterial = "685413e94c24d9a4ca5d5bde8029e930";
+        public static string leafMaterial = "3dcf7fe49dbaba64889a6125d702baf6";
+        public static string bloomMaterial = "80ecaa96e8d32ce4886f96e5cc6cf818";
         
         public static string crystallizeShader = "8484e168103a0a5489cd24accf2d9c6a";
         public static string disolveShader = "12a86566e20249d40b32388e77e7e0c6";
@@ -44,6 +47,8 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         public static string mosaicShader = "888b701ea95e12840aed945e326e56de";
         public static string polygonShader = "f1b444e311b5188499942ce6ccac13eb";
         public static string scaleShader = "1c355790eb97c8e4381587108c6920e4";
+        public static string particleShader = "13f291bdcd56e654590b8159a6aace79";
+        public static string bloomShader = "c2813c94b0550564f882b98be5175f1b";
         
         public static string itemboxIcon = "f1417ebd8a3ad914c9bd1cdbe8d89a82";
         public static string dressAIcon = "ccecdba9fb2c5424ca975dd319d63fe4";

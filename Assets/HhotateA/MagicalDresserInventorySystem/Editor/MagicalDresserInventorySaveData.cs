@@ -510,6 +510,14 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             {
                 return AssetUtility.LoadAssetAtGuid<Material>(EnvironmentGUIDs.scaleMaterial);
             }
+            if (type == FeedType.Leaf)
+            {
+                return AssetUtility.LoadAssetAtGuid<Material>(EnvironmentGUIDs.leafMaterial);
+            }
+            if (type == FeedType.Bloom)
+            {
+                return AssetUtility.LoadAssetAtGuid<Material>(EnvironmentGUIDs.bloomMaterial);
+            }
 
             return null;
         }
@@ -553,6 +561,14 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             {
                 return FeedType.Bounce;
             }
+            if (guid == EnvironmentGUIDs.leafMaterial)
+            {
+                return FeedType.Leaf;
+            }
+            if (guid == EnvironmentGUIDs.bloomMaterial)
+            {
+                return FeedType.Bloom;
+            }
 
             return FeedType.None;
         }
@@ -573,6 +589,8 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         Mosaic,
         Polygon,
         Bounce,
+        Leaf,
+        Bloom,
     }
 
     public enum LayerGroup : int
