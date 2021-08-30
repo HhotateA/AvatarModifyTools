@@ -213,7 +213,8 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         public float delay = 0f;
         public float duration = 1f;
 
-        public Shader animationShader;
+        //public Shader animationShader;
+        public Material animationMaterial;
         public string animationParam = "_AnimationTime";
 
         public bool extendOption = false;
@@ -238,7 +239,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                 type = type,
                 delay = delay,
                 duration = duration,
-                animationShader = animationShader,
+                animationMaterial = animationMaterial,
                 animationParam = animationParam,
                 rendOptions = rendOptions.Select(r=>r.Clone(obj,invert)).ToList(),
             };
@@ -271,16 +272,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                 obj = null;
                 return;
             }
-            var cs = path.Split('/');
-            foreach (var c in cs)
-            {
-                if (!root)
-                {
-                    obj = null;
-                    return;
-                }
-                root = root.FindInChildren(c);
-            }
+            root = root.Find(path);
 
             obj = root.gameObject;
             foreach (var rendOption in rendOptions)
@@ -299,8 +291,10 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         public Renderer rend;
         public bool extendMaterialOption = false;
         public bool extendBlendShapeOption = false;
-        public List<Material> changeMaterialsOption = new List<Material>();
-        public List<float> changeBlendShapeOption = new List<float>();
+        public List<MaterialOption> changeMaterialsOptions = new List<MaterialOption>();
+        public List<BlendShapeOption> changeBlendShapeOptions = new List<BlendShapeOption>();
+        [FormerlySerializedAs("changeMaterialsOption")] [SerializeField] private List<Material> compatibility_changeMaterialsOption = null;
+        [FormerlySerializedAs("changeBlendShapeOption")] [SerializeField] private List<float> compatibility_changeBlendShapeOption = null;
 
         public RendererOption(Renderer r, GameObject root)
         {
@@ -308,11 +302,11 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             GetRelativePath(root);
             if (r)
             {
-                changeMaterialsOption =
-                    Enumerable.Range(0, r.sharedMaterials.Length).Select(_ => (Material) null).ToList();
+                changeMaterialsOptions = r.sharedMaterials.Select(m => new MaterialOption(m)).ToList();
                 if (r is SkinnedMeshRenderer)
                 {
-                    changeBlendShapeOption = Enumerable.Range(0, r.GetMesh().blendShapeCount).Select(_ => -1f).ToList();
+                    changeBlendShapeOptions = Enumerable.Range(0, r.GetMesh().blendShapeCount).Select(i =>
+                        new BlendShapeOption((r as SkinnedMeshRenderer).GetBlendShapeWeight(i))).ToList();
                 }
             }
         }
@@ -320,34 +314,20 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         public RendererOption Clone(GameObject root,bool invert = false)
         {
             var clone = new RendererOption(rend, root);
-            clone.changeMaterialsOption = changeMaterialsOption.ToList();
-            clone.changeBlendShapeOption = changeBlendShapeOption.ToList();
+            clone.changeMaterialsOptions = changeMaterialsOptions.Select(e => e.Clone()).ToList();
+            clone.changeBlendShapeOptions = changeBlendShapeOptions.Select(e=> e.Clone()).ToList();
             if (invert)
             {
-                for (int i = 0; i < changeMaterialsOption.Count; i++)
+                for (int i = 0; i < changeMaterialsOptions.Count; i++)
                 {
-                    if (changeMaterialsOption[i] == null)
-                    {
-                        clone.changeMaterialsOption[i] = null;
-                    }
-                    else
-                    {
-                        clone.changeMaterialsOption[i] = rend.sharedMaterials[i];
-                    }
+                    clone.changeMaterialsOptions[i].material = rend.sharedMaterials[i];
                 }
 
                 if (rend is SkinnedMeshRenderer)
                 {
-                    for (int i = 0; i < changeBlendShapeOption.Count; i++)
+                    for (int i = 0; i < changeBlendShapeOptions.Count; i++)
                     {
-                        if (changeBlendShapeOption[i] < 0)
-                        {
-                            clone.changeBlendShapeOption[i] = -1f;
-                        }
-                        else
-                        {
-                            clone.changeBlendShapeOption[i] = (rend as SkinnedMeshRenderer)?.GetBlendShapeWeight(i) ?? -1f;
-                        }
+                        clone.changeBlendShapeOptions[i].weight = (rend as SkinnedMeshRenderer).GetBlendShapeWeight(i);
                     }
                 }
             }
@@ -379,25 +359,78 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         {
             if (!String.IsNullOrWhiteSpace(path))
             {
-                var cs = path.Split('/');
-                foreach (var c in cs)
-                {
-                    if (!root)
-                    {
-                        rend = null;
-                        return;
-                    }
-                    root = root.FindInChildren(c);
-                }
+                root = root.Find(path);
             }
 
             rend = root.gameObject.GetComponent<Renderer>();
+        }
+
+        public void ReplaceMaterialOption()
+        {
+            if (compatibility_changeMaterialsOption.Count > 0)
+            {
+                changeMaterialsOptions = compatibility_changeMaterialsOption
+                    .Select(m => new MaterialOption(m)).ToList();
+                compatibility_changeMaterialsOption = new List<Material>();
+            }
+            if (compatibility_changeBlendShapeOption.Count > 0)
+            {
+                changeBlendShapeOptions = compatibility_changeBlendShapeOption
+                    .Select(m =>  new BlendShapeOption(m)).ToList();
+                compatibility_changeBlendShapeOption = new List<float>();
+            }
+        }
+    }
+
+    [Serializable]
+    public class MaterialOption
+    {
+        public bool change = false;
+        public Material material;
+        public float delay = -1f;
+        // public float duration = 1f;
+
+        public MaterialOption(Material mat)
+        {
+            material = mat;
+        }
+
+        public MaterialOption Clone()
+        {
+            var clone = new MaterialOption(material);
+            clone.change = change;
+            clone.delay = delay;
+            // clone.duration = duration;
+            return clone;
+        }
+    }
+
+    [Serializable]
+    public class BlendShapeOption
+    {
+        public bool change = false;
+        public float weight;
+        public float delay = -1f;
+        public float duration = 1f;
+
+        public BlendShapeOption(float w)
+        {
+            weight = w;
+        }
+        
+        public BlendShapeOption Clone()
+        {
+            var clone = new BlendShapeOption(weight);
+            clone.change = change;
+            clone.delay = delay;
+            clone.duration = duration;
+            return clone;
         }
     }
 
     public static class AssetLink
     {
-        public static Shader GetShaderByType(this FeedType type)
+        /*public static Shader GetShaderByType(this FeedType type)
         {
             if (type == FeedType.Feed)
             {
@@ -437,12 +470,13 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             }
 
             return null;
-        }
+        }*/
+        
         public static Material GetMaterialByType(this FeedType type)
         {
-            if (type == FeedType.Feed)
+            if (type == FeedType.Fade)
             {
-                return AssetUtility.LoadAssetAtGuid<Material>(EnvironmentGUIDs.feedMaterial);
+                return AssetUtility.LoadAssetAtGuid<Material>(EnvironmentGUIDs.fadeMaterial);
             }
             if (type == FeedType.Crystallize)
             {
@@ -476,48 +510,64 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             {
                 return AssetUtility.LoadAssetAtGuid<Material>(EnvironmentGUIDs.scaleMaterial);
             }
+            if (type == FeedType.Leaf)
+            {
+                return AssetUtility.LoadAssetAtGuid<Material>(EnvironmentGUIDs.leafMaterial);
+            }
+            if (type == FeedType.Bloom)
+            {
+                return AssetUtility.LoadAssetAtGuid<Material>(EnvironmentGUIDs.bloomMaterial);
+            }
 
             return null;
         }
 
-        public static FeedType GetTypeByShader(this Shader shader)
+        public static FeedType GetTypeByMaterial(this Material mat)
         {
-            var guid = AssetUtility.GetAssetGuid(shader);
-            if (guid == EnvironmentGUIDs.feedShader)
+            var guid = AssetUtility.GetAssetGuid(mat);
+            if (guid == EnvironmentGUIDs.fadeMaterial)
             {
-                return FeedType.Feed;
+                return FeedType.Fade;
             }
-            if (guid == EnvironmentGUIDs.crystallizeShader)
+            if (guid == EnvironmentGUIDs.crystallizeMaterial)
             {
                 return FeedType.Crystallize;
             }
-            if (guid == EnvironmentGUIDs.disolveShader)
+            if (guid == EnvironmentGUIDs.disolveMaterial)
             {
                 return FeedType.Dissolve;
             }
-            if (guid == EnvironmentGUIDs.drawShader)
+            if (guid == EnvironmentGUIDs.drawMaterial)
             {
                 return FeedType.Draw;
             }
-            if (guid == EnvironmentGUIDs.explosionShader)
+            if (guid == EnvironmentGUIDs.explosionMaterial)
             {
                 return FeedType.Explosion;
             }
-            if (guid == EnvironmentGUIDs.geomShader)
+            if (guid == EnvironmentGUIDs.geomMaterial)
             {
                 return FeedType.Geom;
             }
-            if (guid == EnvironmentGUIDs.mosaicShader)
+            if (guid == EnvironmentGUIDs.mosaicMaterial)
             {
                 return FeedType.Mosaic;
             }
-            if (guid == EnvironmentGUIDs.polygonShader)
+            if (guid == EnvironmentGUIDs.polygonMaterial)
             {
                 return FeedType.Polygon;
             }
-            if (guid == EnvironmentGUIDs.scaleShader)
+            if (guid == EnvironmentGUIDs.scaleMaterial)
             {
                 return FeedType.Bounce;
+            }
+            if (guid == EnvironmentGUIDs.leafMaterial)
+            {
+                return FeedType.Leaf;
+            }
+            if (guid == EnvironmentGUIDs.bloomMaterial)
+            {
+                return FeedType.Bloom;
             }
 
             return FeedType.None;
@@ -530,7 +580,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         None,
         Scale,
         Shader,
-        Feed,
+        Fade,
         Crystallize,
         Dissolve,
         Draw,
@@ -539,6 +589,8 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         Mosaic,
         Polygon,
         Bounce,
+        Leaf,
+        Bloom,
     }
 
     public enum LayerGroup : int

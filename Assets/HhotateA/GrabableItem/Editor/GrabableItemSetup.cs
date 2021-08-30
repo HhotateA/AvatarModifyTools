@@ -177,12 +177,12 @@ namespace HhotateA.AvatarModifyTools.GrabableItem
 
         void ConstraintSetup(string path)
         {
-            GameObject worldPoint = avatar.transform.FindInChildren(EnvironmentGUIDs.prefix + saveName + "_WorldPoint")?.gameObject;
+            GameObject worldPoint = avatar.transform.Find(EnvironmentGUIDs.prefix + saveName + "_WorldPoint")?.gameObject;
             if (!worldPoint) worldPoint = new GameObject(EnvironmentGUIDs.prefix + saveName + "_WorldPoint");
             worldPoint.transform.SetPositionAndRotation(Vector3.zero,Quaternion.identity);
             worldPoint.transform.SetParent(avatar.transform);
             
-            GameObject worldAnchor = worldPoint.transform.FindInChildren(EnvironmentGUIDs.prefix + saveName + "_WorldAnchor")?.gameObject;
+            GameObject worldAnchor = worldPoint.transform.Find(EnvironmentGUIDs.prefix + saveName + "_WorldAnchor")?.gameObject;
             if (!worldAnchor) worldAnchor = new GameObject(EnvironmentGUIDs.prefix + saveName + "_WorldAnchor");
             worldAnchor.transform.SetPositionAndRotation(Vector3.zero,Quaternion.identity);
             worldAnchor.transform.SetParent(worldPoint.transform);

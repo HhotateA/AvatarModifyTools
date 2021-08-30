@@ -21,7 +21,7 @@ AnimatorController:
     m_DefaultInt: 0
     m_DefaultBool: 0
     m_Controller: {fileID: 9100000}
-  - m_Name: AvatarPen
+  - m_Name: HhotateA_Pen_AvatarPen
     m_Type: 3
     m_DefaultFloat: 0
     m_DefaultInt: 0
@@ -29,7 +29,7 @@ AnimatorController:
     m_Controller: {fileID: 9100000}
   m_AnimatorLayers:
   - serializedVersion: 5
-    m_Name: AvatarPen
+    m_Name: HhotateA_Pen_AvatarPen
     m_StateMachine: {fileID: 1107011006169878664}
     m_Mask: {fileID: 31900000, guid: fb3cb20bd9fa4fa47ba68b49d8db8a43, type: 2}
     m_Motions: []
@@ -3558,7 +3558,7 @@ AnimatorStateTransition:
   m_Name: 
   m_Conditions:
   - m_ConditionMode: 7
-    m_ConditionEvent: AvatarPen
+    m_ConditionEvent: HhotateA_Pen_AvatarPen
     m_EventTreshold: 0
   m_DstStateMachine: {fileID: 0}
   m_DstState: {fileID: 1102697162485491548}
@@ -3583,7 +3583,7 @@ AnimatorStateTransition:
   m_Name: 
   m_Conditions:
   - m_ConditionMode: 6
-    m_ConditionEvent: AvatarPen
+    m_ConditionEvent: HhotateA_Pen_AvatarPen
     m_EventTreshold: 10
   m_DstStateMachine: {fileID: 0}
   m_DstState: {fileID: 1102501644748685310}
@@ -3608,7 +3608,7 @@ AnimatorStateTransition:
   m_Name: 
   m_Conditions:
   - m_ConditionMode: 6
-    m_ConditionEvent: AvatarPen
+    m_ConditionEvent: HhotateA_Pen_AvatarPen
     m_EventTreshold: 4
   - m_ConditionMode: 6
     m_ConditionEvent: GestureRight
@@ -4046,7 +4046,7 @@ AnimatorStateTransition:
   m_Name: 
   m_Conditions:
   - m_ConditionMode: 6
-    m_ConditionEvent: AvatarPen
+    m_ConditionEvent: HhotateA_Pen_AvatarPen
     m_EventTreshold: 2
   - m_ConditionMode: 6
     m_ConditionEvent: GestureRight
@@ -4121,7 +4121,7 @@ AnimatorStateTransition:
   m_Name: 
   m_Conditions:
   - m_ConditionMode: 6
-    m_ConditionEvent: AvatarPen
+    m_ConditionEvent: HhotateA_Pen_AvatarPen
     m_EventTreshold: 3
   - m_ConditionMode: 6
     m_ConditionEvent: GestureRight
@@ -4174,7 +4174,7 @@ AnimatorStateTransition:
   m_Name: 
   m_Conditions:
   - m_ConditionMode: 6
-    m_ConditionEvent: AvatarPen
+    m_ConditionEvent: HhotateA_Pen_AvatarPen
     m_EventTreshold: 1
   - m_ConditionMode: 6
     m_ConditionEvent: GestureRight
@@ -4571,7 +4571,7 @@ AnimatorStateTransition:
   m_Name: 
   m_Conditions:
   - m_ConditionMode: 6
-    m_ConditionEvent: AvatarPen
+    m_ConditionEvent: HhotateA_Pen_AvatarPen
     m_EventTreshold: 0
   m_DstStateMachine: {fileID: 0}
   m_DstState: {fileID: 1102108021807414296}
@@ -4671,7 +4671,7 @@ AnimatorStateTransition:
   m_Name: 
   m_Conditions:
   - m_ConditionMode: 6
-    m_ConditionEvent: AvatarPen
+    m_ConditionEvent: HhotateA_Pen_AvatarPen
     m_EventTreshold: 5
   - m_ConditionMode: 6
     m_ConditionEvent: GestureRight
@@ -4799,7 +4799,7 @@ AnimatorStateTransition:
   m_Name: 
   m_Conditions:
   - m_ConditionMode: 7
-    m_ConditionEvent: AvatarPen
+    m_ConditionEvent: HhotateA_Pen_AvatarPen
     m_EventTreshold: 10
   m_DstStateMachine: {fileID: 0}
   m_DstState: {fileID: 1102697162485491548}

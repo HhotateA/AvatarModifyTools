@@ -41,8 +41,26 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
             {
                 saveddata = CreateInstance<EmojiSaveData>();
             }
-            wnd.data = saveddata;
-            wnd.emojiReorderableList = new ReorderableList(saveddata.emojis,typeof(IconElement),true,false,true,true)
+            wnd.data = Instantiate(saveddata);
+            wnd.LoadReorderableList();
+        }
+        private Target target;
+        ReorderableList emojiReorderableList;
+        private EmojiSaveData data;
+        Vector2 scroll = Vector2.zero;
+
+        enum Target
+        {
+            Hip,
+            Head,
+            RightHand,
+            LeftHand
+        }
+        
+
+        void LoadReorderableList()
+        {
+            emojiReorderableList = new ReorderableList(data.emojis,typeof(IconElement),true,false,true,true)
             {
                 elementHeight = 60,
                 drawHeaderCallback = (r) => EditorGUI.LabelField(r,"Emojis","絵文字を追加してください"),
@@ -50,7 +68,7 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
                 {
                     r.height -= 4;
                     r.y += 2;
-                    var d = saveddata.emojis[i];
+                    var d = data.emojis[i];
                     var nameRect = r;
                     var emojiRect = r;
                     emojiRect.width = emojiRect.height;
@@ -62,22 +80,11 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
                     d.name = EditorGUI.TextField(nameRect,"", d.name);
                     d.emoji = (Texture2D) EditorGUI.ObjectField(emojiRect,"",d.emoji,typeof(Texture2D),true);
                 },
-                onRemoveCallback = l => saveddata.emojis.RemoveAt(l.index),
-                onAddCallback = l => saveddata.emojis.Add(new IconElement("",null))
+                onRemoveCallback = l => data.emojis.RemoveAt(l.index),
+                onAddCallback = l => data.emojis.Add(new IconElement("",null))
             };
         }
-        private Target target;
-        ReorderableList emojiReorderableList;
 
-        enum Target
-        {
-            Hip,
-            Head,
-            RightHand,
-            LeftHand
-        }
-        
-        private EmojiSaveData data;
 
         private void OnGUI()
         {
@@ -99,7 +106,9 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
             
             EditorGUILayout.Space();
             
+            scroll = EditorGUILayout.BeginScrollView(scroll, false, false, GUIStyle.none, GUI.skin.verticalScrollbar, GUI.skin.scrollView);
             emojiReorderableList.DoLayoutList();
+            EditorGUILayout.EndScrollView();
             
             EditorGUILayout.Space();
             if (ShowNotRecommended())
@@ -121,7 +130,7 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
                     var asset = AssetUtility.LoadAssetAtGuid<AvatarModifyData>(EnvironmentGUIDs.emojiModifyData);
                     asset = Instantiate(asset);
                     
-                    var path = EditorUtility.SaveFilePanel("Save", "Assets",String.IsNullOrWhiteSpace(data.saveName) ? "EmojiSetupData" : data.saveName , "asset");
+                    var path = EditorUtility.SaveFilePanel("Save", data.GetAssetDir(),String.IsNullOrWhiteSpace(data.saveName) ? "EmojiSetupData" : data.saveName , "emojiparticle.asset");
                     if (string.IsNullOrEmpty(path))
                     {
                         OnCancel();
@@ -155,8 +164,47 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
                         throw;
                     }
                 }
-                status.Display();
             }
+            EditorGUILayout.Space();
+
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                if (GUILayout.Button("Save Settings"))
+                {
+                    var path = EditorUtility.SaveFilePanel("Save", data.GetAssetDir(), data.saveName,"emojiparticle.asset");
+                    if (string.IsNullOrEmpty(path))
+                    {
+                        OnCancel();
+                        return;
+                    }
+                    data = Instantiate(data);
+                    LoadReorderableList();
+                    AssetDatabase.CreateAsset(data, FileUtil.GetProjectRelativePath(path));
+                    status.Success("Saved");
+                }
+                if (GUILayout.Button("Load Settings"))
+                {
+                    var path = EditorUtility.OpenFilePanel("Load", data.GetAssetDir(), "emojiparticle.asset");
+                    if (string.IsNullOrEmpty(path))
+                    {
+                        OnCancel();
+                        return;
+                    }
+                    var d = AssetDatabase.LoadAssetAtPath<EmojiSaveData>(FileUtil.GetProjectRelativePath(path));
+                    if (d == null)
+                    {
+                        status.Warning("Load Failure");
+                        return;
+                    }
+                    else
+                    {
+                        data = d;
+                        LoadReorderableList();
+                    }
+                    status.Success("Loaded");
+                }
+            }
+            status.Display();
 #else
             VRCErrorLabel();
 #endif
