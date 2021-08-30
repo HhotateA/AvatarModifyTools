@@ -44,7 +44,8 @@ namespace HhotateA.AvatarModifyTools.EmoteMotionKit
                 saveddata = CreateInstance<EmoteMotionKitSaveData>();
                 saveddata.icon = AssetUtility.LoadAssetAtGuid<Texture2D>(EnvironmentGUIDs.emotesIcon);
             }
-            wnd.data = Instantiate(saveddata);
+            // wnd.data = Instantiate(saveddata);
+            wnd.data = saveddata;
             wnd.LoadReorderableList();
         }
 
