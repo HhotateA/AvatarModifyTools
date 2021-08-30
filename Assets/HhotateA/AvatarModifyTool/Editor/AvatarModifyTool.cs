@@ -1167,7 +1167,19 @@ namespace HhotateA.AvatarModifyTools.Core
             toPath = "";
             // オブジェクトのインスタンシエイト
             var instance = GameObject.Instantiate(prefab, avatar.transform);
-            instance.name = prefab.name;
+            if (!renameParameters)
+            {
+                instance.name = prefab.name;
+            }
+            else
+            if (prefab.name.StartsWith(prefix))
+            {
+                instance.name = prefab.name;
+            }
+            else
+            {
+                instance.name = prefix + prefab.name;
+            }
             
             var humanoid = avatar.GetComponent<Animator>();
             var constraint = instance.GetComponent<ParentConstraint>();
@@ -1521,6 +1533,7 @@ namespace HhotateA.AvatarModifyTools.Core
         {
             if(param == null) return null;
             if(param.parameters == null) return null;
+            param = ScriptableObject.Instantiate(param);
             param.parameters = param.parameters.Select(p =>
                 new VRCExpressionParameters.Parameter()
                 {
@@ -1537,6 +1550,7 @@ namespace HhotateA.AvatarModifyTools.Core
         {
             if (menu == null) return null;
             if (menu.controls == null) return null;
+            menu = ScriptableObject.Instantiate(menu);
             menu.controls = menu.controls.Select(c =>
             {
                 if (c.type == VRCExpressionsMenu.Control.ControlType.SubMenu)
