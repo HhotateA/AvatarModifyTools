@@ -91,15 +91,16 @@ Shader "HhotateA/DimensionalStorage/Particle"
 				float3 height = saturate(((vec - _Center) / _Extent) * 0.5 + 0.5);
             	float animationTime = saturate((1.0-_AnimationTime)*(1.0+_Factor) + height.y * _Factor - _Factor);
             	float3 noise = randomvec(vec);
+            	noise = normalize(noise);
             	
+            	vec.xyz = norqrot(float3(0,1,0),animationTime*_VortexFactor*noise.y,vec);
 	            float4 wwp = mul(UNITY_MATRIX_M,vec);
-            	wwp.xyz = norqrot(float3(0,1,0),animationTime*_VortexFactor,wwp);
             	wwp.xyz += noise*animationTime*_MoveFactor + _Grabity.xyz*animationTime;
 	            float4 vwp = mul(UNITY_MATRIX_V,wwp);
             	for(int i = 0; i < 3; i++)
             	{
+            		v[i].vertex.xyz = norqrot(float3(0,1,0),animationTime*_VortexFactor*noise.y,v[i].vertex);
             		v[i].vertex = mul(UNITY_MATRIX_M,v[i].vertex);
-            		v[i].vertex.xyz = norqrot(float3(0,1,0),animationTime*_VortexFactor,v[i].vertex);
             		wwp.xyz += noise*animationTime*_MoveFactor + _Grabity.xyz*animationTime;
             		v[i].vertex = mul(UNITY_MATRIX_V,v[i].vertex);
             	}
