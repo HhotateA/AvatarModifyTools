@@ -1235,37 +1235,34 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                 {
                     if (!syncElement.syncOn && !syncElement.syncOff) continue;
                     var syncParam = menuElements.FirstOrDefault(e => e.guid == syncElement.guid);
-                    if (syncParam!=null)
+                    if (syncParam == null) continue;
+                    
+                    if (syncElement.delay < 0)
                     {
-                        if (syncElement.delay < 0)
+                        c.SetEditLayer(c.GetEditLayer(menuElement.param));
+                        if (menuElement.isToggle)
                         {
-                            c.SetEditLayer(c.GetEditLayer(menuElement.param));
-                            if (menuElement.isToggle)
-                            {
-                                c.ParameterDriver( "Active" , syncParam.param, syncElement.syncOn ? syncParam.value : 0f);
-                            }
-                            else
-                            {
-                                c.ParameterDriver( menuElement.value.ToString() + "_Active", syncParam.param, syncElement.syncOn ? syncParam.value : 0f);
-                            }
+                            c.ParameterDriver( "Active" , syncParam.param, syncElement.syncOn ? syncParam.value : 0f);
                         }
                         else
                         {
-                            c.SetEditLayer(c.GetEditLayer(menuElement.param));
-                            if (menuElement.isToggle)
+                            c.ParameterDriver( menuElement.value.ToString() + "_Active", syncParam.param, syncElement.syncOn ? syncParam.value : 0f);
+                        }
+                    }
+                    else
+                    {
+                        c.SetEditLayer(c.GetEditLayer(menuElement.param));
+                        if (menuElement.isToggle)
+                        {
+                            c.ParameterDriver( "Activate" , syncParam.param, syncElement.syncOn ? syncParam.value : 0f);
+                        }
+                        else
+                        {
+                            var states = c.GetStates(".*" + "to" + menuElement.value.ToString() + "_Transition").Distinct().ToArray();
+                            foreach (var state in states)
                             {
-                                c.ParameterDriver( "Activate" , syncParam.param, syncElement.syncOn ? syncParam.value : 0f);
+                                c.ParameterDriver( state, syncParam.param, syncElement.syncOn ? syncParam.value : 0f);
                             }
-                            else
-                            {
-                                Debug.Log(".*" + "to" + menuElement.value.ToString() + "_Transition");
-                                var states = c.GetStates(".*" + "to" + syncParam.value.ToString() + "_Transition");
-                                foreach (var state in states)
-                                {
-                                    c.ParameterDriver( state,syncParam.param, syncElement.syncOn ? syncParam.value : 0f);
-                                }
-                            }
-                            
                         }
                     }
                 }
@@ -1276,18 +1273,17 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                     {
                         if (!syncElement.syncOn && !syncElement.syncOff) continue;
                         var syncParam = menuElements.FirstOrDefault(e => e.guid == syncElement.guid);
-                        if (syncParam!=null)
+                        if (syncParam == null) continue;
+                        
+                        if (syncElement.delay < 0)
                         {
-                            if (syncElement.delay < 0)
-                            {
-                                c.SetEditLayer(c.GetEditLayer(menuElement.param));
-                                c.ParameterDriver( "Inactive" , syncParam.param, syncElement.syncOn ? syncParam.value : 0f);
-                            }
-                            else
-                            {
-                                c.SetEditLayer(c.GetEditLayer(menuElement.param));
-                                c.ParameterDriver( "Inactivate" , syncParam.param, syncElement.syncOn ? syncParam.value : 0f);
-                            }
+                            c.SetEditLayer(c.GetEditLayer(menuElement.param));
+                            c.ParameterDriver( "Inactive" , syncParam.param, syncElement.syncOn ? syncParam.value : 0f);
+                        }
+                        else
+                        {
+                            c.SetEditLayer(c.GetEditLayer(menuElement.param));
+                            c.ParameterDriver( "Inactivate" , syncParam.param, syncElement.syncOn ? syncParam.value : 0f);
                         }
                     }
                 }

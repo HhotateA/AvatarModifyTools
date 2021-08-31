@@ -782,6 +782,7 @@ namespace HhotateA.AvatarModifyTools.Core
 
         void SaveStateMachine(AnimatorStateMachine machine,string path)
         {
+            machine.hideFlags = HideFlags.HideInHierarchy;
             AssetDatabase.AddObjectToAsset(machine,path);
             foreach (var s in machine.states)
             {
@@ -789,20 +790,24 @@ namespace HhotateA.AvatarModifyTools.Core
                 SaveMotion(s.state.motion,path);
                 foreach (var t in s.state.transitions)
                 {
+                    t.hideFlags = HideFlags.HideInHierarchy;
                     AssetDatabase.AddObjectToAsset(t,path);
                 }
                 foreach (var b in s.state.behaviours)
                 {
+                    b.hideFlags = HideFlags.HideInHierarchy;
                     AssetDatabase.AddObjectToAsset(b,path);
                 }
             }
 
             foreach (var t in machine.entryTransitions)
             {
+                t.hideFlags = HideFlags.HideInHierarchy;
                 AssetDatabase.AddObjectToAsset(t,path);
             }
             foreach (var t in machine.anyStateTransitions)
             {
+                t.hideFlags = HideFlags.HideInHierarchy;
                 AssetDatabase.AddObjectToAsset(t,path);
             }
             foreach (var m in machine.stateMachines)
@@ -810,6 +815,7 @@ namespace HhotateA.AvatarModifyTools.Core
                 SaveStateMachine(m.stateMachine,path);
                 foreach (var b in m.stateMachine.behaviours)
                 {
+                    b.hideFlags = HideFlags.HideInHierarchy;
                     AssetDatabase.AddObjectToAsset(b,path);
                 }
             }

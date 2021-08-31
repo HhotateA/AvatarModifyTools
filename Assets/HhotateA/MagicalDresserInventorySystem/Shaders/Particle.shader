@@ -91,24 +91,27 @@ Shader "HhotateA/DimensionalStorage/Particle"
 				float3 height = saturate(((vec - _Center) / _Extent) * 0.5 + 0.5);
             	float animationTime = saturate((1.0-_AnimationTime)*(1.0+_Factor) + height.y * _Factor - _Factor);
             	float3 noise = randomvec(vec);
+            	noise = normalize(noise);
             	
+            	vec.xyz = rot(vec.xyz,animationTime*_VortexFactor);
+            	vec.xz = vec.xz * animationTime * (1.+_MoveFactor);
 	            float4 wwp = mul(UNITY_MATRIX_M,vec);
-            	wwp.xyz = norqrot(float3(0,1,0),animationTime*_VortexFactor,wwp);
-            	wwp.xyz += noise*animationTime*_MoveFactor + _Grabity.xyz*animationTime;
+            	wwp.xyz += _Grabity.xyz*animationTime;
 	            float4 vwp = mul(UNITY_MATRIX_V,wwp);
             	for(int i = 0; i < 3; i++)
             	{
+            		v[i].vertex.xyz = rot(v[i].vertex.xyz,animationTime*_VortexFactor);
+            		// v[i].vertex.xz = v[i].vertex.xz * animationTime * (1.+_MoveFactor);
             		v[i].vertex = mul(UNITY_MATRIX_M,v[i].vertex);
-            		v[i].vertex.xyz = norqrot(float3(0,1,0),animationTime*_VortexFactor,v[i].vertex);
-            		wwp.xyz += noise*animationTime*_MoveFactor + _Grabity.xyz*animationTime;
+            		// wwp.xyz += _Grabity.xyz*animationTime;
             		v[i].vertex = mul(UNITY_MATRIX_V,v[i].vertex);
             	}
 
             	for(int i = 0; i < 4; i++)
             	{
 	                // o.vertex = UnityObjectToClipPos(v[i].vertex);
-            		float4 sqr = float4(particleOffset[i] * _ParticleSize,0.,1.);
-            		sqr.xyz = norqrot(float3(0,0,1),noise.x*10.0,sqr);
+            		float4 sqr = float4(rot(particleOffset[i],pid) * _ParticleSize,0.,1.);
+            		// sqr.xyz = norqrot(float3(0,0,1),noise.x*10.0,sqr);
 	                float4 ppos = mul(UNITY_MATRIX_P,vwp + float4(sqr.xyz,1.));
             		if(pid%_PidFactor!=0)
             		{
@@ -167,21 +170,26 @@ Shader "HhotateA/DimensionalStorage/Particle"
 					vpos.xyz += stereocamerapos();
 					return vpos;
 				}
+			
 				float getGray(float4 c)
 	            {
             		return (c.r+c.g+c.b)*c.a*0.3333333333;
 		            
 	            }
-				float4 qmat(float4 q1, float4 q2) {
-							return float4(cross(q1.xyz, q2.xyz) + q2.w*q1.xyz + q1.w*q2.xyz, q1.w*q2.w - dot(q1.xyz, q2.xyz));
-						}
-				float4 qrot(float4 qwe, float4 pos) {
-							return float4(qmat(qmat(qwe, pos), float4(-qwe.xyz, qwe.w)));
-						}
-				float3 norqrot(float3 bec, float rot, float4 pos) {
-							float4 qwe = float4(normalize(bec)*sin(rot*UNITY_TWO_PI), cos(rot*UNITY_TWO_PI));
-							return qrot(qwe, pos);
-				}
+
+				float2 rot(float2 pos,float r)
+	            {
+            		float x = pos.x * cos(r) - pos.y * sin(r);
+            		float y = pos.x * sin(r) + pos.y * cos(r);
+            		return float2(x,y);		            
+	            }
+
+				float3 rot(float3 pos,float r)
+	            {
+            		pos.xz = rot(pos.xz,r);
+            		return pos;		            
+	            }
+			
 				float random(float3 seed) {
 				    return frac(sin(dot(seed+float3(500,500,500), float3(871.1, 510.92, 127.5))) * 7275.1)-1.0;
 				}
