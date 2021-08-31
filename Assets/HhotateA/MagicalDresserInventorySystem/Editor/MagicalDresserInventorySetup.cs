@@ -391,7 +391,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                                             if (check.changed)
                                             {
                                                 SetObjectActiveForScene(menuElements[index]);
-                                                SyncItemActive(menuElements[index].activeItems, menuElements[index].inactiveItems, true);
+                                                // SyncItemActive(menuElements[index].activeItems, menuElements[index].inactiveItems, true);
                                             }
                                         }
                                     }
@@ -427,7 +427,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                                             if (check.changed)
                                             {
                                                 SetObjectActiveForScene(menuElements[index]);
-                                                SyncItemActive(menuElements[index].inactiveItems, menuElements[index].activeItems, true);
+                                                // SyncItemActive(menuElements[index].inactiveItems, menuElements[index].activeItems, true);
                                             }
                                         }
                                     }

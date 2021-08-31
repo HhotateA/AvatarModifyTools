@@ -100,6 +100,7 @@ namespace HhotateA.AvatarModifyTools.Core
         public bool overrideSettings = true;
         public bool renameParameters = false;
         public bool autoAddNextPage = false;
+        public bool overrideNullAnimation = true;
         private string exportDir = "Assets/";
         string prefix = "";
         private Dictionary<string, string> animRepathList = new Dictionary<string, string>();
@@ -705,7 +706,17 @@ namespace HhotateA.AvatarModifyTools.Core
 
         Motion CloneMotion(Motion origin)
         {
-            if (!origin) return null;
+            if (origin == null)
+            {
+                if (overrideNullAnimation)
+                {
+                    return AssetUtility.LoadAssetAtGuid<AnimationClip>(EnvironmentVariable.nottingAnim);
+                }
+                else
+                {
+                    return null;
+                }
+            }
             if (origin is BlendTree)
             {
                 var o = origin as BlendTree;
@@ -870,7 +881,7 @@ namespace HhotateA.AvatarModifyTools.Core
                 if(parameters == current) return;
                 foreach (var parameter in parameters.parameters)
                 {
-                    AddExpressionParameter(current, parameter.name, parameter.valueType, parameter.saved);
+                    AddExpressionParameter(current, parameter.name, parameter.valueType, parameter.saved,parameter.defaultValue);
                 }
                 EditorUtility.SetDirty(current);
             }
@@ -890,7 +901,7 @@ namespace HhotateA.AvatarModifyTools.Core
         }
         
         void AddExpressionParameter(VRCExpressionParameters parameters, string name,
-            VRCExpressionParameters.ValueType type, bool saved = true)
+            VRCExpressionParameters.ValueType type, bool saved = true, float value = 0f)
         {
             // パラメータズのコピー作成(重複があった場合スキップ)
             var originalParm = parameters.parameters;
@@ -910,6 +921,7 @@ namespace HhotateA.AvatarModifyTools.Core
                 name = name,
                 valueType = type,
                 saved = saved,
+                defaultValue = value
             });
 
             parameters.parameters = newParm.ToArray();
