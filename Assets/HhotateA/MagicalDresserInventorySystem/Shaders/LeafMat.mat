@@ -29,17 +29,17 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Floats:
     - _AlphaFactor: 0.05
-    - _AnimationTime: 0.78
+    - _AnimationTime: 0.83
     - _ClipFactor: 0.01
     - _ColorFactor: 0.025
     - _Distance: 5
-    - _Factor: 2.5
+    - _Factor: 1.25
     - _Move: 1
     - _MoveFactor: 7.5
     - _MoveNoise: 1
     - _ParticleFactor: 0.01
     - _ParticleSize: 0.075
-    - _PidFactor: 150
+    - _PidFactor: 50
     - _Rotation: 1
     - _RotationNoise: 1
     - _Scale: 1
@@ -52,5 +52,6 @@ Material:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _ColorCull: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
     - _Extent: {r: 0.5, g: 0.5, b: 0.5, a: 0.5}
-    - _Grabity: {r: 0, g: -0.75, b: 0, a: 0}
+    - _Grabity: {r: 0, g: -1.25, b: 0, a: 0}
+    - _Noises: {r: 2.5, g: 2.5, b: 2.5, a: 0}
     - _PolyNoise: {r: 0, g: 0, b: 0.5, a: 1}

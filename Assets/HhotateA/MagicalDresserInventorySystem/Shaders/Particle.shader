@@ -27,12 +27,13 @@ Shader "HhotateA/DimensionalStorage/Particle"
     	_AlphaFactor ("_AlphaFactor",float) = 0.20
     	_ClipFactor("_ClipFactor",float) = 0.5
     	_PidFactor("_PidFactor",int) = 3
+    	_Noises("_Noise",vector) = (0.0,0.0,0.0,0.0)
     	_Grabity ("_Grabity",vector) = (0.0,-1.0,0.0,0.0)
     }
     SubShader
     {
         Tags { "RenderType"="Transparent" "Queue"="Transparent+50"}
-    	//Cull Off
+    	Cull Off
     	Blend SrcAlpha OneMinusSrcAlpha
     	// ZTest Greater
 
@@ -70,6 +71,7 @@ Shader "HhotateA/DimensionalStorage/Particle"
             float _VortexFactor,_MoveFactor,_ParticleFactor,_ColorFactor,_AlphaFactor,_ClipFactor;
             float4 _Grabity;
             uint _PidFactor;
+            float4 _Noises;
             
 			static float2 particleOffset[4] = {
 				float2(-1.0,-1.0),
@@ -90,38 +92,37 @@ Shader "HhotateA/DimensionalStorage/Particle"
 				float4 vec = (v[0].vertex+v[1].vertex+v[2].vertex)/3.0;
 				float3 height = saturate(((vec - _Center) / _Extent) * 0.5 + 0.5);
             	float animationTime = saturate((1.0-_AnimationTime)*(1.0+_Factor) + height.y * _Factor - _Factor);
-            	float3 noise = randomvec(vec);
-            	noise = normalize(noise);
+            	float3 noise = randoms(pid);
+            	//noise = normalize(noise);
+            	noise *= _Noises.xyz;
             	
-            	vec.xyz = rot(vec.xyz,animationTime*_VortexFactor);
-            	vec.xz = vec.xz * animationTime * (1.+_MoveFactor);
+            	vec.xyz = rot(vec.xyz,animationTime*_VortexFactor*(1.+noise.x));
+            	vec.xz = vec.xz * (1.+animationTime*_MoveFactor*(1.+noise.y));
 	            float4 wwp = mul(UNITY_MATRIX_M,vec);
             	wwp.xyz += _Grabity.xyz*animationTime;
 	            float4 vwp = mul(UNITY_MATRIX_V,wwp);
             	for(int i = 0; i < 3; i++)
             	{
-            		v[i].vertex.xyz = rot(v[i].vertex.xyz,animationTime*_VortexFactor);
-            		// v[i].vertex.xz = v[i].vertex.xz * animationTime * (1.+_MoveFactor);
+            		v[i].vertex.xyz = rot(v[i].vertex.xyz,animationTime*_VortexFactor*(1.+noise.x));
+            		v[i].vertex.xz = v[i].vertex.xz * (1.+animationTime*_MoveFactor*(1.+noise.y));
             		v[i].vertex = mul(UNITY_MATRIX_M,v[i].vertex);
-            		// wwp.xyz += _Grabity.xyz*animationTime;
+            		v[i].vertex.xyz += _Grabity.xyz*animationTime;
             		v[i].vertex = mul(UNITY_MATRIX_V,v[i].vertex);
             	}
 
             	for(int i = 0; i < 4; i++)
             	{
 	                // o.vertex = UnityObjectToClipPos(v[i].vertex);
-            		float4 sqr = float4(rot(particleOffset[i],pid) * _ParticleSize,0.,1.);
+            		float2 sqr = float2(rot(particleOffset[i],pid) * _ParticleSize);
             		// sqr.xyz = norqrot(float3(0,0,1),noise.x*10.0,sqr);
-	                float4 ppos = mul(UNITY_MATRIX_P,vwp + float4(sqr.xyz,1.));
-            		if(pid%_PidFactor!=0)
-            		{
-            			ppos = float4(0,0,0,1);
-            		}
+	                float4 ppos = mul(UNITY_MATRIX_P,vwp + float4(sqr.xy,0.,0.));
 	                float4 opos = mul(UNITY_MATRIX_P,v[min(i,2)].vertex);
-            		o.vertex = lerp(opos,ppos,NormalizeValue(animationTime,_ParticleFactor,_ColorFactor));
+            		o.vertex = pid%_PidFactor!=0 ?
+            			lerp(opos,float4(0,0,0,1),step(0.01,NormalizeValue(animationTime,_ParticleFactor,_ColorFactor))) :
+            			lerp(opos,ppos,NormalizeValue(animationTime,_ParticleFactor,_ColorFactor));
 	                o.uv = TRANSFORM_TEX(v[min(i,2)].uv, _MainTex);
             		o.uv2 = float4(particleOffset[i]*0.5+0.5,
-            			NormalizeValue(animationTime,_ColorFactor,_AlphaFactor),
+            			NormalizeValue(animationTime*(1.+noise.z),_ColorFactor,_AlphaFactor),
             			NormalizeValue(animationTime,_AlphaFactor,1.0f));
 					tristream.Append(o);
             	}
@@ -193,6 +194,12 @@ Shader "HhotateA/DimensionalStorage/Particle"
 				float random(float3 seed) {
 				    return frac(sin(dot(seed+float3(500,500,500), float3(871.1, 510.92, 127.5))) * 7275.1)-1.0;
 				}
+				float3 randoms(int seed)
+	            {
+					return float3(	frac(sin(seed+85.2) * 7250.1)-0.5,
+									frac(sin(seed+11.4) * 8731.2)-0.5,
+									frac(sin(seed+31.5) * 3966.0)-0.5);
+	            }
 				float3 randomvec(float3 seed) {
 					return float3(	frac(sin(dot(seed, float3(428.01, 300.91, 2145.23))) * 7250.1)-0.5,
 									frac(sin(dot(seed, float3(1648.42, 372.91, 1421.23))) * 8731.2)-0.5,
