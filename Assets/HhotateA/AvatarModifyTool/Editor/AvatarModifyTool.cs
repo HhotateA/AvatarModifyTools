@@ -107,7 +107,7 @@ namespace HhotateA.AvatarModifyTools.Core
         public void ModifyAvatar(AvatarModifyData assets,string keyword = "")
         {
             prefix = keyword;
-            if (renameParameters) assets = RenameAssetsParameters(assets);
+            //if (renameParameters) assets = RenameAssetsParameters(assets);
             if (overrideSettings) RevertByAssets(assets);
             if (avatar != null)
             {
@@ -392,7 +392,7 @@ namespace HhotateA.AvatarModifyTools.Core
                 foreach (var layer in originController.layers)
                 {
                     // すでに同名レイヤーがあれば削除する
-                    int index = Array.FindIndex(cloneController.layers, l => l.name == layer.name);
+                    int index = Array.FindIndex(cloneController.layers, l => l.name == GetSafeParam(layer.name));
                     if (index > -1) cloneController.RemoveLayer(index);
                     // レイヤーの複製
                     var newLayer = CloneLayer(layer);
@@ -414,7 +414,7 @@ namespace HhotateA.AvatarModifyTools.Core
                 blendingMode = originLayer.blendingMode,
                 defaultWeight = originLayer.defaultWeight,
                 iKPass = originLayer.iKPass,
-                name = originLayer.name,
+                name = GetSafeParam(originLayer.name),
                 syncedLayerAffectsTiming = originLayer.syncedLayerAffectsTiming,
                 syncedLayerIndex = originLayer.syncedLayerIndex,
                 // StateMachineは別途複製
@@ -565,7 +565,7 @@ namespace HhotateA.AvatarModifyTools.Core
 
                         CopyAnimatorStateTransition(cloneTransition,originTransition);
                     }
-                    cloneState = CopyVRCComponent(cloneState, originState);
+                    CopyStateBehaviours(cloneState, originState);
                 }
                 else
                 {
@@ -664,7 +664,7 @@ namespace HhotateA.AvatarModifyTools.Core
             
             foreach (var originCondition in origin.conditions)
             {
-                clone.AddCondition(originCondition.mode, originCondition.threshold, originCondition.parameter);
+                clone.AddCondition(originCondition.mode, originCondition.threshold, GetSafeParam(originCondition.parameter));
             }
 
             return clone;
@@ -684,20 +684,20 @@ namespace HhotateA.AvatarModifyTools.Core
             var clone = new AnimatorState()
             {
                 cycleOffset = origin.cycleOffset,
-                cycleOffsetParameter = origin.cycleOffsetParameter,
+                cycleOffsetParameter = GetSafeParam(origin.cycleOffsetParameter),
                 cycleOffsetParameterActive = origin.cycleOffsetParameterActive,
                 hideFlags = origin.hideFlags,
                 iKOnFeet = origin.iKOnFeet,
                 mirror = origin.mirror,
-                mirrorParameter = origin.mirrorParameter,
+                mirrorParameter = GetSafeParam(origin.mirrorParameter),
                 mirrorParameterActive = origin.mirrorParameterActive,
                 motion = CloneMotion(origin.motion),
                 name = origin.name,
                 speed = origin.speed,
-                speedParameter = origin.speedParameter,
+                speedParameter = GetSafeParam(origin.speedParameter),
                 speedParameterActive = origin.speedParameterActive,
                 tag = origin.tag,
-                timeParameter = origin.timeParameter,
+                timeParameter = GetSafeParam(origin.timeParameter),
                 timeParameterActive = origin.timeParameterActive,
                 writeDefaultValues = WriteDefaultOverride ?? origin.writeDefaultValues
             };
@@ -722,13 +722,13 @@ namespace HhotateA.AvatarModifyTools.Core
                 var o = origin as BlendTree;
                 BlendTree c = new BlendTree()
                 {
-                    blendParameter = o.blendParameter,
-                    blendParameterY = o.blendParameterY,
+                    blendParameter = GetSafeParam(o.blendParameter),
+                    blendParameterY = GetSafeParam(o.blendParameterY),
                     children = o.children.Select(m=>
                         new ChildMotion()
                         {
                             cycleOffset = m.cycleOffset,
-                            directBlendParameter = m.directBlendParameter,
+                            directBlendParameter = GetSafeParam(m.directBlendParameter),
                             mirror = m.mirror,
                             motion = CloneMotion(m.motion),
                             position = m.position,
@@ -756,12 +756,12 @@ namespace HhotateA.AvatarModifyTools.Core
             return origin;
         }
 
-        AnimatorState CopyVRCComponent(AnimatorState clone,AnimatorState origin)
+        AnimatorState CopyStateBehaviours(AnimatorState clone,AnimatorState origin)
         {
             var behaviours = new List<StateMachineBehaviour>();
             foreach (var behaviour in origin.behaviours)
             {
-                if (behaviour.GetType() == typeof(VRCAnimatorLayerControl))
+                if (behaviour is VRCAnimatorLayerControl)
                 {
                     VRCAnimatorLayerControl o = behaviour as VRCAnimatorLayerControl;
                     var c = clone.AddStateMachineBehaviour<VRCAnimatorLayerControl>();
@@ -772,6 +772,31 @@ namespace HhotateA.AvatarModifyTools.Core
                     c.blendDuration = o.blendDuration;
                     c.goalWeight = o.goalWeight;
                     c.playable = o.playable;
+                }
+                else
+                if (behaviour is VRCAvatarParameterDriver)
+                {
+                    VRCAvatarParameterDriver o = behaviour as VRCAvatarParameterDriver;
+                    var c = clone.AddStateMachineBehaviour<VRCAvatarParameterDriver>();
+                    {
+                        c.name = o.name;
+                        c.parameters = o.parameters.Select(p =>
+                        {
+                            return new VRC_AvatarParameterDriver.Parameter()
+                            {
+                                name = GetSafeParam(p.name),
+                                chance = p.chance,
+                                type = p.type,
+                                value = p.value,
+                                valueMin = p.valueMin,
+                                valueMax = p.valueMax
+                            };
+                        }).ToList();
+                        c.debugString = o.debugString;
+                        c.hideFlags = o.hideFlags;
+                        c.localOnly = o.localOnly;
+                        c.ApplySettings = o.ApplySettings;
+                    }
                 }
                 else
                 {
@@ -857,12 +882,18 @@ namespace HhotateA.AvatarModifyTools.Core
             {
                 foreach (var parameter in originController.parameters)
                 {
-                    parameter.name = GetSafeParam(parameter.name);
                     // すでに同名パラメーターがあれば削除する
-                    int index = Array.FindIndex(cloneController.parameters, p => p.name == parameter.name);
+                    int index = Array.FindIndex(cloneController.parameters, p => p.name == GetSafeParam(parameter.name));
                     if (index > -1) cloneController.RemoveParameter(cloneController.parameters[index]);
                     // パラメーターのコピー
-                    cloneController.AddParameter(parameter);
+                    cloneController.AddParameter(new AnimatorControllerParameter()
+                    {
+                        defaultBool = parameter.defaultBool,
+                        defaultFloat = parameter.defaultFloat,
+                        defaultInt = parameter.defaultInt,
+                        name = GetSafeParam(parameter.name),
+                        type = parameter.type,
+                    });
                 }
             }
         }
@@ -881,7 +912,7 @@ namespace HhotateA.AvatarModifyTools.Core
                 if(parameters == current) return;
                 foreach (var parameter in parameters.parameters)
                 {
-                    AddExpressionParameter(current, parameter.name, parameter.valueType, parameter.saved,parameter.defaultValue);
+                    AddExpressionParameter(current, parameter.name, parameter.valueType, parameter.saved, parameter.defaultValue);
                 }
                 EditorUtility.SetDirty(current);
             }
@@ -901,24 +932,14 @@ namespace HhotateA.AvatarModifyTools.Core
         }
         
         void AddExpressionParameter(VRCExpressionParameters parameters, string name,
-            VRCExpressionParameters.ValueType type, bool saved = true, float value = 0f)
+            VRCExpressionParameters.ValueType type, bool saved = true,float value = 0f)
         {
-            // パラメータズのコピー作成(重複があった場合スキップ)
-            var originalParm = parameters.parameters;
-            var newParm = new List<VRCExpressionParameters.Parameter>();
-            foreach (var parameter in parameters.parameters)
-            {
-                if (!String.IsNullOrWhiteSpace(parameter.name) &&
-                    parameter.name != name)
-                {
-                    newParm.Add(parameter);
-                }
-            }
+            var newParm = parameters.parameters.Where(p=>p.name!=GetSafeParam(name)).ToList();
 
             // 新規パラメータ追加
             newParm.Add(new VRCExpressionParameters.Parameter()
             {
-                name = name,
+                name = GetSafeParam(name),
                 valueType = type,
                 saved = saved,
                 defaultValue = value
@@ -973,10 +994,19 @@ namespace HhotateA.AvatarModifyTools.Core
                         name = control.name,
                         icon = control.icon,
                         labels = control.labels,
-                        parameter = control.parameter,
+                        parameter = new VRCExpressionsMenu.Control.Parameter()
+                        {
+                            name = GetSafeParam(control.parameter.name)
+                        },
                         style = control.style,
                         subMenu = control.subMenu,
-                        subParameters = control.subParameters,
+                        subParameters = control.subParameters.Select(p =>
+                        {
+                            return new VRCExpressionsMenu.Control.Parameter()
+                            {
+                                name = GetSafeParam(p.name),
+                            };
+                        }).ToArray(),
                         type = control.type,
                         value = control.value
                     };
@@ -1013,7 +1043,7 @@ namespace HhotateA.AvatarModifyTools.Core
                 foreach (var layer in current.layers)
                 {
                     if (controller.layers.Any(l =>
-                        (l.name == layer.name)))
+                        (GetSafeParam(l.name) == layer.name)))
                     {
                         
                     }
@@ -1056,7 +1086,7 @@ namespace HhotateA.AvatarModifyTools.Core
                 foreach (var parameter in current.parameters)
                 {
                     if (parameters.parameters.Any(p => (
-                        p.name == parameter.name &&
+                        GetSafeParam(p.name) == parameter.name &&
                         p.valueType == parameter.valueType)))
                     {
                     }
@@ -1103,19 +1133,19 @@ namespace HhotateA.AvatarModifyTools.Core
             var newControll = new List<VRCExpressionsMenu.Control>();
             foreach (var controll in parentnmenu.controls)
             {
-                if (menus.controls.Any(c => (
-                    c.name == controll.name &&
-                    c.icon == controll.icon &&
-                    c.type == controll.type &&
-                    c.parameter.name == controll.parameter.name)))
-                {
-                }
-                else
                 if (controll.name == "NextPage" &&
                     controll.icon == AssetUtility.LoadAssetAtGuid<Texture2D>(EnvironmentVariable.arrowIcon) &&
                     controll.type == VRCExpressionsMenu.Control.ControlType.SubMenu)
                 {
                     if(controll.subMenu) RevertMenu(menus,controll.subMenu);
+                }
+                else
+                if (menus.controls.Any(c => (
+                    c.name == controll.name &&
+                    c.icon == controll.icon &&
+                    c.type == controll.type &&
+                    GetSafeParam(c.parameter.name) == controll.parameter.name)))
+                {
                 }
                 else
                 {
@@ -1417,7 +1447,7 @@ namespace HhotateA.AvatarModifyTools.Core
             return clip;
         }
 
-        AvatarModifyData RenameAssetsParameters(AvatarModifyData assets)
+        /*AvatarModifyData RenameAssetsParameters(AvatarModifyData assets)
         {
             assets.locomotion_controller = AnimatorControllerParameterRename(assets.locomotion_controller);
             assets.idle_controller = AnimatorControllerParameterRename(assets.idle_controller);
@@ -1589,22 +1619,23 @@ namespace HhotateA.AvatarModifyTools.Core
             }).ToList();
             EditorUtility.SetDirty(menu);
             return menu;
-        }
+        }*/
         
         // パラメータ文字列から2バイト文字の除去を行う
         public string GetSafeParam(string param)
         {
             if (String.IsNullOrWhiteSpace(param)) return "";
             if (EnvironmentVariable.VRChatParams.Contains(param)) return param;
+            if (renameParameters)
+            {
+                param = GetNihongoHash(param);
+            }
+            if (!param.StartsWith(prefix))
+            {
+                param = prefix + param;
+            }
 
-            if (param.StartsWith(prefix))
-            {
-                return GetNihongoHash(param);
-            }
-            else
-            {
-                return prefix + GetNihongoHash(param);
-            }
+            return param;
         }
 
         public static string GetNihongoHash(string origin)
