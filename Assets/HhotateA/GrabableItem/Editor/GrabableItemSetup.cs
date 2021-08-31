@@ -277,20 +277,6 @@ namespace HhotateA.AvatarModifyTools.GrabableItem
 
             if (safeMode)
             {
-                var targetConst = target.AddComponent<ParentConstraint>();
-                targetConst.AddSource(new ConstraintSource()
-                {
-                    sourceTransform = itemAnchor.transform,
-                    weight = 1f
-                });
-                targetConst.weight = 1f;
-                targetConst.translationAtRest = Vector3.zero;
-                targetConst.rotationAtRest = Vector3.zero;
-                targetConst.locked = true;
-                targetConst.constraintActive = true;
-            }
-            else
-            {
                 var clone = GameObject.Instantiate(target,itemAnchor.transform);
                 clone.transform.SetPositionAndRotation(Vector3.zero,Quaternion.identity);
                 clone.SetActive(false);
@@ -309,6 +295,20 @@ namespace HhotateA.AvatarModifyTools.GrabableItem
                 dropAnim.AddKeyframe_Gameobject(target,1f/60f,false);
                 dropAnim.AddKeyframe_Gameobject(clone,0f,true);
                 dropAnim.AddKeyframe_Gameobject(clone,1f/60f,true);
+            }
+            else
+            {
+                var targetConst = target.AddComponent<ParentConstraint>();
+                targetConst.AddSource(new ConstraintSource()
+                {
+                    sourceTransform = itemAnchor.transform,
+                    weight = 1f
+                });
+                targetConst.weight = 1f;
+                targetConst.translationAtRest = Vector3.zero;
+                targetConst.rotationAtRest = Vector3.zero;
+                targetConst.locked = true;
+                targetConst.constraintActive = true;
             }
             
             c.AddDefaultState("Idle",resetAnim.Create());
