@@ -782,6 +782,7 @@ namespace HhotateA.AvatarModifyTools.Core
 
         void SaveStateMachine(AnimatorStateMachine machine,string path)
         {
+            machine.hideFlags = HideFlags.HideInHierarchy;
             AssetDatabase.AddObjectToAsset(machine,path);
             foreach (var s in machine.states)
             {
@@ -789,20 +790,24 @@ namespace HhotateA.AvatarModifyTools.Core
                 SaveMotion(s.state.motion,path);
                 foreach (var t in s.state.transitions)
                 {
+                    t.hideFlags = HideFlags.HideInHierarchy;
                     AssetDatabase.AddObjectToAsset(t,path);
                 }
                 foreach (var b in s.state.behaviours)
                 {
+                    b.hideFlags = HideFlags.HideInHierarchy;
                     AssetDatabase.AddObjectToAsset(b,path);
                 }
             }
 
             foreach (var t in machine.entryTransitions)
             {
+                t.hideFlags = HideFlags.HideInHierarchy;
                 AssetDatabase.AddObjectToAsset(t,path);
             }
             foreach (var t in machine.anyStateTransitions)
             {
+                t.hideFlags = HideFlags.HideInHierarchy;
                 AssetDatabase.AddObjectToAsset(t,path);
             }
             foreach (var m in machine.stateMachines)
@@ -810,6 +815,7 @@ namespace HhotateA.AvatarModifyTools.Core
                 SaveStateMachine(m.stateMachine,path);
                 foreach (var b in m.stateMachine.behaviours)
                 {
+                    b.hideFlags = HideFlags.HideInHierarchy;
                     AssetDatabase.AddObjectToAsset(b,path);
                 }
             }
@@ -1167,7 +1173,19 @@ namespace HhotateA.AvatarModifyTools.Core
             toPath = "";
             // オブジェクトのインスタンシエイト
             var instance = GameObject.Instantiate(prefab, avatar.transform);
-            instance.name = prefab.name;
+            if (!renameParameters)
+            {
+                instance.name = prefab.name;
+            }
+            else
+            if (prefab.name.StartsWith(prefix))
+            {
+                instance.name = prefab.name;
+            }
+            else
+            {
+                instance.name = prefix + prefab.name;
+            }
             
             var humanoid = avatar.GetComponent<Animator>();
             var constraint = instance.GetComponent<ParentConstraint>();
@@ -1416,6 +1434,7 @@ namespace HhotateA.AvatarModifyTools.Core
                 l.stateMachine = StateMachineParameterRename(l.stateMachine);
                 return l;
             }).ToArray();
+            EditorUtility.SetDirty(anim);
             return anim;
         }
         
@@ -1521,6 +1540,7 @@ namespace HhotateA.AvatarModifyTools.Core
         {
             if(param == null) return null;
             if(param.parameters == null) return null;
+            // param = ScriptableObject.Instantiate(param);
             param.parameters = param.parameters.Select(p =>
                 new VRCExpressionParameters.Parameter()
                 {
@@ -1530,6 +1550,7 @@ namespace HhotateA.AvatarModifyTools.Core
                     valueType = p.valueType
                 }
             ).ToArray();
+            EditorUtility.SetDirty(param);
             return param;
         }
         
@@ -1537,6 +1558,7 @@ namespace HhotateA.AvatarModifyTools.Core
         {
             if (menu == null) return null;
             if (menu.controls == null) return null;
+            // menu = ScriptableObject.Instantiate(menu);
             menu.controls = menu.controls.Select(c =>
             {
                 if (c.type == VRCExpressionsMenu.Control.ControlType.SubMenu)
@@ -1553,6 +1575,7 @@ namespace HhotateA.AvatarModifyTools.Core
                 }
                 return c;
             }).ToList();
+            EditorUtility.SetDirty(menu);
             return menu;
         }
         

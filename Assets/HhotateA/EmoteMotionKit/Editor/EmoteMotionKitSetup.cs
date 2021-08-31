@@ -44,8 +44,20 @@ namespace HhotateA.AvatarModifyTools.EmoteMotionKit
                 saveddata = CreateInstance<EmoteMotionKitSaveData>();
                 saveddata.icon = AssetUtility.LoadAssetAtGuid<Texture2D>(EnvironmentGUIDs.emotesIcon);
             }
+            // wnd.data = Instantiate(saveddata);
             wnd.data = saveddata;
-            wnd.emoteReorderableList = new ReorderableList(saveddata.emotes,typeof(EmoteElement),true,false,true,true)
+            wnd.LoadReorderableList();
+        }
+
+        ReorderableList emoteReorderableList;
+        
+        private EmoteMotionKitSaveData data;
+        
+        Vector2 scroll = Vector2.zero;
+
+        void LoadReorderableList()
+        {
+            emoteReorderableList = new ReorderableList(data.emotes,typeof(EmoteElement),true,false,true,true)
             {
                 elementHeight = 60,
                 drawHeaderCallback = (r) => EditorGUI.LabelField(r,"Emotes","アニメーションを追加してください"),
@@ -53,7 +65,7 @@ namespace HhotateA.AvatarModifyTools.EmoteMotionKit
                 {
                     r.height -= 4;
                     r.y += 2;
-                    var d = saveddata.emotes[i];
+                    var d = data.emotes[i];
                     var rh = r;
                     rh.width = rh.height;
                     rh.x += 5;
@@ -69,7 +81,7 @@ namespace HhotateA.AvatarModifyTools.EmoteMotionKit
                         d.anim = (AnimationClip) EditorGUI.ObjectField(rh, "", d.anim, typeof(AnimationClip));
                         if (check.changed)
                         {
-                            wnd.SetPreviewAnimation(d.anim);
+                            SetPreviewAnimation(d.anim);
                         }
                     }
                     rh.x += rh.width;
@@ -99,20 +111,14 @@ namespace HhotateA.AvatarModifyTools.EmoteMotionKit
                 onAddCallback = l =>
                 {
                     var icon = AssetUtility.LoadAssetAtGuid<Texture2D>(EnvironmentGUIDs.emoteIcons[Random.Range(0, EnvironmentGUIDs.emoteIcons.Length)]);
-                    saveddata.emotes.Add(new EmoteElement(icon));
+                    data.emotes.Add(new EmoteElement(icon));
                 },
                 onSelectCallback = l =>
                 {
-                    wnd.SetPreviewAnimation(saveddata.emotes[l.index].anim);
+                    SetPreviewAnimation(data.emotes[l.index].anim);
                 }
             };
         }
-
-        ReorderableList emoteReorderableList;
-        
-        private EmoteMotionKitSaveData data;
-        
-        Vector2 scroll = Vector2.zero;
 
         private void OnGUI()
         {
@@ -176,7 +182,7 @@ namespace HhotateA.AvatarModifyTools.EmoteMotionKit
 
             if (GUILayout.Button("Setup"))
             {
-                var path = EditorUtility.SaveFilePanel("Save", "Assets",String.IsNullOrWhiteSpace(data.saveName) ? "EmojiSetupData" : data.saveName , "asset");
+                var path = EditorUtility.SaveFilePanel("Save", data.GetAssetDir(),String.IsNullOrWhiteSpace(data.saveName) ? "EmojiSetupData" : data.saveName , "asset");
                 if (string.IsNullOrEmpty(path))
                 {
                     OnCancel();
@@ -199,6 +205,45 @@ namespace HhotateA.AvatarModifyTools.EmoteMotionKit
                 {
                     OnError(e);
                     throw;
+                }
+            }
+            EditorGUILayout.Space();
+
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                if (GUILayout.Button("Save Settings"))
+                {
+                    var path = EditorUtility.SaveFilePanel("Save", data.GetAssetDir(), data.saveName,"emotemotion.asset");
+                    if (string.IsNullOrEmpty(path))
+                    {
+                        OnCancel();
+                        return;
+                    }
+                    data = Instantiate(data);
+                    LoadReorderableList();
+                    AssetDatabase.CreateAsset(data, FileUtil.GetProjectRelativePath(path));
+                    status.Success("Saved");
+                }
+                if (GUILayout.Button("Load Settings"))
+                {
+                    var path = EditorUtility.OpenFilePanel("Load", data.GetAssetDir(), "emotemotion.asset");
+                    if (string.IsNullOrEmpty(path))
+                    {
+                        OnCancel();
+                        return;
+                    }
+                    var d = AssetDatabase.LoadAssetAtPath<EmoteMotionKitSaveData>(FileUtil.GetProjectRelativePath(path));
+                    if (d == null)
+                    {
+                        status.Warning("Load Failure");
+                        return;
+                    }
+                    else
+                    {
+                        data = d;
+                        LoadReorderableList();
+                    }
+                    status.Success("Loaded");
                 }
             }
             status.Display();

@@ -11,6 +11,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using UnityEditor;
 using UnityEditor.Animations;
 using UnityEngine;
@@ -426,6 +427,18 @@ namespace HhotateA.AvatarModifyTools.Core
                 return asset.layers[layer].stateMachine.states.FirstOrDefault(s => s.state.name == name).state;
             }
         }
+        
+        public string[] GetStates(string regular, int layer = -1)
+        {
+            if (layer == -1)
+            {
+                return GetStateMachine().states.Where(s=>Regex.IsMatch(s.state.name,@regular)).Select(s=>s.state.name).ToArray();
+            }
+            else
+            {
+                return asset.layers[layer].stateMachine.states.Where(s=>Regex.IsMatch(s.state.name,@regular)).Select(s=>s.state.name).ToArray();
+            }
+        }
 
         public void SetEditLayer(int value)
         {
@@ -523,6 +536,7 @@ namespace HhotateA.AvatarModifyTools.Core
 
         void SaveStateMachine(AnimatorStateMachine machine,string path)
         {
+            machine.hideFlags = HideFlags.HideInHierarchy;
             AssetDatabase.AddObjectToAsset(machine,path);
             foreach (var s in machine.states)
             {
@@ -530,11 +544,13 @@ namespace HhotateA.AvatarModifyTools.Core
                 SaveMotion(s.state.motion,path);
                 foreach (var t in s.state.transitions)
                 {
+                    t.hideFlags = HideFlags.HideInHierarchy;
                     AssetDatabase.AddObjectToAsset(t,path);
                 }
 #if VRC_SDK_VRCSDK3
                 foreach (var b in s.state.behaviours)
                 {
+                    b.hideFlags = HideFlags.HideInHierarchy;
                     AssetDatabase.AddObjectToAsset(b,path);
                 }
 #endif
@@ -542,10 +558,12 @@ namespace HhotateA.AvatarModifyTools.Core
 
             foreach (var t in machine.entryTransitions)
             {
+                t.hideFlags = HideFlags.HideInHierarchy;
                 AssetDatabase.AddObjectToAsset(t,path);
             }
             foreach (var t in machine.anyStateTransitions)
             {
+                t.hideFlags = HideFlags.HideInHierarchy;
                 AssetDatabase.AddObjectToAsset(t,path);
             }
             foreach (var m in machine.stateMachines)
@@ -554,6 +572,7 @@ namespace HhotateA.AvatarModifyTools.Core
 #if VRC_SDK_VRCSDK3
                 foreach (var b in m.stateMachine.behaviours)
                 {
+                    b.hideFlags = HideFlags.HideInHierarchy;
                     AssetDatabase.AddObjectToAsset(b,path);
                 }
 #endif

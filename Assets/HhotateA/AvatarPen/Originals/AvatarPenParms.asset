@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: AvatarPenParms
   m_EditorClassIdentifier: 
   parameters:
-  - name: AvatarPen
+  - name: HhotateA_Pen_AvatarPen
     valueType: 0
     saved: 0
     defaultValue: 0
