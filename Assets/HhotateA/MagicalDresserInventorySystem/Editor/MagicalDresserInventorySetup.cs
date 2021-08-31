@@ -787,7 +787,17 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                     }
                 }
             }
-            // item.animationMaterial = (Material) EditorGUILayout.ObjectField("", item.animationMaterial,typeof(Material),true, GUILayout.Width(50));
+
+            if (item.type == FeedType.Shader)
+            {
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    EditorGUILayout.LabelField(" ", GUILayout.ExpandWidth(true));
+                    item.animationMaterial = (Material) EditorGUILayout.ObjectField("", item.animationMaterial,
+                        typeof(Material), true, GUILayout.Width(100));
+                    item.animationParam = EditorGUILayout.TextField("", item.animationParam, GUILayout.Width(100));
+                }
+            }
 
             if (item.extendOption && optionEdit)
             {
