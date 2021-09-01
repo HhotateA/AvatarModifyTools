@@ -96,19 +96,20 @@ namespace HhotateA.AvatarModifyTools.Core
         }
         
         public bool? WriteDefaultOverride { get; set; } = null;
-        public bool safeOriginalAsset = true;
-        public bool overrideSettings = true;
-        public bool renameParameters = false;
-        public bool autoAddNextPage = false;
-        public bool overrideNullAnimation = true;
+        public bool DuplicateSDKAssets { get; set; } = true;
+        public bool OverrideSettings { get; set; } = true;
+        public bool RenameParameters { get; set; } = false;
+        public bool ModifyOriginalAsset { get; set; } = false;
+        public bool AutoAddNextPage { get; set; } = false;
+        public bool OverrideNullAnimation { get; set; } = true;
         private string exportDir = "Assets/";
         string prefix = "";
         private Dictionary<string, string> animRepathList = new Dictionary<string, string>();
         public void ModifyAvatar(AvatarModifyData assets,string keyword = "")
         {
             prefix = keyword;
-            //if (renameParameters) assets = RenameAssetsParameters(assets);
-            if (overrideSettings) RevertByAssets(assets);
+            if (ModifyOriginalAsset) assets = RenameAssetsParameters(assets);
+            if (OverrideSettings) RevertByAssets(assets);
             if (avatar != null)
             {
                 animRepathList = new Dictionary<string,string>();
@@ -126,8 +127,8 @@ namespace HhotateA.AvatarModifyTools.Core
                 ModifyAvatarAnimatorController(VRCAvatarDescriptor.AnimLayerType.Gesture,assets.gesture_controller);
                 ModifyAvatarAnimatorController(VRCAvatarDescriptor.AnimLayerType.Action,assets.action_controller);
                 ModifyAvatarAnimatorController(VRCAvatarDescriptor.AnimLayerType.FX,assets.fx_controller);
-                ModifyExpressionParameter(assets.parameter,safeOriginalAsset);
-                ModifyExpressionMenu(assets.menu,autoAddNextPage,safeOriginalAsset);
+                ModifyExpressionParameter(assets.parameter,DuplicateSDKAssets);
+                ModifyExpressionMenu(assets.menu,AutoAddNextPage,DuplicateSDKAssets);
                 AssetDatabase.SaveAssets();
             }
             else
@@ -708,7 +709,7 @@ namespace HhotateA.AvatarModifyTools.Core
         {
             if (origin == null)
             {
-                if (overrideNullAnimation)
+                if (OverrideNullAnimation)
                 {
                     return AssetUtility.LoadAssetAtGuid<AnimationClip>(EnvironmentVariable.nottingAnim);
                 }
@@ -989,7 +990,7 @@ namespace HhotateA.AvatarModifyTools.Core
                         }
                         EditorUtility.SetDirty(current);
                     }
-                    var newcontroller = new VRCExpressionsMenu.Control()
+                    var newController = new VRCExpressionsMenu.Control()
                     {
                         name = control.name,
                         icon = control.icon,
@@ -1000,17 +1001,32 @@ namespace HhotateA.AvatarModifyTools.Core
                         },
                         style = control.style,
                         subMenu = control.subMenu,
-                        subParameters = control.subParameters.Select(p =>
-                        {
-                            return new VRCExpressionsMenu.Control.Parameter()
-                            {
-                                name = GetSafeParam(p.name),
-                            };
-                        }).ToArray(),
                         type = control.type,
                         value = control.value
                     };
-                    current.controls.Add(newcontroller);
+                    
+                    if (control.subParameters != null)
+                    {
+                        newController.subParameters = control.subParameters.Select(cc =>
+                        {
+                            return new VRCExpressionsMenu.Control.Parameter(){name = GetSafeParam(cc.name)};
+                        }).ToArray();
+                    }
+                    if (control.subMenu != null)
+                    {
+                        if (ModifyOriginalAsset)
+                        {
+                            newController.subMenu = control.subMenu;
+                        }
+                        else
+                        {
+                            var menu = Object.Instantiate(newController.subMenu);
+                            AssetDatabase.CreateAsset(menu, AssetDatabase.GenerateUniqueAssetPath(Path.Combine(exportDir, menu.name + ".asset")));
+                            newController.subMenu = ExpressionMenuParameterRename(menu);
+                        }
+                    }
+                    
+                    current.controls.Add(newController);
                 }
                 SetExpressionMenu(parentnmenu);
                 EditorUtility.SetDirty(parentnmenu);
@@ -1215,7 +1231,7 @@ namespace HhotateA.AvatarModifyTools.Core
             toPath = "";
             // オブジェクトのインスタンシエイト
             var instance = GameObject.Instantiate(prefab, avatar.transform);
-            if (!renameParameters)
+            if (!RenameParameters)
             {
                 instance.name = prefab.name;
             }
@@ -1447,7 +1463,7 @@ namespace HhotateA.AvatarModifyTools.Core
             return clip;
         }
 
-        /*AvatarModifyData RenameAssetsParameters(AvatarModifyData assets)
+        AvatarModifyData RenameAssetsParameters(AvatarModifyData assets)
         {
             assets.locomotion_controller = AnimatorControllerParameterRename(assets.locomotion_controller);
             assets.idle_controller = AnimatorControllerParameterRename(assets.idle_controller);
@@ -1619,14 +1635,14 @@ namespace HhotateA.AvatarModifyTools.Core
             }).ToList();
             EditorUtility.SetDirty(menu);
             return menu;
-        }*/
+        }
         
         // パラメータ文字列から2バイト文字の除去を行う
         public string GetSafeParam(string param)
         {
             if (String.IsNullOrWhiteSpace(param)) return "";
             if (EnvironmentVariable.VRChatParams.Contains(param)) return param;
-            if (renameParameters)
+            if (RenameParameters)
             {
                 param = GetNihongoHash(param);
             }
