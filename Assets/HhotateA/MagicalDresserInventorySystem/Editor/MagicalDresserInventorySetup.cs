@@ -792,10 +792,15 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             {
                 using (new EditorGUILayout.HorizontalScope())
                 {
-                    EditorGUILayout.LabelField(" ", GUILayout.ExpandWidth(true));
+                    EditorGUILayout.LabelField("", GUILayout.Width(100));
                     item.animationMaterial = (Material) EditorGUILayout.ObjectField("", item.animationMaterial,
-                        typeof(Material), true, GUILayout.Width(100));
-                    item.animationParam = EditorGUILayout.TextField("", item.animationParam, GUILayout.Width(100));
+                        typeof(Material), false, GUILayout.Width(100));
+                    EditorGUILayout.LabelField("", GUILayout.Width(5));
+                    item.animationParam = EditorGUILayout.TextField( item.animationParam, GUILayout.Width(100));
+                    EditorGUILayout.LabelField("", GUILayout.Width(5));
+                    item.animationParamOff = EditorGUILayout.FloatField(item.animationParamOff,GUILayout.Width(30));
+                    EditorGUILayout.LabelField("=>", GUILayout.Width(20));
+                    item.animationParamOn = EditorGUILayout.FloatField(item.animationParamOn,GUILayout.Width(30));
                 }
             }
 
@@ -1400,7 +1405,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                 else
                 if(element.type == FeedType.Shader)
                 {
-                    ShaderAnimation(transitionAnim, element.obj, element.delay, element.duration, element.animationMaterial, element.animationParam,0f,1f);
+                    ShaderAnimation(transitionAnim, element.obj, element.delay, element.duration, element.animationMaterial, element.animationParam,element.animationParamOff,element.animationParamOn);
                 }
                 else
                 {
@@ -1462,7 +1467,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                 else
                 if(element.type == FeedType.Shader)
                 {
-                    ShaderAnimation(transitionAnim, element.obj,element.delay,element.duration, element.animationMaterial, element.animationParam,1f,0f);
+                    ShaderAnimation(transitionAnim, element.obj,element.delay,element.duration, element.animationMaterial, element.animationParam,element.animationParamOn, element.animationParamOff);
                 }
                 else
                 {

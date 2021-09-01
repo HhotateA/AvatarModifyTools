@@ -124,9 +124,6 @@ namespace HhotateA.AvatarModifyTools.Core
                         overrideNullAnimation = EditorGUILayout.Toggle("Override Null Animation", overrideNullAnimation);
                         // duplicateSDKAssets = EditorGUILayout.Toggle("Duplicate SDK Assets", duplicateSDKAssets); 
                         renameParameters = EditorGUILayout.Toggle("Rename Parameters", renameParameters); 
-                    }
-                    using (new EditorGUILayout.VerticalScope())
-                    {
                         modifyOriginalAsset = EditorGUILayout.Toggle("Modify Original Asset", modifyOriginalAsset); 
                         overrideSettings = EditorGUILayout.Toggle("Override Settings", overrideSettings); 
                         autoNextPage = EditorGUILayout.Toggle("Auto Next Page", autoNextPage);
