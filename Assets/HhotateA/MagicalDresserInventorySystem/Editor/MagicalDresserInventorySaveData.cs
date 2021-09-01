@@ -234,6 +234,8 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         //public Shader animationShader;
         public Material animationMaterial;
         public string animationParam = "_AnimationTime";
+        public float animationParamOff = 0f;
+        public float animationParamOn = 1f;
 
         public bool extendOption = false;
         public List<RendererOption> rendOptions = new List<RendererOption>();

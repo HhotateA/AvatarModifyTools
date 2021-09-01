@@ -31,6 +31,7 @@ namespace HhotateA.AvatarModifyTools.Core
         public static string linkIcon = "20b4b9db03a839148b2a2166e53c9123";
 
         public static string nottingAvatarMask = "fb3cb20bd9fa4fa47ba68b49d8db8a43";
+        public static string nottingAnim = "1927de9efc6d12140be0499624f05160";
 
         public static string texturePreviewShader = "e422dd8b39cd79343b42ffba228bb53b";
         public static string texturePainterShader = "3cfd9a4da725f0c41b16979b05bd5a53";

@@ -71,7 +71,7 @@ namespace HhotateA.AvatarModifyTools.AvatarPen
                         }
                     }
 
-                    if (notRecommended)
+                    if (expandOptions)
                     {
                         if (GUILayout.Button("Revert"))
                         {

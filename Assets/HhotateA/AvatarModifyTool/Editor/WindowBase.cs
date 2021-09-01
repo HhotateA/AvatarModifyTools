@@ -26,10 +26,14 @@ namespace HhotateA.AvatarModifyTools.Core
 #endif
         public Animator avatarAnim;
         
-        public bool notRecommended = false;
+        public bool expandOptions = false;
         public bool writeDefault = false;
+        public bool duplicateSDKAssets = true;
         public bool overrideSettings = true;
+        public bool renameParameters = true;
+        public bool modifyOriginalAsset = true;
         public bool autoNextPage = true;
+        public bool overrideNullAnimation = true;
 
         public void VRCErrorLabel()
         {
@@ -108,15 +112,26 @@ namespace HhotateA.AvatarModifyTools.Core
 
         public bool ShowNotRecommended()
         {
-            notRecommended = EditorGUILayout.Foldout(notRecommended,"VRChat Not Recommended");
-            if (notRecommended)
+            expandOptions = EditorGUILayout.Foldout(expandOptions,"Modify Options");
+            if (expandOptions)
             {
-                writeDefault = EditorGUILayout.Toggle("Write Default", writeDefault); 
-                overrideSettings = EditorGUILayout.Toggle("Override Settings", overrideSettings); 
-                autoNextPage = EditorGUILayout.Toggle("Auto Next Page", autoNextPage); 
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    EditorGUILayout.LabelField(" ",GUILayout.Width(20));
+                    using (new EditorGUILayout.VerticalScope())
+                    {
+                        writeDefault = EditorGUILayout.Toggle("Write Default", writeDefault); 
+                        overrideNullAnimation = EditorGUILayout.Toggle("Override Null Animation", overrideNullAnimation);
+                        // duplicateSDKAssets = EditorGUILayout.Toggle("Duplicate SDK Assets", duplicateSDKAssets); 
+                        renameParameters = EditorGUILayout.Toggle("Rename Parameters", renameParameters); 
+                        modifyOriginalAsset = EditorGUILayout.Toggle("Modify Original Asset", modifyOriginalAsset); 
+                        overrideSettings = EditorGUILayout.Toggle("Override Settings", overrideSettings); 
+                        autoNextPage = EditorGUILayout.Toggle("Auto Next Page", autoNextPage);
+                    }
+                }
             }
 
-            return notRecommended;
+            return expandOptions;
         }
 
 #if VRC_SDK_VRCSDK3
@@ -126,10 +141,12 @@ namespace HhotateA.AvatarModifyTools.Core
             {
                 mod.WriteDefaultOverride = true;
             }
-            mod.safeOriginalAsset = true;
-            mod.overrideSettings = overrideSettings;
-            mod.renameParameters = true;
-            mod.autoAddNextPage = autoNextPage;
+            mod.DuplicateSDKAssets = duplicateSDKAssets;
+            mod.OverrideSettings = overrideSettings;
+            mod.RenameParameters = renameParameters;
+            mod.ModifyOriginalAsset = modifyOriginalAsset;
+            mod.AutoAddNextPage = autoNextPage;
+            mod.OverrideNullAnimation = overrideNullAnimation;
             return mod;
         }
 #endif

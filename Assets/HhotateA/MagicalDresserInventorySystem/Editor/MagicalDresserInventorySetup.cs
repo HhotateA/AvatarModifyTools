@@ -391,7 +391,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                                             if (check.changed)
                                             {
                                                 SetObjectActiveForScene(menuElements[index]);
-                                                SyncItemActive(menuElements[index].activeItems, menuElements[index].inactiveItems, true);
+                                                // SyncItemActive(menuElements[index].activeItems, menuElements[index].inactiveItems, true);
                                             }
                                         }
                                     }
@@ -427,7 +427,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                                             if (check.changed)
                                             {
                                                 SetObjectActiveForScene(menuElements[index]);
-                                                SyncItemActive(menuElements[index].inactiveItems, menuElements[index].activeItems, true);
+                                                // SyncItemActive(menuElements[index].inactiveItems, menuElements[index].activeItems, true);
                                             }
                                         }
                                     }
@@ -787,7 +787,22 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                     }
                 }
             }
-            // item.animationMaterial = (Material) EditorGUILayout.ObjectField("", item.animationMaterial,typeof(Material),true, GUILayout.Width(50));
+
+            if (item.type == FeedType.Shader)
+            {
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    EditorGUILayout.LabelField("", GUILayout.Width(100));
+                    item.animationMaterial = (Material) EditorGUILayout.ObjectField("", item.animationMaterial,
+                        typeof(Material), false, GUILayout.Width(100));
+                    EditorGUILayout.LabelField("", GUILayout.Width(5));
+                    item.animationParam = EditorGUILayout.TextField( item.animationParam, GUILayout.Width(100));
+                    EditorGUILayout.LabelField("", GUILayout.Width(5));
+                    item.animationParamOff = EditorGUILayout.FloatField(item.animationParamOff,GUILayout.Width(30));
+                    EditorGUILayout.LabelField("=>", GUILayout.Width(20));
+                    item.animationParamOn = EditorGUILayout.FloatField(item.animationParamOn,GUILayout.Width(30));
+                }
+            }
 
             if (item.extendOption && optionEdit)
             {
@@ -877,79 +892,82 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                 }
             }
 
-            using (new EditorGUILayout.HorizontalScope())
+            if (rendOption.rend is SkinnedMeshRenderer)
             {
-                EditorGUILayout.LabelField("",GUILayout.Width(10));
-                rendOption.extendBlendShapeOption = EditorGUILayout.Foldout(rendOption.extendBlendShapeOption,
-                    "Blend Shape Option : " + rendOption.rend.name);
-            }
-
-            if (rendOption.extendBlendShapeOption)
-            {
-                for (int i = 0; i < rendOption.changeBlendShapeOptions.Count; i++)
+                using (new EditorGUILayout.HorizontalScope())
                 {
-                    using (new EditorGUILayout.HorizontalScope())
-                    {
-                        EditorGUILayout.LabelField("",GUILayout.Width(30));
-                        var toggle = EditorGUILayout.Toggle("", rendOption.changeBlendShapeOptions[i].change, GUILayout.Width(25));
-                        if (toggle != rendOption.changeBlendShapeOptions[i].change)
-                        {
-                            // 変更があった場合レイヤー内に伝播
-                            if (menuElements[menuReorderableList.index].isToggle)
-                            {
-                                ToggleBlendshapeOption(menuElements[menuReorderableList.index], rendOption.rend as SkinnedMeshRenderer, i, toggle);
-                            }
-                            else
-                            {
-                                ToggleBlendshapeOption(menuElements[menuReorderableList.index].layer, rendOption.rend as SkinnedMeshRenderer, i, toggle);
-                            }
-                        }
-                        rendOption.changeBlendShapeOptions[i].change = toggle;
-                        
-                        EditorGUILayout.LabelField(rendOption.rend.GetMesh().GetBlendShapeName(i),  GUILayout.Width(125));
-                        if (!rendOption.changeBlendShapeOptions[i].change)
-                        {
-                            EditorGUILayout.LabelField("",  GUILayout.Width(125));
-                        }
-                        else
-                        {
-                            if (EditorGUILayout.Toggle("", rendOption.changeBlendShapeOptions[i].delay < 0, GUILayout.Width(25)))
-                            {
-                                if (rendOption.changeBlendShapeOptions[i].delay >= 0)
-                                {
-                                    rendOption.changeBlendShapeOptions[i].delay = -1f;
-                                }
-                            }
-                            else
-                            {
-                                if (rendOption.changeBlendShapeOptions[i].delay < 0)
-                                {
-                                    rendOption.changeBlendShapeOptions[i].delay = 0f;
-                                }
-                            }
-                            using (new EditorGUI.DisabledScope(rendOption.changeBlendShapeOptions[i].delay<0))
-                            {
-                                rendOption.changeBlendShapeOptions[i].delay = EditorGUILayout.FloatField("", rendOption.changeBlendShapeOptions[i].delay, GUILayout.Width(50));
-                                rendOption.changeBlendShapeOptions[i].duration = EditorGUILayout.FloatField("", rendOption.changeBlendShapeOptions[i].duration, GUILayout.Width(50));
-                            }
-                        }
+                    EditorGUILayout.LabelField("",GUILayout.Width(10));
+                    rendOption.extendBlendShapeOption = EditorGUILayout.Foldout(rendOption.extendBlendShapeOption,
+                        "Blend Shape Option : " + rendOption.rend.name);
+                }
 
-                        if (toggle)
+                if (rendOption.extendBlendShapeOption)
+                {
+                    for (int i = 0; i < rendOption.changeBlendShapeOptions.Count; i++)
+                    {
+                        using (new EditorGUILayout.HorizontalScope())
                         {
-                            rendOption.changeBlendShapeOptions[i].weight =
-                                GUILayout.HorizontalSlider(rendOption.changeBlendShapeOptions[i].weight, 0f, 100f,GUILayout.Width(40));
-                            rendOption.changeBlendShapeOptions[i].weight =
-                                EditorGUILayout.FloatField(rendOption.changeBlendShapeOptions[i].weight,GUILayout.Width(30));
-                        }
-                        else
-                        {
-                            rendOption.changeBlendShapeOptions[i].weight = GetDefaultBlendshape(rendOption.rend as SkinnedMeshRenderer, i);
-                            using (new EditorGUI.DisabledScope(true))
+                            EditorGUILayout.LabelField("",GUILayout.Width(30));
+                            var toggle = EditorGUILayout.Toggle("", rendOption.changeBlendShapeOptions[i].change, GUILayout.Width(25));
+                            if (toggle != rendOption.changeBlendShapeOptions[i].change)
                             {
-                                var noChange =
-                                    GUILayout.HorizontalSlider
-                                        (-1f, 0f, 100f,GUILayout.Width(40));
-                                EditorGUILayout.LabelField("NoChange",GUILayout.Width(30));
+                                // 変更があった場合レイヤー内に伝播
+                                if (menuElements[menuReorderableList.index].isToggle)
+                                {
+                                    ToggleBlendshapeOption(menuElements[menuReorderableList.index], rendOption.rend as SkinnedMeshRenderer, i, toggle);
+                                }
+                                else
+                                {
+                                    ToggleBlendshapeOption(menuElements[menuReorderableList.index].layer, rendOption.rend as SkinnedMeshRenderer, i, toggle);
+                                }
+                            }
+                            rendOption.changeBlendShapeOptions[i].change = toggle;
+                            
+                            EditorGUILayout.LabelField(rendOption.rend.GetMesh().GetBlendShapeName(i),  GUILayout.Width(125));
+                            if (!rendOption.changeBlendShapeOptions[i].change)
+                            {
+                                EditorGUILayout.LabelField("",  GUILayout.Width(125));
+                            }
+                            else
+                            {
+                                if (EditorGUILayout.Toggle("", rendOption.changeBlendShapeOptions[i].delay < 0, GUILayout.Width(25)))
+                                {
+                                    if (rendOption.changeBlendShapeOptions[i].delay >= 0)
+                                    {
+                                        rendOption.changeBlendShapeOptions[i].delay = -1f;
+                                    }
+                                }
+                                else
+                                {
+                                    if (rendOption.changeBlendShapeOptions[i].delay < 0)
+                                    {
+                                        rendOption.changeBlendShapeOptions[i].delay = 0f;
+                                    }
+                                }
+                                using (new EditorGUI.DisabledScope(rendOption.changeBlendShapeOptions[i].delay<0))
+                                {
+                                    rendOption.changeBlendShapeOptions[i].delay = EditorGUILayout.FloatField("", rendOption.changeBlendShapeOptions[i].delay, GUILayout.Width(50));
+                                    rendOption.changeBlendShapeOptions[i].duration = EditorGUILayout.FloatField("", rendOption.changeBlendShapeOptions[i].duration, GUILayout.Width(50));
+                                }
+                            }
+
+                            if (toggle)
+                            {
+                                rendOption.changeBlendShapeOptions[i].weight =
+                                    GUILayout.HorizontalSlider(rendOption.changeBlendShapeOptions[i].weight, 0f, 100f,GUILayout.Width(40));
+                                rendOption.changeBlendShapeOptions[i].weight =
+                                    EditorGUILayout.FloatField(rendOption.changeBlendShapeOptions[i].weight,GUILayout.Width(30));
+                            }
+                            else
+                            {
+                                rendOption.changeBlendShapeOptions[i].weight = GetDefaultBlendshape(rendOption.rend as SkinnedMeshRenderer, i);
+                                using (new EditorGUI.DisabledScope(true))
+                                {
+                                    var noChange =
+                                        GUILayout.HorizontalSlider
+                                            (-1f, 0f, 100f,GUILayout.Width(40));
+                                    EditorGUILayout.LabelField("NoChange",GUILayout.Width(30));
+                                }
                             }
                         }
                     }
@@ -1387,7 +1405,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                 else
                 if(element.type == FeedType.Shader)
                 {
-                    ShaderAnimation(transitionAnim, element.obj, element.delay, element.duration, element.animationMaterial, element.animationParam,0f,1f);
+                    ShaderAnimation(transitionAnim, element.obj, element.delay, element.duration, element.animationMaterial, element.animationParam,element.animationParamOff,element.animationParamOn);
                 }
                 else
                 {
@@ -1449,7 +1467,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                 else
                 if(element.type == FeedType.Shader)
                 {
-                    ShaderAnimation(transitionAnim, element.obj,element.delay,element.duration, element.animationMaterial, element.animationParam,1f,0f);
+                    ShaderAnimation(transitionAnim, element.obj,element.delay,element.duration, element.animationMaterial, element.animationParam,element.animationParamOn, element.animationParamOff);
                 }
                 else
                 {
