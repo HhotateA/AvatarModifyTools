@@ -1231,6 +1231,10 @@ namespace HhotateA.AvatarModifyTools.Core
             toPath = "";
             // オブジェクトのインスタンシエイト
             var instance = GameObject.Instantiate(prefab, avatar.transform);
+            instance.name = prefab.name;
+            
+            fromPath = GetRelativePath(instance.transform);
+            
             if (!RenameParameters)
             {
                 instance.name = prefab.name;
@@ -1244,6 +1248,8 @@ namespace HhotateA.AvatarModifyTools.Core
             {
                 instance.name = prefix + prefab.name;
             }
+            
+            toPath = GetRelativePath(instance.transform);
             
             var humanoid = avatar.GetComponent<Animator>();
             var constraint = instance.GetComponent<ParentConstraint>();
@@ -1271,7 +1277,6 @@ namespace HhotateA.AvatarModifyTools.Core
             else
             if(humanoid)
             { //ボーン差し替えでの設定
-                fromPath = GetRelativePath(instance.transform);
                 if (humanoid.isHuman)
                 {
                     Transform bone = humanoid.GetBoneTransform(target);
@@ -1282,6 +1287,12 @@ namespace HhotateA.AvatarModifyTools.Core
                     }
                 }
                 toPath = GetRelativePath(instance.transform);
+            }
+
+            if (fromPath == toPath)
+            {
+                fromPath = "";
+                toPath = "";
             }
         }
         
