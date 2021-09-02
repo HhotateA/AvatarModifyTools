@@ -2096,6 +2096,33 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                 icon = AssetUtility.LoadAssetAtGuid<Texture2D>(EnvironmentGUIDs.itemIcon)
             });
         }
+
+        void FindConflict()
+        {
+#if VRC_SDK_VRCSDK3
+            var mod = new AvatarModifyTool(avatar);
+            ApplySettings(mod);
+            System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
+            sw.Start();
+            var conflictLayers = new List<string>();
+            foreach (var menu in data.menuElements)
+            {
+                foreach (var item in menu.activeItems)
+                {
+                    conflictLayers.AddRange(mod.HasActivateKeyframeLayers(item.obj).Where(l=>!l.StartsWith(EnvironmentGUIDs.prefix+
+                        mod.GetSafeParam(data.saveName))));
+                }
+            }
+
+            conflictLayers = conflictLayers.Distinct().ToList();
+            foreach (var layer in conflictLayers)
+            {
+                Debug.Log(layer);
+            }
+            sw.Stop();
+            Debug.Log(sw.ElapsedMilliseconds + "ms");
+#endif
+        }
         private void OnDestroy()
         {
             RevertObjectActiveForScene();

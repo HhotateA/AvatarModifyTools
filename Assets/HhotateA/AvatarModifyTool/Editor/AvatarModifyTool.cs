@@ -18,6 +18,7 @@ using UnityEngine.Animations;
 using Object = UnityEngine.Object;
 using System.Text;
 #if VRC_SDK_VRCSDK3
+using System.Text.RegularExpressions;
 using VRC.SDKBase;
 using VRC.SDK3.Avatars.ScriptableObjects;
 using VRC.SDK3.Avatars.Components;
@@ -30,7 +31,6 @@ namespace HhotateA.AvatarModifyTools.Core
     /// </summary>
     public class AvatarModifyTool
     {
-        
 #if VRC_SDK_VRCSDK3
         private VRCAvatarDescriptor avatar;
         public AvatarModifyTool(VRCAvatarDescriptor a,string dir = "Assets/Export")
@@ -138,8 +138,10 @@ namespace HhotateA.AvatarModifyTools.Core
             EditorUtility.SetDirty( avatar );
         }
 
-        public void RevertByAssets(AvatarModifyData assets)
+        public void RevertByAssets(AvatarModifyData assets,string keyword = "")
         {
+            prefix = keyword;
+            if (ModifyOriginalAsset) assets = RenameAssetsParameters(assets);
             if (avatar != null)
             {
                 animRepathList = new Dictionary<string,string>();
@@ -1472,6 +1474,165 @@ namespace HhotateA.AvatarModifyTools.Core
                 }
             }
             return clip;
+        }
+        
+        public List<string> HasActivateKeyframeLayers(GameObject obj)
+        {
+            var path = GetRelativePath(obj.transform);
+            return HasKeyframeLayers(path, "m_IsActive");
+        }
+        
+        public List<string> HasMaterialKeyframeLayers(GameObject obj)
+        {
+            var path = GetRelativePath(obj.transform);
+            return HasKeyframeLayers(path, "m_Materials");
+        }
+        
+        public List<string> HasKeyframeLayers(string path, string attribute = "")
+        {
+            var layers = new List<string>();
+            foreach (var playableLayer in avatar.baseAnimationLayers)
+            {
+                if (playableLayer.animatorController == null) continue;
+                AnimatorController ac = (AnimatorController) playableLayer.animatorController;
+                if (ac)
+                {
+                    foreach (var layer in ac.layers)
+                    {
+                        if (HasKeyFrameStateMachine(layer.stateMachine, path, attribute))
+                        {
+                            layers.Add(layer.name);
+                        }
+                    }
+                }
+            }
+
+            return layers;
+        }
+        
+        bool HasKeyFrameStateMachine(AnimatorStateMachine machine, string path, string attribute = "")
+        {
+            foreach (var s in machine.states)
+            {
+                if (s.state.motion)
+                {
+                    if (HasKeyframeMotion(s.state.motion, path, attribute))
+                    {
+                        return true;
+                    }
+                }
+            }
+            foreach (var m in machine.stateMachines)
+            {
+                if (HasKeyFrameStateMachine(m.stateMachine, path, attribute))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+        
+        bool HasKeyframeMotion(Motion motion, string path, string attribute = "")
+        {
+            if (motion is BlendTree)
+            {
+                BlendTree tree = (BlendTree) motion;
+                foreach (var m in tree.children)
+                {
+                    if (HasKeyframeMotion(m.motion, path, attribute))
+                    {
+                        return true;
+                    }
+                }
+            }
+            else 
+            if (motion is AnimationClip)
+            {
+                AnimationClip clip = (AnimationClip) motion;
+                if (HasKeyframeAnimation(clip, path, attribute))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+        
+        bool HasKeyframeAnimation(AnimationClip clip, string path, string attribute = "")
+        {
+            bool hasPath = false;
+            using (var o = new SerializedObject(clip))
+            {
+                var curves = o.FindProperty("m_FloatCurves");
+                for (int i = curves.arraySize - 1; i >= 0; i--)
+                {
+                    var pathProp = curves.GetArrayElementAtIndex(i).FindPropertyRelative("path");
+                    var attributeProp = curves.GetArrayElementAtIndex(i).FindPropertyRelative("attribute");
+                    if (pathProp != null)
+                    {
+                        if (pathProp.stringValue == path)
+                        {
+                            if (String.IsNullOrWhiteSpace(attribute))
+                            {
+                                return true;
+                            }
+                            else
+                            {
+                                if (attributeProp.stringValue.Contains(attribute))
+                                {
+                                    return true;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                /*var i = o.GetIterator();
+                while (i.Next(true))
+                {
+                    if (i.name == "curve")
+                    {
+                        var a = i.FindPropertyRelative("attribute");
+                        var p = i.FindPropertyRelative("path");
+                        if(a!=null) Debug.Log(a.stringValue);
+                        if(p!=null) Debug.Log(p.stringValue);
+                    }
+                    /*if (String.IsNullOrWhiteSpace(attribute))
+                    {
+                        if (i.name == "curve" && i.propertyType == SerializedPropertyType.String)
+                        {
+                            if (i.stringValue == path)
+                            {
+                                return true;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        if (i.name == "attribute" && i.propertyType == SerializedPropertyType.String)
+                        {
+                            if (i.stringValue.StartsWith(attribute))
+                            {
+                                Debug.Log(i.stringValue);
+                                i.Next(true);
+                                Debug.Log(i.stringValue);
+                                if (i.name == "path" && i.propertyType == SerializedPropertyType.String)
+                                {
+                                    Debug.Log(i.stringValue);
+                                    if (i.stringValue == path)
+                                    {
+                                        return true;
+                                    }
+                                }
+                            }
+                        }
+                    }#1#
+                }
+            }*/
+            }
+
+            return false;
         }
 
         AvatarModifyData RenameAssetsParameters(AvatarModifyData assets)
