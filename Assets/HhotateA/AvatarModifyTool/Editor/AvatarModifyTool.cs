@@ -1476,19 +1476,19 @@ namespace HhotateA.AvatarModifyTools.Core
             return clip;
         }
         
-        public List<string> HasActivateKeyframeLayers(GameObject obj)
+        public List<string> HasActivateKeyframeLayers(GameObject[] obj)
         {
-            var path = GetRelativePath(obj.transform);
+            var path = obj.Select(o=>GetRelativePath(o.transform)).ToArray();
             return HasKeyframeLayers(path, "m_IsActive");
         }
         
-        public List<string> HasMaterialKeyframeLayers(GameObject obj)
+        public List<string> HasMaterialKeyframeLayers(GameObject[] obj)
         {
-            var path = GetRelativePath(obj.transform);
+            var path = obj.Select(o=>GetRelativePath(o.transform)).ToArray();
             return HasKeyframeLayers(path, "m_Materials");
         }
         
-        public List<string> HasKeyframeLayers(string path, string attribute = "")
+        public List<string> HasKeyframeLayers(string[] path, string attribute = "")
         {
             var layers = new List<string>();
             foreach (var playableLayer in avatar.baseAnimationLayers)
@@ -1510,7 +1510,7 @@ namespace HhotateA.AvatarModifyTools.Core
             return layers;
         }
         
-        bool HasKeyFrameStateMachine(AnimatorStateMachine machine, string path, string attribute = "")
+        bool HasKeyFrameStateMachine(AnimatorStateMachine machine, string[] path, string attribute = "")
         {
             foreach (var s in machine.states)
             {
@@ -1533,7 +1533,7 @@ namespace HhotateA.AvatarModifyTools.Core
             return false;
         }
         
-        bool HasKeyframeMotion(Motion motion, string path, string attribute = "")
+        bool HasKeyframeMotion(Motion motion, string[] path, string attribute = "")
         {
             if (motion is BlendTree)
             {
@@ -1559,7 +1559,7 @@ namespace HhotateA.AvatarModifyTools.Core
             return false;
         }
         
-        bool HasKeyframeAnimation(AnimationClip clip, string path, string attribute = "")
+        bool HasKeyframeAnimation(AnimationClip clip, string[] path, string attribute = "")
         {
             bool hasPath = false;
             using (var o = new SerializedObject(clip))
@@ -1571,7 +1571,7 @@ namespace HhotateA.AvatarModifyTools.Core
                     var attributeProp = curves.GetArrayElementAtIndex(i).FindPropertyRelative("attribute");
                     if (pathProp != null)
                     {
-                        if (pathProp.stringValue == path)
+                        if (path.Contains(pathProp.stringValue))
                         {
                             if (String.IsNullOrWhiteSpace(attribute))
                             {

@@ -611,6 +611,12 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                                     AssetDatabase.CreateAsset(data, path);
                                     Setup(path);
                                     OnFinishSetup();
+                                    
+                                    var conflict = FindConflict();
+                                    if (conflict.Count > 0)
+                                    {
+                                        status.Warning("Detect Conflict Layer : " + conflict[0]);
+                                    }
                                 }
                                 catch (Exception e)
                                 {
@@ -618,6 +624,10 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                                     throw;
                                 }
                             }
+                        }
+                        if (GUILayout.Button("Find"))
+                        {
+                            FindConflict();
                         }
 
                         EditorGUILayout.Space();
@@ -2097,31 +2107,29 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             });
         }
 
-        void FindConflict()
+        List<string> FindConflict()
         {
 #if VRC_SDK_VRCSDK3
-            var mod = new AvatarModifyTool(avatar);
+            AvatarModifyTool mod = new AvatarModifyTool(avatar);
             ApplySettings(mod);
-            System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
-            sw.Start();
-            var conflictLayers = new List<string>();
+            var items = new List<GameObject>();
             foreach (var menu in data.menuElements)
             {
                 foreach (var item in menu.activeItems)
                 {
-                    conflictLayers.AddRange(mod.HasActivateKeyframeLayers(item.obj).Where(l=>!l.StartsWith(EnvironmentGUIDs.prefix+
-                        mod.GetSafeParam(data.saveName))));
+                    items.Add(item.obj);
                 }
             }
 
+            items = items.Distinct().ToList();
+            var conflictLayers = mod.HasActivateKeyframeLayers(items.ToArray()).Where(l =>
+                !l.StartsWith(EnvironmentGUIDs.prefix + mod.GetSafeParam(data.saveName))).Where(l=>
+                !l.StartsWith(EnvironmentGUIDs.prefix + data.saveName)).ToList();
+
             conflictLayers = conflictLayers.Distinct().ToList();
-            foreach (var layer in conflictLayers)
-            {
-                Debug.Log(layer);
-            }
-            sw.Stop();
-            Debug.Log(sw.ElapsedMilliseconds + "ms");
+            return conflictLayers;
 #endif
+            return new List<string>();
         }
         private void OnDestroy()
         {
