@@ -616,6 +616,11 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                                     if (conflict.Count > 0)
                                     {
                                         status.Warning("Detect Conflict Layer : " + conflict[0]);
+                                        foreach (var c in conflict)
+                                        {
+                                            Debug.LogWarning("Detect Conflict Layer : " + c);
+                                            
+                                        }
                                     }
                                 }
                                 catch (Exception e)
@@ -624,10 +629,6 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                                     throw;
                                 }
                             }
-                        }
-                        if (GUILayout.Button("Find"))
-                        {
-                            FindConflict();
                         }
 
                         EditorGUILayout.Space();
