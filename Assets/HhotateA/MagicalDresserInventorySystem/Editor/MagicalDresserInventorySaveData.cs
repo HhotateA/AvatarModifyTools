@@ -148,11 +148,12 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         
         public List<SyncElement> activeSyncElements = new List<SyncElement>();
         public List<SyncElement> inactiveSyncElements = new List<SyncElement>();
-        // 別に互換性いいかな．．．？
-        /*public List<string> activeSyncOnElements = new List<string>();
-        public List<string> activeSyncOffElements = new List<string>();
-        public List<string> inactiveSyncOnElements = new List<string>();
-        public List<string> inactiveSyncOffElements = new List<string>();*/
+
+        public bool extendOverrides = false;
+        public bool isOverrideActivateTransition = false;
+        public ItemElement overrideActivateTransition = new ItemElement();
+        public bool isOverrideInactivateTransition = false;
+        public ItemElement overrideInactivateTransition = new ItemElement();
 
         public MenuElement()
         {
@@ -234,9 +235,15 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         //public Shader animationShader;
         public Material animationMaterial;
         public string animationParam = "_AnimationTime";
+        public float animationParamOff = 0f;
+        public float animationParamOn = 1f;
 
         public bool extendOption = false;
         public List<RendererOption> rendOptions = new List<RendererOption>();
+
+        public ItemElement()
+        {
+        }
 
         public ItemElement(GameObject o,GameObject root = null,bool defaultActive = true)
         {

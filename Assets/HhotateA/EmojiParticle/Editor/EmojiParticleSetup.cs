@@ -112,7 +112,7 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
             EditorGUILayout.EndScrollView();
             
             EditorGUILayout.Space();
-            if (ShowNotRecommended())
+            if (ShowOptions())
             {
                 if (GUILayout.Button("Force Revert"))
                 {

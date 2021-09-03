@@ -26,10 +26,13 @@ namespace HhotateA.AvatarModifyTools.Core
 #endif
         public Animator avatarAnim;
         
-        public bool notRecommended = false;
+        public bool expandOptions = false;
         public bool writeDefault = false;
         public bool overrideSettings = true;
+        public bool renameParameters = true;
+        public bool modifyOriginalAsset = true;
         public bool autoNextPage = true;
+        public bool overrideNullAnimation = true;
 
         public void VRCErrorLabel()
         {
@@ -106,17 +109,27 @@ namespace HhotateA.AvatarModifyTools.Core
             }
         }
 
-        public bool ShowNotRecommended()
+        public bool ShowOptions()
         {
-            notRecommended = EditorGUILayout.Foldout(notRecommended,"VRChat Not Recommended");
-            if (notRecommended)
+            expandOptions = EditorGUILayout.Foldout(expandOptions,"Modify Options");
+            if (expandOptions)
             {
-                writeDefault = EditorGUILayout.Toggle("Write Default", writeDefault); 
-                overrideSettings = EditorGUILayout.Toggle("Override Settings", overrideSettings); 
-                autoNextPage = EditorGUILayout.Toggle("Auto Next Page", autoNextPage); 
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    EditorGUILayout.LabelField(" ",GUILayout.Width(20));
+                    using (new EditorGUILayout.VerticalScope())
+                    {
+                        writeDefault = EditorGUILayout.Toggle("Override Write Default", writeDefault); 
+                        // overrideNullAnimation = EditorGUILayout.Toggle("Override Null Animation", overrideNullAnimation);
+                        renameParameters = EditorGUILayout.Toggle("Rename Parameters", renameParameters); 
+                        //modifyOriginalAsset = EditorGUILayout.Toggle("Allow Modify Assets", modifyOriginalAsset); 
+                        //overrideSettings = EditorGUILayout.Toggle("Revert Before Setup", overrideSettings); 
+                        autoNextPage = EditorGUILayout.Toggle("Auto Next Page", autoNextPage);
+                    }
+                }
             }
 
-            return notRecommended;
+            return expandOptions;
         }
 
 #if VRC_SDK_VRCSDK3
@@ -126,10 +139,11 @@ namespace HhotateA.AvatarModifyTools.Core
             {
                 mod.WriteDefaultOverride = true;
             }
-            mod.safeOriginalAsset = true;
-            mod.overrideSettings = overrideSettings;
-            mod.renameParameters = true;
-            mod.autoAddNextPage = autoNextPage;
+            mod.OverrideSettings = overrideSettings;
+            mod.RenameParameters = renameParameters;
+            mod.ModifyOriginalAsset = modifyOriginalAsset;
+            mod.AutoAddNextPage = autoNextPage;
+            mod.OverrideNullAnimation = overrideNullAnimation;
             return mod;
         }
 #endif
@@ -223,7 +237,9 @@ namespace HhotateA.AvatarModifyTools.Core
             
             EditorGUILayout.Space();
             
-            EditorGUILayout.LabelField("powered by AvatarModifyTool @HhotateA_xR",signature);
+            EditorGUILayout.LabelField( "powered by AvatarModifyTool @HhotateA_xR" ,signature);
+            EditorGUILayout.LabelField( "Version " + EnvironmentVariable.version ,signature);
+            // EditorGUILayout.LabelField( EnvironmentVariable.githubLink ,signature);
         }
 
         public class StatusView

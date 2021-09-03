@@ -23,6 +23,13 @@ VRChatのアバターで使用できる，トレイルタイプの指ペンの�
 3. VRCExpressionParameters"AvatarPen"から始まる名前の項目を削除する．
 4. アバター指先の"Avatar_Pen"オブジェクトを削除する．
 
+## Modify Options
+- Override Write Default : WriteDefaultの値を上書きします．(VRChat非推奨項目)
+- RenameParameters : パラメーター名に含まれる2バイト文字をハッシュ化して取り除きます．
+- Auto Next Page : メニューの項目数が上限に達した場合，自動で次ページを作成します．
+
+- Force Revert : このツールでセットアップされた設定を元に戻します．
+
 ## 注意事項
 - アバターのfxAnimatorController,ExpressionMenu,ExpressionParametersに破壊的な変更を加えます．あらかじめ忘れずにバックアップを取ってください．
 - 過去バージョンと競合してエラーが出る場合はFullPackageを試してください．
@@ -48,3 +55,4 @@ VRChatのアバターで使用できる，トレイルタイプの指ペンの�
 2021/07/31 v1.25
 2021/08/13 v1.26
 2021/08/27 v1.27
+2021/09/03 v1.29
