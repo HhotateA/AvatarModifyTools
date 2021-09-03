@@ -1522,6 +1522,12 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                         }
                     }
                 }
+
+                if (materialOverride)
+                {
+                    setAnim.AddKeyframe_Scale(0f,element.obj.transform,element.obj.transform.localScale);
+                    setAnim.AddKeyframe_Scale(1f/60f,element.obj.transform,element.obj.transform.localScale);
+                }
             }
 
             if (transitionAnim != null)
@@ -1746,6 +1752,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             var defaultScale = obj.transform.localScale;
             if (activate)
             {
+                anim.AddKeyframe_Scale( 0f,obj.transform,Vector3.zero);
                 anim.AddKeyframe_Scale( delay,obj.transform,Vector3.zero);
                 if (bounce)
                 {
@@ -1756,13 +1763,16 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             }
             else
             {
-                anim.AddKeyframe_Scale( delay+duration,obj.transform,Vector3.zero);
+                anim.AddKeyframe_Scale(delay,obj.transform,defaultScale);
                 if (bounce)
                 {
                     anim.AddKeyframe_Scale(delay+duration*0.2f,obj.transform, defaultScale*1.2f);
                     anim.AddKeyframe_Scale(delay+duration*0.4f,obj.transform, defaultScale*0.9f);
                 }
-                anim.AddKeyframe_Scale(delay,obj.transform,defaultScale);
+                anim.AddKeyframe_Scale( delay+duration,obj.transform,Vector3.zero);
+                
+                anim.AddKeyframe_Gameobject(obj,delay+duration,false);
+                anim.AddKeyframe_Scale(delay+duration+1f/60f,obj.transform,defaultScale);
             }
             return anim;
         }
