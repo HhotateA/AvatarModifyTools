@@ -708,6 +708,27 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                                     data = d;
                                     LoadReorderableList();
                                 }
+
+                                // avatarの設定
+                                if (avatar)
+                                {
+                                    data.ApplyRoot(avatar.gameObject);
+                                }
+                                else
+                                {
+                                    var root = d.GetRoot();
+                                    if (root)
+                                    {
+#if VRC_SDK_VRCSDK3
+                                        avatar = root.GetComponent<VRCAvatarDescriptor>();
+#endif
+                                        if (avatar)
+                                        {
+                                            data.ApplyRoot(avatar.gameObject);
+                                        }
+                                    }
+                                }
+                                
                                 status.Success("Loaded");
                             }
                         }
