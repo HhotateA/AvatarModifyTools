@@ -16,6 +16,9 @@ namespace HhotateA.AvatarModifyTools.Core
 {
     public static class EnvironmentVariable
     {
+        public static string version = "1.29.0";
+        public static string githubLink = "https://github.com/HhotateA/AvatarModifyTools";
+            
         public static string computeShader = "8e33ed767aaabf04eae3c3866bece392";
         
         public static int maxCaches = 16;

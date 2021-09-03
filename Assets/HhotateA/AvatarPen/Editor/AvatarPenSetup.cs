@@ -25,7 +25,7 @@ namespace HhotateA.AvatarModifyTools.AvatarPen
         {
             var wnd = GetWindow<AvatarPenSetup>();
             wnd.titleContent = new GUIContent("AvatarPenSetup");
-            wnd.maxSize = wnd.minSize = new Vector2(340, 310);
+            wnd.maxSize = wnd.minSize = new Vector2(340, 340);
         }
         private bool isLeftHand = false;
 

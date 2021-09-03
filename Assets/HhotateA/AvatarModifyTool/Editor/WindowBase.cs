@@ -237,7 +237,9 @@ namespace HhotateA.AvatarModifyTools.Core
             
             EditorGUILayout.Space();
             
-            EditorGUILayout.LabelField("powered by AvatarModifyTool @HhotateA_xR",signature);
+            EditorGUILayout.LabelField( "powered by AvatarModifyTool @HhotateA_xR" ,signature);
+            EditorGUILayout.LabelField( "Version " + EnvironmentVariable.version ,signature);
+            // EditorGUILayout.LabelField( EnvironmentVariable.githubLink ,signature);
         }
 
         public class StatusView
