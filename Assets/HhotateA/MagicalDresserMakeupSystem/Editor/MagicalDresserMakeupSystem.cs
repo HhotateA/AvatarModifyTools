@@ -124,7 +124,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserMakeupSystem
             }
             
             EditorGUILayout.Space();
-            if (ShowNotRecommended())
+            if (ShowOptions())
             {
                 if (GUILayout.Button("Force Revert"))
                 {

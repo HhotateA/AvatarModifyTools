@@ -141,7 +141,7 @@ namespace HhotateA.AvatarModifyTools.TailMover
             EditorGUILayout.Space();
             if (!avatar)
             {
-                if (ShowNotRecommended())
+                if (ShowOptions())
                 {
                     if (GUILayout.Button("Force Revert"))
                     {
@@ -367,7 +367,7 @@ namespace HhotateA.AvatarModifyTools.TailMover
                 }
                 
                 EditorGUILayout.Space();
-                if (ShowNotRecommended())
+                if (ShowOptions())
                 {
                     if (GUILayout.Button("Force Revert"))
                     {

@@ -28,7 +28,6 @@ namespace HhotateA.AvatarModifyTools.Core
         
         public bool expandOptions = false;
         public bool writeDefault = false;
-        public bool duplicateSDKAssets = true;
         public bool overrideSettings = true;
         public bool renameParameters = true;
         public bool modifyOriginalAsset = true;
@@ -110,7 +109,7 @@ namespace HhotateA.AvatarModifyTools.Core
             }
         }
 
-        public bool ShowNotRecommended()
+        public bool ShowOptions()
         {
             expandOptions = EditorGUILayout.Foldout(expandOptions,"Modify Options");
             if (expandOptions)
@@ -120,12 +119,11 @@ namespace HhotateA.AvatarModifyTools.Core
                     EditorGUILayout.LabelField(" ",GUILayout.Width(20));
                     using (new EditorGUILayout.VerticalScope())
                     {
-                        writeDefault = EditorGUILayout.Toggle("Write Default", writeDefault); 
-                        overrideNullAnimation = EditorGUILayout.Toggle("Override Null Animation", overrideNullAnimation);
-                        // duplicateSDKAssets = EditorGUILayout.Toggle("Duplicate SDK Assets", duplicateSDKAssets); 
+                        writeDefault = EditorGUILayout.Toggle("Override Write Default", writeDefault); 
+                        // overrideNullAnimation = EditorGUILayout.Toggle("Override Null Animation", overrideNullAnimation);
                         renameParameters = EditorGUILayout.Toggle("Rename Parameters", renameParameters); 
-                        modifyOriginalAsset = EditorGUILayout.Toggle("Modify Original Asset", modifyOriginalAsset); 
-                        overrideSettings = EditorGUILayout.Toggle("Override Settings", overrideSettings); 
+                        //modifyOriginalAsset = EditorGUILayout.Toggle("Allow Modify Assets", modifyOriginalAsset); 
+                        //overrideSettings = EditorGUILayout.Toggle("Revert Before Setup", overrideSettings); 
                         autoNextPage = EditorGUILayout.Toggle("Auto Next Page", autoNextPage);
                     }
                 }
@@ -141,7 +139,6 @@ namespace HhotateA.AvatarModifyTools.Core
             {
                 mod.WriteDefaultOverride = true;
             }
-            mod.DuplicateSDKAssets = duplicateSDKAssets;
             mod.OverrideSettings = overrideSettings;
             mod.RenameParameters = renameParameters;
             mod.ModifyOriginalAsset = modifyOriginalAsset;
@@ -240,7 +237,9 @@ namespace HhotateA.AvatarModifyTools.Core
             
             EditorGUILayout.Space();
             
-            EditorGUILayout.LabelField("powered by AvatarModifyTool @HhotateA_xR",signature);
+            EditorGUILayout.LabelField( "powered by AvatarModifyTool @HhotateA_xR" ,signature);
+            EditorGUILayout.LabelField( "Version " + EnvironmentVariable.version ,signature);
+            // EditorGUILayout.LabelField( EnvironmentVariable.githubLink ,signature);
         }
 
         public class StatusView
