@@ -96,7 +96,7 @@ namespace HhotateA.AvatarModifyTools.Core
         }
         
         public bool? WriteDefaultOverride { get; set; } = null;
-        public bool DuplicateSDKAssets { get; set; } = true;
+        public bool DuplicateAssets { get; set; } = true;
         public bool OverrideSettings { get; set; } = true;
         public bool RenameParameters { get; set; } = false;
         public bool ModifyOriginalAsset { get; set; } = false;
@@ -127,8 +127,8 @@ namespace HhotateA.AvatarModifyTools.Core
                 ModifyAvatarAnimatorController(VRCAvatarDescriptor.AnimLayerType.Gesture,assets.gesture_controller);
                 ModifyAvatarAnimatorController(VRCAvatarDescriptor.AnimLayerType.Action,assets.action_controller);
                 ModifyAvatarAnimatorController(VRCAvatarDescriptor.AnimLayerType.FX,assets.fx_controller);
-                ModifyExpressionParameter(assets.parameter,DuplicateSDKAssets);
-                ModifyExpressionMenu(assets.menu,AutoAddNextPage,DuplicateSDKAssets);
+                ModifyExpressionParameter(assets.parameter);
+                ModifyExpressionMenu(assets.menu);
                 AssetDatabase.SaveAssets();
             }
             else
@@ -906,7 +906,7 @@ namespace HhotateA.AvatarModifyTools.Core
         /// </summary>
         /// <param name="parameters"></param>
         /// <param name="origin"></param>
-        void ModifyExpressionParameter(VRCExpressionParameters parameters,bool keepOriginalAsset = true)
+        void ModifyExpressionParameter(VRCExpressionParameters parameters)
         {
             if(parameters==null) return;
             if (GetExpressionParameterExist())
@@ -921,7 +921,7 @@ namespace HhotateA.AvatarModifyTools.Core
             }
             else
             {
-                if (keepOriginalAsset)
+                if (DuplicateAssets)
                 {
                     var current = MakeCopy<VRCExpressionParameters>(parameters,false);
                     SetExpressionParameter(current);
@@ -957,7 +957,7 @@ namespace HhotateA.AvatarModifyTools.Core
         /// </summary>
         /// <param name="menus"></param>
         /// <param name="origin"></param>
-        void ModifyExpressionMenu(VRCExpressionsMenu menus, bool autoNextPage = true,bool keepOriginalAsset = true)
+        void ModifyExpressionMenu(VRCExpressionsMenu menus)
         {
             if (menus == null) return;
             if (GetExpressionMenuExist())
@@ -968,7 +968,7 @@ namespace HhotateA.AvatarModifyTools.Core
                 foreach (var control in menus.controls)
                 {
                     int menuMax = 8;
-                    while (current.controls.Count >= menuMax && autoNextPage) // 項目が上限に達していたら次ページに飛ぶ
+                    while (current.controls.Count >= menuMax && AutoAddNextPage) // 項目が上限に達していたら次ページに飛ぶ
                     {
                         if (current.controls[menuMax-1].name == "NextPage" &&
                             current.controls[menuMax-1].type == VRCExpressionsMenu.Control.ControlType.SubMenu &&
@@ -1035,7 +1035,7 @@ namespace HhotateA.AvatarModifyTools.Core
             }
             else
             {
-                if (keepOriginalAsset)
+                if (DuplicateAssets)
                 {
                     var current = MakeCopy<VRCExpressionsMenu>(menus,false);
                     SetExpressionMenu(current);

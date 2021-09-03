@@ -121,7 +121,7 @@ namespace HhotateA.AvatarModifyTools.GrabableItem
             }
 
             EditorGUILayout.Space();
-            if (ShowNotRecommended())
+            if (ShowOptions())
             {
                 if (GUILayout.Button("Force Revert"))
                 {
@@ -175,8 +175,207 @@ namespace HhotateA.AvatarModifyTools.GrabableItem
             Signature();
         }
 
+        void DeleateSettingObjects()
+        {
+            while (true)
+            {
+                var wp = avatar.transform.RecursiveFindChild(EnvironmentGUIDs.prefix + saveName + "_WorldPoint");
+                if (wp)
+                {
+                    DestroyImmediate(wp.gameObject);
+                    continue;
+                }
+                var wa = avatar.transform.RecursiveFindChild(EnvironmentGUIDs.prefix + saveName + "_WorldAnchor");
+                if (wa)
+                {
+                    DestroyImmediate(wa.gameObject);
+                    continue;
+                }
+                var ia = avatar.transform.RecursiveFindChild(EnvironmentGUIDs.prefix + saveName + "_ItemShip");
+                if (ia)
+                {
+                    DestroyImmediate(ia.gameObject);
+                    continue;
+                }
+                var ha = avatar.transform.RecursiveFindChild(EnvironmentGUIDs.prefix + saveName + "_HandAnchor");
+                if (ha)
+                {
+                    DestroyImmediate(ha.gameObject);
+                    continue;
+                }
+                var ra = avatar.transform.RecursiveFindChild(EnvironmentGUIDs.prefix + saveName + "_RootAnchor");
+                if (ra)
+                {
+                    DestroyImmediate(ra.gameObject);
+                    continue;
+                }
+                break;
+            }
+        }
+
         void ConstraintSetup(string path)
         {
+            if (deleateObject)
+            {
+                DeleateSettingObjects();
+            }
+            if (grabTrigger == Triggers.None && dropTrigger == Triggers.None)
+            {
+                return;
+            }
+            else
+            if(grabTrigger == Triggers.None)
+            {
+                DropSetup(path);
+            }
+            else
+            if(dropTrigger == Triggers.None)
+            {
+                GrabSetup(path);
+            }
+            else
+            {
+                FullSetup(path);
+            }
+        }
+
+        void GrabSetup(string path)
+        {
+            GameObject itemAnchor = new GameObject(EnvironmentGUIDs.prefix + saveName + "_ItemShip");
+            itemAnchor.transform.SetPositionAndRotation(Vector3.zero,Quaternion.identity);
+            itemAnchor.transform.SetParent(avatar.transform);
+            
+            GameObject handAnchor = new GameObject(EnvironmentGUIDs.prefix + saveName + "_HandAnchor");
+            handAnchor.transform.SetPositionAndRotation(handBone.transform.position,handBone.transform.rotation);
+            handAnchor.transform.SetParent(handBone.transform);
+            
+            GameObject rootAnchor = new GameObject(EnvironmentGUIDs.prefix + saveName + "_RootAnchor");
+            rootAnchor.transform.SetPositionAndRotation(target.transform.position,target.transform.rotation);
+            rootAnchor.transform.SetParent(target.transform.parent);
+            
+            var itemConst = itemAnchor.AddComponent<ParentConstraint>();
+            itemConst.AddSource(new ConstraintSource()
+            {
+                sourceTransform = rootAnchor.transform,
+                weight = 1f
+            });
+            itemConst.AddSource(new ConstraintSource()
+            {
+                sourceTransform = handAnchor.transform,
+                weight = 0f
+            });
+            itemConst.weight = 1f;
+            itemConst.translationAtRest = Vector3.zero;
+            itemConst.rotationAtRest = Vector3.zero;
+            itemConst.locked = true;
+            itemConst.constraintActive = true;
+
+            var c = new AnimatorControllerCreator(saveName);
+            var resetAnim = new AnimationClipCreator("Reset",avatar.gameObject);
+            resetAnim.AddKeyframe(0f,itemConst,"m_Enabled",1f);
+            resetAnim.AddKeyframe(0f,itemConst,"m_Sources.Array.data[0].weight",1f);
+            resetAnim.AddKeyframe(0f,itemConst,"m_Sources.Array.data[1].weight",0f);
+            resetAnim.AddKeyframe(1f/60f,itemConst,"m_Enabled",1f);
+            resetAnim.AddKeyframe(1f/60f,itemConst,"m_Sources.Array.data[0].weight",1f);
+            resetAnim.AddKeyframe(1f/60f,itemConst,"m_Sources.Array.data[1].weight",0f);
+            
+            var grabAnim = new AnimationClipCreator("Grab",avatar.gameObject);
+            grabAnim.AddKeyframe(0f,itemConst,"m_Enabled",1f);
+            grabAnim.AddKeyframe(0f,itemConst,"m_Sources.Array.data[0].weight",0f);
+            grabAnim.AddKeyframe(0f,itemConst,"m_Sources.Array.data[1].weight",1f);
+            grabAnim.AddKeyframe(1f/60f,itemConst,"m_Enabled",1f);
+            grabAnim.AddKeyframe(1f/60f,itemConst,"m_Sources.Array.data[0].weight",0f);
+            grabAnim.AddKeyframe(1f/60f,itemConst,"m_Sources.Array.data[1].weight",1f);
+
+            if (safeMode)
+            {
+                var clone = GameObject.Instantiate(target,itemAnchor.transform);
+                clone.transform.SetPositionAndRotation(Vector3.zero,Quaternion.identity);
+                clone.SetActive(false);
+                
+                resetAnim.AddKeyframe_Gameobject(target,0f,true);
+                resetAnim.AddKeyframe_Gameobject(target,1f/60f,true);
+                resetAnim.AddKeyframe_Gameobject(clone,0f,false);
+                resetAnim.AddKeyframe_Gameobject(clone,1f/60f,false);
+                
+                grabAnim.AddKeyframe_Gameobject(target,0f,false);
+                grabAnim.AddKeyframe_Gameobject(target,1f/60f,false);
+                grabAnim.AddKeyframe_Gameobject(clone,0f,true);
+                grabAnim.AddKeyframe_Gameobject(clone,1f/60f,true);
+            }
+            else
+            {
+                var targetConst = target.GetComponent<ParentConstraint>();
+                if(targetConst) DestroyImmediate(targetConst);
+                targetConst = target.AddComponent<ParentConstraint>();
+                targetConst.AddSource(new ConstraintSource()
+                {
+                    sourceTransform = itemAnchor.transform,
+                    weight = 1f
+                });
+                targetConst.weight = 1f;
+                targetConst.translationAtRest = Vector3.zero;
+                targetConst.rotationAtRest = Vector3.zero;
+                targetConst.locked = true;
+                targetConst.constraintActive = true;
+            }
+            
+            c.AddDefaultState("Idle",resetAnim.Create());
+            c.AddState("Reset",resetAnim.Create());
+            c.AddState("Grab", grabAnim.Create());
+
+            string paramGrab = saveName + "_Grab";
+            string paramDrop = saveName + "_Drop";
+            c.AddParameter(paramGrab,false);
+            c.AddParameter(paramDrop,false);
+            c.AddParameter("GestureLeft",0);
+            c.AddParameter("GestureRight",0);
+            
+            if (grabTrigger == Triggers.Menu)
+            {
+                c.AddTransition("Idle","Grab",paramGrab,true,true,1f,0.2f);
+                c.AddTransition("Grab","Reset",paramGrab,false,true,1f,0.2f);
+            }
+            else
+            {
+                c.AddTransition("Idle","Grab",new AnimatorCondition[2]{new AnimatorCondition()
+                {
+                    mode = AnimatorConditionMode.If,
+                    parameter = paramGrab,
+                    threshold = 1,
+                },GetGrabTrigger(grabTrigger,true) },true,1f,0.2f);
+                c.AddTransition("Grab","Reset",paramGrab,false, true,1f,0.2f);
+                c.AddTransition("Grab","Reset",new AnimatorCondition[1]{ GetGrabTrigger(grabTrigger,false)},true,1f,0.2f);
+            }
+            c.AddTransition("Reset","Idle");
+            
+            c.CreateAsset(path);
+            resetAnim.CreateAsset(path, true);
+            grabAnim.CreateAsset(path, true);
+            
+#if VRC_SDK_VRCSDK3
+            var m = new MenuCreater(saveName);
+            m.AddToggle("Grab",AssetUtility.LoadAssetAtGuid<Texture2D>(EnvironmentGUIDs.grabIcon),paramGrab);
+            
+            var p = new ParametersCreater(saveName);
+            p.AddParam(paramGrab,false,false);
+            p.AddParam(paramDrop,false,false);
+            
+            var mod = new AvatarModifyTool(avatar,path);
+            var assets = CreateInstance<AvatarModifyData>();
+            {
+                assets.fx_controller = c.Create();
+                assets.parameter = p.CreateAsset(path, true);
+                assets.menu = m.CreateAsset(path, true);
+            }
+            AssetDatabase.AddObjectToAsset(assets,path);
+            ApplySettings(mod).ModifyAvatar(assets,EnvironmentGUIDs.prefix);
+#endif
+        }
+
+        void DropSetup(string path)
+        {
+
             GameObject worldPoint = avatar.transform.Find(EnvironmentGUIDs.prefix + saveName + "_WorldPoint")?.gameObject;
             if (!worldPoint) worldPoint = new GameObject(EnvironmentGUIDs.prefix + saveName + "_WorldPoint");
             worldPoint.transform.SetPositionAndRotation(Vector3.zero,Quaternion.identity);
@@ -214,15 +413,158 @@ namespace HhotateA.AvatarModifyTools.GrabableItem
                 worldConstR.locked = true;
                 worldConstR.constraintActive = true;
             }
+
+            GameObject itemAnchor = new GameObject(EnvironmentGUIDs.prefix + saveName + "_ItemShip");
+            itemAnchor.transform.SetPositionAndRotation(Vector3.zero,Quaternion.identity);
+            itemAnchor.transform.SetParent(worldAnchor.transform);
+
+            GameObject rootAnchor = new GameObject(EnvironmentGUIDs.prefix + saveName + "_RootAnchor");
+            rootAnchor.transform.SetPositionAndRotation(target.transform.position,target.transform.rotation);
+            rootAnchor.transform.SetParent(target.transform.parent);
             
-            if (deleateObject)
+            var itemConst = itemAnchor.AddComponent<ParentConstraint>();
+            itemConst.AddSource(new ConstraintSource()
             {
-                var ia = worldAnchor.transform.RecursiveFindChild(EnvironmentGUIDs.prefix + saveName + "_ItemShip");
-                if(ia) DestroyImmediate(ia.gameObject);
-                var ha = handBone.transform.RecursiveFindChild(EnvironmentGUIDs.prefix + saveName + "_HandAnchor");
-                if(ha) DestroyImmediate(ha.gameObject);
-                var ra = target.transform.parent.RecursiveFindChild(EnvironmentGUIDs.prefix + saveName + "_RootAnchor");
-                if(ra) DestroyImmediate(ra.gameObject);
+                sourceTransform = rootAnchor.transform,
+                weight = 1f
+            });
+            itemConst.weight = 1f;
+            itemConst.translationAtRest = Vector3.zero;
+            itemConst.rotationAtRest = Vector3.zero;
+            itemConst.locked = true;
+            itemConst.constraintActive = true;
+
+            var c = new AnimatorControllerCreator(saveName);
+            var resetAnim = new AnimationClipCreator("Reset",avatar.gameObject);
+            resetAnim.AddKeyframe(0f,itemConst,"m_Enabled",1f);
+            resetAnim.AddKeyframe(1f/60f,itemConst,"m_Enabled",1f);
+            
+            var dropAnim = new AnimationClipCreator("Drop",avatar.gameObject);
+            dropAnim.AddKeyframe(0f,itemConst,"m_Enabled",0f);
+            dropAnim.AddKeyframe(1f/60f,itemConst,"m_Enabled",0f);
+
+            if (safeMode)
+            {
+                var clone = GameObject.Instantiate(target,itemAnchor.transform);
+                clone.transform.SetPositionAndRotation(Vector3.zero,Quaternion.identity);
+                clone.SetActive(false);
+                
+                resetAnim.AddKeyframe_Gameobject(target,0f,true);
+                resetAnim.AddKeyframe_Gameobject(target,1f/60f,true);
+                resetAnim.AddKeyframe_Gameobject(clone,0f,false);
+                resetAnim.AddKeyframe_Gameobject(clone,1f/60f,false);
+                
+                dropAnim.AddKeyframe_Gameobject(target,0f,false);
+                dropAnim.AddKeyframe_Gameobject(target,1f/60f,false);
+                dropAnim.AddKeyframe_Gameobject(clone,0f,true);
+                dropAnim.AddKeyframe_Gameobject(clone,1f/60f,true);
+            }
+            else
+            {
+                var targetConst = target.GetComponent<ParentConstraint>();
+                if(targetConst) DestroyImmediate(targetConst);
+                targetConst = target.AddComponent<ParentConstraint>();
+                targetConst.AddSource(new ConstraintSource()
+                {
+                    sourceTransform = itemAnchor.transform,
+                    weight = 1f
+                });
+                targetConst.weight = 1f;
+                targetConst.translationAtRest = Vector3.zero;
+                targetConst.rotationAtRest = Vector3.zero;
+                targetConst.locked = true;
+                targetConst.constraintActive = true;
+            }
+            
+            c.AddDefaultState("Idle",resetAnim.Create());
+            c.AddState("Reset",resetAnim.Create());
+            c.AddState("Drop", dropAnim.Create());
+
+            string paramDrop = saveName + "_Drop";
+            c.AddParameter(paramDrop,false);
+            c.AddParameter("GestureLeft",0);
+            c.AddParameter("GestureRight",0);
+            
+            if (dropTrigger == Triggers.Menu)
+            {
+                c.AddTransition("Idle","Drop",paramDrop,true,true,1f,0f);
+                c.AddTransition("Drop","Reset",paramDrop,false);
+            }
+            else
+            {
+                c.AddTransition("Idle","Drop",new AnimatorCondition[2]{new AnimatorCondition()
+                {
+                    mode = AnimatorConditionMode.If,
+                    parameter = paramDrop,
+                    threshold = 1,
+                },GetGrabTrigger(dropTrigger,true) },true,1f,0f);
+
+                c.AddTransition("Drop", "Reset", paramDrop, false);
+                c.AddTransition("Drop","Reset",new AnimatorCondition[1]{ GetGrabTrigger(dropTrigger,false)},true,1f,0f);
+            }
+            c.AddTransition("Reset","Idle");
+            
+            c.CreateAsset(path);
+            resetAnim.CreateAsset(path, true);
+            dropAnim.CreateAsset(path, true);
+            
+#if VRC_SDK_VRCSDK3
+            var m = new MenuCreater(saveName);
+            m.AddToggle("Drop",AssetUtility.LoadAssetAtGuid<Texture2D>(EnvironmentGUIDs.dropIcon),paramDrop);
+            
+            var p = new ParametersCreater(saveName);
+            p.AddParam(paramDrop,false,false);
+            
+            var mod = new AvatarModifyTool(avatar,path);
+            var assets = CreateInstance<AvatarModifyData>();
+            {
+                assets.fx_controller = c.Create();
+                assets.parameter = p.CreateAsset(path, true);
+                assets.menu = m.CreateAsset(path, true);
+            }
+            AssetDatabase.AddObjectToAsset(assets,path);
+            ApplySettings(mod).ModifyAvatar(assets,EnvironmentGUIDs.prefix);
+#endif
+        }
+
+        void FullSetup(string path)
+        {
+            GameObject worldPoint = avatar.transform.Find(EnvironmentGUIDs.prefix + saveName + "_WorldPoint")?.gameObject;
+            if (!worldPoint) worldPoint = new GameObject(EnvironmentGUIDs.prefix + saveName + "_WorldPoint");
+            worldPoint.transform.SetPositionAndRotation(Vector3.zero,Quaternion.identity);
+            worldPoint.transform.SetParent(avatar.transform);
+            
+            GameObject worldAnchor = worldPoint.transform.Find(EnvironmentGUIDs.prefix + saveName + "_WorldAnchor")?.gameObject;
+            if (!worldAnchor) worldAnchor = new GameObject(EnvironmentGUIDs.prefix + saveName + "_WorldAnchor");
+            worldAnchor.transform.SetPositionAndRotation(Vector3.zero,Quaternion.identity);
+            worldAnchor.transform.SetParent(worldPoint.transform);
+            var worldConstP = worldAnchor.GetComponent<PositionConstraint>();
+            if (!worldConstP)
+            {
+                worldConstP = worldAnchor.AddComponent<PositionConstraint>();
+                worldConstP.AddSource(new ConstraintSource()
+                {
+                    sourceTransform = worldPoint.transform,
+                    weight = -1f
+                });
+                worldConstP.weight = 0.5f;
+                worldConstP.translationAtRest = Vector3.zero;
+                worldConstP.locked = true;
+                worldConstP.constraintActive = true;
+            }
+            var worldConstR = worldAnchor.GetComponent<RotationConstraint>();
+            if (!worldConstR)
+            {
+                worldConstR = worldAnchor.AddComponent<RotationConstraint>();
+                worldConstR.AddSource(new ConstraintSource()
+                {
+                    sourceTransform = worldPoint.transform,
+                    weight = -0.5f
+                });
+                worldConstR.weight = 1f;
+                worldConstR.rotationAtRest = Vector3.zero;
+                worldConstR.locked = true;
+                worldConstR.constraintActive = true;
             }
             
             GameObject itemAnchor = new GameObject(EnvironmentGUIDs.prefix + saveName + "_ItemShip");
@@ -298,7 +640,9 @@ namespace HhotateA.AvatarModifyTools.GrabableItem
             }
             else
             {
-                var targetConst = target.AddComponent<ParentConstraint>();
+                var targetConst = target.GetComponent<ParentConstraint>();
+                if(targetConst) DestroyImmediate(targetConst);
+                targetConst = target.AddComponent<ParentConstraint>();
                 targetConst.AddSource(new ConstraintSource()
                 {
                     sourceTransform = itemAnchor.transform,
@@ -400,6 +744,11 @@ namespace HhotateA.AvatarModifyTools.GrabableItem
 
         void SimpleSetup(string path)
         {
+            if (grabTrigger == Triggers.None)
+            {
+                return;
+            }
+            
             if (deleateObject)
             {
                 var go = handBone.transform.FindInChildren(EnvironmentGUIDs.prefix + saveName);
@@ -616,6 +965,7 @@ namespace HhotateA.AvatarModifyTools.GrabableItem
 
         enum Triggers
         {
+            None,
             RightHand_Idle,
             RightHand_Fist,
             RightHand_Open,

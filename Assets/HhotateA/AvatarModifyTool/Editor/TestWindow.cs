@@ -43,7 +43,7 @@ namespace HhotateA.AvatarModifyTools.Core
             if(data==null) return;
             EditorGUILayout.LabelField("DATA : " + data.name);
             AvatartField("Avatar");
-            if (ShowNotRecommended())
+            if (ShowOptions())
             {
                 saveOrigin = EditorGUILayout.Toggle("Save Origin", saveOrigin); 
             }

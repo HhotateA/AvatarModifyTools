@@ -574,10 +574,8 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                         }
 
                         EditorGUILayout.Space();
-                        if (ShowNotRecommended())
+                        if (ShowOptions())
                         {
-                            idleOverride = EditorGUILayout.Toggle("Override Animation On Idle State", idleOverride);
-                            materialOverride = EditorGUILayout.Toggle("Override Material On Activate", materialOverride);
                             if (GUILayout.Button("Force Revert"))
                             {
                                 RevertObjectActiveForScene();
@@ -587,6 +585,17 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                             }
                         }
 
+                        EditorGUILayout.Space();
+                        using (new EditorGUILayout.HorizontalScope())
+                        {
+                            EditorGUILayout.LabelField("Override Animation On Idle State", GUILayout.Width(200));
+                            idleOverride = EditorGUILayout.Toggle("", idleOverride);
+                        }
+                        using (new EditorGUILayout.HorizontalScope())
+                        {
+                            EditorGUILayout.LabelField("Override Default Value Animation", GUILayout.Width(200));
+                            materialOverride = EditorGUILayout.Toggle("", materialOverride);
+                        }
                         EditorGUILayout.Space();
                         EditorGUILayout.Space();
 

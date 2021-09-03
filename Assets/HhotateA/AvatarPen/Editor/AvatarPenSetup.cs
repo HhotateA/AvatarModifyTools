@@ -43,7 +43,7 @@ namespace HhotateA.AvatarModifyTools.AvatarPen
             isLeftHand = EditorGUILayout.Toggle("Left Hand", isLeftHand);
             EditorGUILayout.Space();
 
-            if (ShowNotRecommended())
+            if (ShowOptions())
             {
                 
             }

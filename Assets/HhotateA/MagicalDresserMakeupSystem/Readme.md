@@ -27,13 +27,20 @@ VRChatのアバターで，メニューから服や髪色や，BlendShapeの上�
 
 ## アンインストール手順
 ### v1.27以降
- 1. 本ツールのVRChatNotRecommendedオプションから"Force Revert"ボタンを押す．
+ 1. 本ツールの"Modify Options"オプションから"Force Revert"ボタンを押す．
  2. 「Status : Complete Revert」というメッセージが出れば成功
 ### v1.26以前
 1. Fx_Animatorから"MDMakeup_"から始まる名前のレイヤーを削除する．
 2. VRCExpressionsMenuから"MDMakeup_"から始まる名前の項目を削除する．
 3. VRCExpressionParameters"MDMakeup_"から始まる名前の項目を削除する．
 4. HSV設定した場合，Rendererの子オブジェクトの"(clone)_Filter"という名前のオブジェクトを削除する
+
+## Modify Options
+- Override Write Default : WriteDefaultの値を上書きします．(VRChat非推奨項目)
+- RenameParameters : パラメーター名に含まれる2バイト文字をハッシュ化して取り除きます．
+- Auto Next Page : メニューの項目数が上限に達した場合，自動で次ページを作成します．
+
+- Force Revert : このツールでセットアップされた設定を元に戻します．
 
 ## 注意事項
 - アバターのfxAnimatorController,ExpressionMenu,ExpressionParametersに破壊的な変更を加えます．あらかじめ忘れずにバックアップを取ってください．
@@ -57,3 +64,4 @@ VRChatのアバターで，メニューから服や髪色や，BlendShapeの上�
 ## 更新履歴
 2021/08/13 v1.26
 2021/08/27 v1.27
+2021/09/03 v1.28
