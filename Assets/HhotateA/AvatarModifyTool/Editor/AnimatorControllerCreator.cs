@@ -442,7 +442,6 @@ namespace HhotateA.AvatarModifyTools.Core
 
         public void SetEditLayer(int value)
         {
-            Debug.Log(value);
             if (value >= 0)
             {
                 editLayer = value;
