@@ -767,20 +767,23 @@ namespace HhotateA.AvatarModifyTools.Core
                 if (behaviour is VRCAnimatorLayerControl)
                 {
                     VRCAnimatorLayerControl o = behaviour as VRCAnimatorLayerControl;
-                    var c = clone.AddStateMachineBehaviour<VRCAnimatorLayerControl>();
-                    c.ApplySettings = o.ApplySettings;
-                    c.debugString = o.debugString;
-                    c.playable = o.playable;
-                    c.layer = o.layer + layerOffset[o.playable]; // レイヤーが増えた分加算する
-                    c.blendDuration = o.blendDuration;
-                    c.goalWeight = o.goalWeight;
-                    c.playable = o.playable;
+                    var c = ScriptableObject.CreateInstance<VRCAnimatorLayerControl>();
+                    {
+                        c.ApplySettings = o.ApplySettings;
+                        c.debugString = o.debugString;
+                        c.playable = o.playable;
+                        c.layer = o.layer + layerOffset[o.playable]; // レイヤーが増えた分加算する
+                        c.blendDuration = o.blendDuration;
+                        c.goalWeight = o.goalWeight;
+                        c.playable = o.playable;
+                    }
+                    behaviours.Add(c);
                 }
                 else
                 if (behaviour is VRCAvatarParameterDriver)
                 {
                     VRCAvatarParameterDriver o = behaviour as VRCAvatarParameterDriver;
-                    var c = clone.AddStateMachineBehaviour<VRCAvatarParameterDriver>();
+                    var c = ScriptableObject.CreateInstance<VRCAvatarParameterDriver>();
                     {
                         c.name = o.name;
                         c.parameters = o.parameters.Select(p =>
@@ -800,6 +803,7 @@ namespace HhotateA.AvatarModifyTools.Core
                         c.localOnly = o.localOnly;
                         c.ApplySettings = o.ApplySettings;
                     }
+                    behaviours.Add(c);
                 }
                 else
                 {
