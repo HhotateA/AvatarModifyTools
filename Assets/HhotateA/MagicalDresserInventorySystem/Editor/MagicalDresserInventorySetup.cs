@@ -39,9 +39,6 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
 
         private bool displayItemMode = true;
         private bool displaySyncTransition = false;
-
-        private bool idleOverride = true;
-        private bool materialOverride = true;
         
         // <renderer original material,<transition sample material, use material>>
         Dictionary<Material,Dictionary<Material, Material>> matlist = new Dictionary<Material,Dictionary<Material, Material>>();
@@ -588,13 +585,18 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                         EditorGUILayout.Space();
                         using (new EditorGUILayout.HorizontalScope())
                         {
-                            EditorGUILayout.LabelField("Override Animation On Idle State", GUILayout.Width(200));
-                            idleOverride = EditorGUILayout.Toggle("", idleOverride);
+                            EditorGUILayout.LabelField("Override Animation On Idle State", GUILayout.Width(250));
+                            data.idleOverride = EditorGUILayout.Toggle("", data.idleOverride);
                         }
                         using (new EditorGUILayout.HorizontalScope())
                         {
-                            EditorGUILayout.LabelField("Override Default Value Animation", GUILayout.Width(200));
-                            materialOverride = EditorGUILayout.Toggle("", materialOverride);
+                            EditorGUILayout.LabelField("Override Default Value Animation", GUILayout.Width(250));
+                            data.materialOverride = EditorGUILayout.Toggle("", data.materialOverride);
+                        }
+                        using (new EditorGUILayout.HorizontalScope())
+                        {
+                            EditorGUILayout.LabelField("Create Anim when Not Changed Active", GUILayout.Width(250));
+                            data.createAnimWhenNotChangedActive = EditorGUILayout.Toggle("", data.createAnimWhenNotChangedActive);
                         }
                         EditorGUILayout.Space();
                         EditorGUILayout.Space();
@@ -1248,8 +1250,8 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                     c.AddState("Activate", activateAnim.CreateAsset(path,true));
                     c.AddState("Inactive", inactiveAnim.CreateAsset(path,true));
                     c.AddState("Inactivate", inactivateAnim.CreateAsset(path,true));
-                    c.AddState("ActiveIdle", idleOverride ? activeAnim.Create() : idleAnim);
-                    c.AddState("InactiveIdle", idleOverride ? inactiveAnim.Create() : idleAnim);
+                    c.AddState("ActiveIdle", data.idleOverride ? activeAnim.Create() : idleAnim);
+                    c.AddState("InactiveIdle", data.idleOverride ? inactiveAnim.Create() : idleAnim);
                     c.AddTransition("Default","Active",param,true);
                     c.AddTransition("Default","Inactive",param,false);
                     c.AddTransition("Activate","Active");
@@ -1317,7 +1319,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                                     activeAnim.AddKeyframe_Material(rendOption.rend,rendOption.changeMaterialsOptions[j].material,1f/60f,j);
                                 }
                                 else
-                                if(materialOverride)
+                                if(data.materialOverride)
                                 {
                                     // デフォルトのマテリアルで上書き（同期エラー対策）
                                     activeAnim.AddKeyframe_Material(rendOption.rend,rendOption.rend.sharedMaterials[j],0f,j);
@@ -1338,7 +1340,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                         }
                     }
                     c.AddState(i.ToString() + "_Active", activeAnim.CreateAsset(path,true));
-                    c.AddState(i.ToString() + "_Idle",  idleOverride ? activeAnim.Create() : idleAnim);
+                    c.AddState(i.ToString() + "_Idle",  data.idleOverride ? activeAnim.Create() : idleAnim);
                     c.AddTransition("Default",i.ToString() + "_Active",param,i);
                     c.AddTransition(i.ToString() + "_Active",i.ToString() + "_Idle");
                     //m.AddToggle(menuElement.name,menuElement.icon,param,i);
@@ -1377,7 +1379,8 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                             {
                                 // rend option (material,blend shapeの変更適応)
                                 RendererOptionTransition(fromItem,toItem,transitionAnim);
-                                if (fromItem.active != toItem.active)
+                                // 次のステートでも表示状態の変更がなければ状態変更のアニメをつけない処理
+                                if (data.createAnimWhenNotChangedActive || fromItem.active != toItem.active)
                                 {
                                     // transition animation
                                     SaveElementTransition(toItem,transitionAnim, false);
@@ -1533,7 +1536,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                             setAnim.AddKeyframe_Material(rendOption.rend,rendOption.changeMaterialsOptions[i].material,1f/60f,i);
                         }
                         else
-                        if(materialOverride)
+                        if(data.materialOverride)
                         {
                             // デフォルトのマテリアルで上書き（同期エラー対策）
                             setAnim.AddKeyframe_Material(rendOption.rend,rendOption.rend.sharedMaterials[i],0f,i);
@@ -1553,7 +1556,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                     }
                 }
 
-                if (materialOverride)
+                if (data.materialOverride)
                 {
                     setAnim.AddKeyframe_Scale(0f,element.obj.transform,element.obj.transform.localScale);
                     setAnim.AddKeyframe_Scale(1f/60f,element.obj.transform,element.obj.transform.localScale);
@@ -1639,7 +1642,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                             setAnim.AddKeyframe_Material(rendOption.rend,rendOption.rend.sharedMaterials[i],0f,i);
                             setAnim.AddKeyframe_Material(rendOption.rend,rendOption.rend.sharedMaterials[i],1f/60f,i);
                         }
-                        if(materialOverride)
+                        if(data.materialOverride)
                         {
                             // デフォルトのマテリアルで上書き（同期エラー対策）
                             /*setAnim.AddKeyframe_Material(rendOption.rend,rendOption.rend.sharedMaterials[i],0f,i);

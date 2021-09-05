@@ -228,6 +228,7 @@ namespace HhotateA.AvatarModifyTools.Core
             GUIStyle signature = new GUIStyle(GUI.skin.label);
             signature.alignment = TextAnchor.LowerRight;
             signature.fontSize = 10;
+            signature.wordWrap = false;
             
             EditorGUILayout.Space();
             EditorGUILayout.Space();
@@ -237,8 +238,16 @@ namespace HhotateA.AvatarModifyTools.Core
             
             EditorGUILayout.Space();
             
+            var p = GUILayoutUtility.GetRect(0, 0, GUI.skin.box);
+            p.height = 70;
+            p.width = 70;
+            EditorGUI.DrawPreviewTexture(p, 
+                AssetUtility.LoadAssetAtGuid<Texture>(EnvironmentVariable.icon),
+                AssetUtility.LoadAssetAtGuid<Material>(EnvironmentVariable.iconMat)); 
+            
             EditorGUILayout.LabelField( "powered by AvatarModifyTool @HhotateA_xR" ,signature);
             EditorGUILayout.LabelField( "Version " + EnvironmentVariable.version ,signature);
+            EditorGUILayout.LabelField( EnvironmentVariable.githubLink ,signature);
             // EditorGUILayout.LabelField( EnvironmentVariable.githubLink ,signature);
         }
 
