@@ -237,6 +237,14 @@ namespace HhotateA.AvatarModifyTools.Core
             
             EditorGUILayout.Space();
             
+            var p = GUILayoutUtility.GetRect(0, 0, GUI.skin.box);
+            p.height = 50;
+            p.width = 50;
+            EditorGUI.DrawPreviewTexture(p, 
+                AssetUtility.LoadAssetAtGuid<Texture>(EnvironmentVariable.icon),
+                AssetUtility.LoadAssetAtGuid<Material>(EnvironmentVariable.iconMat)); 
+            
+            EditorGUILayout.Space();
             EditorGUILayout.LabelField( "powered by AvatarModifyTool @HhotateA_xR" ,signature);
             EditorGUILayout.LabelField( "Version " + EnvironmentVariable.version ,signature);
             // EditorGUILayout.LabelField( EnvironmentVariable.githubLink ,signature);

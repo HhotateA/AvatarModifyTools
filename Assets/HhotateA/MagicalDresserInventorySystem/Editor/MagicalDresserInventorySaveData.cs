@@ -28,6 +28,10 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         public LayerSettings[] layerSettingses;
         public AvatarModifyData assets;
 
+        public bool idleOverride = true;
+        public bool materialOverride = true;
+        public bool createAnimWhenNotChangedActive = false;
+
         public MagicalDresserInventorySaveData()
         {
             layerSettingses = Enumerable.Range(0,Enum.GetValues(typeof(LayerGroup)).Length).
