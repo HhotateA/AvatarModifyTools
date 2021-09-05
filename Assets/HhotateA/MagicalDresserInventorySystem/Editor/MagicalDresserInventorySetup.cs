@@ -42,7 +42,9 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
 
         private bool idleOverride = true;
         private bool materialOverride = true;
-        
+        private bool createAnimWhenNotChangedActive = false;
+
+
         // <renderer original material,<transition sample material, use material>>
         Dictionary<Material,Dictionary<Material, Material>> matlist = new Dictionary<Material,Dictionary<Material, Material>>();
         Dictionary<GameObject,bool> defaultActive = new Dictionary<GameObject, bool>();
@@ -588,13 +590,18 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                         EditorGUILayout.Space();
                         using (new EditorGUILayout.HorizontalScope())
                         {
-                            EditorGUILayout.LabelField("Override Animation On Idle State", GUILayout.Width(200));
+                            EditorGUILayout.LabelField("Override Animation On Idle State", GUILayout.Width(250));
                             idleOverride = EditorGUILayout.Toggle("", idleOverride);
                         }
                         using (new EditorGUILayout.HorizontalScope())
                         {
-                            EditorGUILayout.LabelField("Override Default Value Animation", GUILayout.Width(200));
+                            EditorGUILayout.LabelField("Override Default Value Animation", GUILayout.Width(250));
                             materialOverride = EditorGUILayout.Toggle("", materialOverride);
+                        }
+                        using (new EditorGUILayout.HorizontalScope())
+                        {
+                            EditorGUILayout.LabelField("Create Anim when Not Changed Active", GUILayout.Width(250));
+                            createAnimWhenNotChangedActive = EditorGUILayout.Toggle("", createAnimWhenNotChangedActive);
                         }
                         EditorGUILayout.Space();
                         EditorGUILayout.Space();
@@ -1377,7 +1384,8 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                             {
                                 // rend option (material,blend shapeの変更適応)
                                 RendererOptionTransition(fromItem,toItem,transitionAnim);
-                                if (fromItem.active != toItem.active)
+                                // 次のステートでも表示状態の変更がなければ状態変更のアニメをつけない処理
+                                if (createAnimWhenNotChangedActive || fromItem.active != toItem.active)
                                 {
                                     // transition animation
                                     SaveElementTransition(toItem,transitionAnim, false);
