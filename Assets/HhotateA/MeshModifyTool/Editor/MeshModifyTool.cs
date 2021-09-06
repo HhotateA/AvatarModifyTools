@@ -52,11 +52,6 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
                 return meshsCreaters[editIndex];
             }
         }
-
-        // MergeBone機能用
-        private Animator originHuman;
-        private Animator targetHuman;
-        private MergeBoneMode mergeBoneMode;
         
         // Remesh機能用
         private int triangleCount = 0;
@@ -107,14 +102,51 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
         private string blendShapeName = "BlendShapeName";
 
         // 各種設定項目
-        private bool activeExperimentalAlpha = false;
-        private bool activeExperimentalBeta = false;
         private bool isSelectVertex = true;
         private bool isRandomizeVertex = false;
         private bool isRealtimeTransform = false;
         private bool isSelectOverlappingVertexes = true;
         private bool isVertexRemove = false;
+        
         private bool isSaveAll = false;
+        private bool isGenerateNewMesh = false;
+        
+        private bool extendExperimental = false;
+        private bool extendSaveOption = false;
+        private bool extendRawdata = false;
+
+        private bool isDecimateBone = false;
+        private DecimateBoneMode decimateBoneMode;
+        enum DecimateBoneMode
+        {
+            None,
+            DeleateDisableBones,
+            DeleateNonHumanoidBones,
+        }
+
+        // MergeBone機能用
+        private bool isMergeBone = false;
+        private Animator originHuman;
+        private Animator targetHuman;
+        private MergeBoneMode mergeBoneMode;
+        enum MergeBoneMode
+        {
+            None,
+            Merge,
+            //Constraint,
+            RootConstraint,
+            //Move
+        }
+        
+        private bool isCombineMesh = false;
+        private CombineMeshMode combineMeshMode;
+        enum CombineMeshMode
+        {
+            None,
+            CombineAllMesh,
+            CombineSubMesh,
+            TextureAtlas,
+        }
         
         // 不安定項目を非有効化する設定
         private bool disableNotRecommend = true;
@@ -184,7 +216,7 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
         
         // 最終選択頂点のデータ
         Vector2 rowScroll = Vector2.zero;
-        private bool displayRawData => activeExperimentalBeta;
+        // private bool displayRawData => activeExperimentalBeta;
         Vector3 rawPosition = Vector3.zero;
         Vector3 rawNormal = Vector3.up;
         Vector3 rawTangent = Vector3.right;
@@ -252,23 +284,26 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
                         EditorGUILayout.LabelField(" ");
                     }
 
-                    activeExperimentalAlpha = EditorGUILayout.Toggle("ActiveExperimental", activeExperimentalAlpha);
-                    if (activeExperimentalAlpha)
+                    //activeExperimentalAlpha = EditorGUILayout.Toggle("ActiveExperimental", activeExperimentalAlpha);
+                    //if (activeExperimentalAlpha)
                     {
                         using (new EditorGUILayout.VerticalScope(GUI.skin.box))
                         {
                             isSelectVertex = EditorGUILayout.Toggle("SelectVertexMode", isSelectVertex);
-                            isRealtimeTransform = EditorGUILayout.Toggle("RealtimeTransform", isRealtimeTransform, GUILayout.Width(200));
+                            isRealtimeTransform = EditorGUILayout.Toggle("RealtimeTransform", isRealtimeTransform,
+                                GUILayout.Width(200));
                             // isRemoveAsBlendShape = EditorGUILayout.Toggle("DeleteAsBlendShape", isRemoveAsBlendShape, GUILayout.Width(155));
-                            isSelectOverlappingVertexes = EditorGUILayout.Toggle("SelectOverlapping",isSelectOverlappingVertexes, GUILayout.Width(155));
+                            isSelectOverlappingVertexes = EditorGUILayout.Toggle("SelectOverlapping",
+                                isSelectOverlappingVertexes, GUILayout.Width(155));
 
                             using (new EditorGUILayout.HorizontalScope())
                             {
-                                if (activeExperimentalAlpha)
+                                // if (activeExperimentalAlpha)
                                 {
                                     foreach (var penTool in extraTools)
                                     {
-                                        if (penTool.Button(ref penMode, ref brushPower, ref brushWidth, ref brushStrength))
+                                        if (penTool.Button(ref penMode, ref brushPower, ref brushWidth,
+                                            ref brushStrength))
                                         {
                                             if (penMode != MeshPenTool.ExtraTool.DetailMode) DestroyControllPoint();
                                             if (!selectMode) ReloadMesh(false);
@@ -307,160 +342,83 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
                                     }
                                 }
                             }
-                        }
-                    }
-                    EditorGUILayout.Space();
-                    
-                    activeExperimentalBeta = EditorGUILayout.Toggle("ActiveExperimentalBeta", activeExperimentalBeta);
-                    if (activeExperimentalBeta)
-                    {
-                        using (new EditorGUILayout.VerticalScope(GUI.skin.box))
-                        {
-                            isVertexRemove = EditorGUILayout.Toggle("DeleteVertex", isVertexRemove);
 
-                            using (new EditorGUILayout.HorizontalScope())
+                            extendExperimental = EditorGUILayout.Foldout(extendExperimental, "Experimentals");
+                            if (extendExperimental)
                             {
-                                using (new EditorGUI.DisabledScope(editMeshCreater == null && !isSaveAll))
-                                {
-                                    GUILayout.Label("MergeBones", GUILayout.Width(100));
-                                    if (GUILayout.Button("HumanBone", GUILayout.Width(90)))
-                                    {
-                                        SaveAll(() =>
-                                        {
-                                            if (rends[editIndex] is SkinnedMeshRenderer)
-                                            {
-                                                var rend = rends[editIndex] as SkinnedMeshRenderer;
-                                                DisableNonHumanBone(rend);
-                                                DeleateDisableBone();
-                                                ReloadMesh(false);
-                                            }
-                                        });
-                                    }
-
-                                    if (GUILayout.Button("ActiveBones", GUILayout.Width(90)))
-                                    {
-                                        SaveAll(() =>
-                                        {
-                                            if (rends[editIndex] is SkinnedMeshRenderer)
-                                            {
-                                                var rend = rends[editIndex] as SkinnedMeshRenderer;
-                                                DeleateDisableBone();
-                                                ReloadMesh(false);
-                                            }
-                                        });
-                                    }
-                                }
-                            }
-
-                            using (new EditorGUILayout.HorizontalScope())
-                            {
-                                using (new EditorGUI.DisabledScope(originHuman == null))
-                                {
-                                    targetHuman =
-                                        EditorGUILayout.ObjectField("", targetHuman, typeof(Animator), true,
-                                                GUILayout.Width(100)) as
-                                            Animator;
-                                    using (new EditorGUI.DisabledScope(targetHuman == null))
-                                    {
-                                        mergeBoneMode =
-                                            (MergeBoneMode) EditorGUILayout.EnumPopup("", mergeBoneMode,
-                                                GUILayout.Width(55));
-                                        using (new EditorGUI.DisabledScope(editMeshCreater == null && !isSaveAll))
-                                        {
-                                            if (GUILayout.Button("ChangeBone", GUILayout.Width(125)))
-                                            {
-                                                if (mergeBoneMode == MergeBoneMode.merge)
-                                                {
-                                                    SaveAll(MergeBone);
-                                                }
-                                                else if (mergeBoneMode == MergeBoneMode.combinate)
-                                                {
-                                                    SaveAll(CombineBone);
-                                                }
-                                                else if (mergeBoneMode == MergeBoneMode.constraint)
-                                                {
-                                                    ConstraintBone();
-                                                }
-                                                else
-                                                {
-                                                    MoveBone();
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                            using (new EditorGUILayout.HorizontalScope())
-                            {
-                                // GUILayout.Label("CombineMesh", GUILayout.Width(100));
-                                if (GUILayout.Button("CombineMesh",GUILayout.Width(95)))
-                                {
-                                    CombineMesh();
-                                }
-                                using (new EditorGUI.DisabledScope(editMeshCreater==null && !isSaveAll))
-                                {
-                                    if (GUILayout.Button("CombineMaterial",GUILayout.Width(105)))
-                                    {
-                                        CombineMaterial();
-                                    }
-                                    if (GUILayout.Button("TextureAtlas",GUILayout.Width(85)))
-                                    {
-                                        SaveAll(TextureAtlas);
-                                    }
-                                }
-                            }
-                            
-                            EditorGUILayout.Space();
-                            
-                            EditorGUILayout.LabelField("NotRecommended",GUILayout.Width(120));
-                            using (new EditorGUILayout.HorizontalScope())
-                            {
-                                foreach (var betaTool in betaTools)
-                                {
-                                    if (betaTool.Button(ref penMode, ref brushPower, ref brushWidth, ref brushStrength))
-                                    {
-                                        if (penMode != MeshPenTool.ExtraTool.DetailMode) DestroyControllPoint();
-                                        if (penMode == MeshPenTool.ExtraTool.Decimate) DecimateSelect();
-                                        if (penMode == MeshPenTool.ExtraTool.Subdivision) SubdivisionSelect();
-                                    }
-                                }
-                            }
-                            
-                            using (new EditorGUI.DisabledScope(disableNotRecommend))
-                            {
-                                // あんまよくない
-                                isRandomizeVertex = EditorGUILayout.Toggle("RandomizeVertex", isRandomizeVertex);
-
-                                // 動かない（重すぎる）
-                                using (new EditorGUILayout.HorizontalScope())
-                                {
-                                    weightOrigin = EditorGUILayout.ObjectField("", weightOrigin,
-                                            typeof(SkinnedMeshRenderer), true, GUILayout.Width(155)) as
-                                        SkinnedMeshRenderer;
-                                    
-                                    if (GUILayout.Button("CopyBoneWeight",GUILayout.Width(125)))
-                                    {
-                                        if (weightOrigin)
-                                        {
-                                            editMeshCreater.CopyBoneWeight(new SkinnedMeshRenderer[1] {weightOrigin});
-
-                                        }
-                                    }
-                                }
+                                isVertexRemove = EditorGUILayout.Toggle("Delete Vertex", isVertexRemove);
                                 
-                                // 精度悪い，重い
+                                extendRawdata = EditorGUILayout.Toggle("View Raw Data", extendRawdata);
+
+                                // EditorGUILayout.LabelField("NotRecommended", GUILayout.Width(120));
                                 using (new EditorGUILayout.HorizontalScope())
                                 {
-                                    triangleCount = EditorGUILayout.IntField("", triangleCount,GUILayout.Width(155));
-                                    if (GUILayout.Button("Decimate",GUILayout.Width(125)))
+                                    foreach (var betaTool in betaTools)
                                     {
-                                        Decimate();
+                                        if (betaTool.Button(ref penMode, ref brushPower, ref brushWidth,
+                                            ref brushStrength))
+                                        {
+                                            if (penMode != MeshPenTool.ExtraTool.DetailMode) DestroyControllPoint();
+                                            if (penMode == MeshPenTool.ExtraTool.Decimate) DecimateSelect();
+                                            if (penMode == MeshPenTool.ExtraTool.Subdivision) SubdivisionSelect();
+                                        }
+                                    }
+                                }
+
+                                using (new EditorGUI.DisabledScope(disableNotRecommend))
+                                {
+                                    // あんまよくない
+                                    isRandomizeVertex = EditorGUILayout.Toggle("RandomizeVertex", isRandomizeVertex);
+
+                                    // 動かない（重すぎる）
+                                    using (new EditorGUILayout.HorizontalScope())
+                                    {
+                                        weightOrigin = EditorGUILayout.ObjectField("", weightOrigin,
+                                                typeof(SkinnedMeshRenderer), true, GUILayout.Width(155)) as
+                                            SkinnedMeshRenderer;
+
+                                        if (GUILayout.Button("CopyBoneWeight", GUILayout.Width(125)))
+                                        {
+                                            if (weightOrigin)
+                                            {
+                                                editMeshCreater.CopyBoneWeight(
+                                                    new SkinnedMeshRenderer[1] {weightOrigin});
+
+                                            }
+                                        }
+                                    }
+
+                                    // 精度悪い，重い
+                                    using (new EditorGUILayout.HorizontalScope())
+                                    {
+                                        triangleCount =
+                                            EditorGUILayout.IntField("", triangleCount, GUILayout.Width(155));
+                                        if (GUILayout.Button("Decimate", GUILayout.Width(125)))
+                                        {
+                                            Decimate();
+                                        }
+                                    }
+                                }
+                            }
+                    
+                            EditorGUILayout.Space();
+
+                            using (new EditorGUILayout.HorizontalScope())
+                            {
+                                blendShapeName = EditorGUILayout.TextField("", blendShapeName,GUILayout.Width(155));
+
+                                using (new EditorGUI.DisabledScope(!editMeshCreater?.CanUndo() ?? true))
+                                {
+                                    if (GUILayout.Button("SaveAsBlendShape",GUILayout.Width(125)))
+                                    {
+                                        editMeshCreater.SaveAsBlendshape(blendShapeName);
+                                        ReloadMesh(false);
+                                        editMeshCreater.ResetCaches();
                                     }
                                 }
                             }
                         }
                     }
-                    
                     EditorGUILayout.Space();
 
                     using (new EditorGUILayout.HorizontalScope())
@@ -614,43 +572,79 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
                     
                     EditorGUILayout.Space();
 
-                    using (new EditorGUILayout.HorizontalScope())
+                    extendSaveOption = EditorGUILayout.Foldout(extendSaveOption, "Save Option");
+                    if (extendSaveOption)
                     {
-                        blendShapeName = EditorGUILayout.TextField("", blendShapeName,GUILayout.Width(155));
-
-                        using (new EditorGUI.DisabledScope(!editMeshCreater?.CanUndo() ?? true))
+                        if (isCombineMesh && combineMeshMode == CombineMeshMode.CombineAllMesh)
                         {
-                            if (GUILayout.Button("SaveAsBlendShape",GUILayout.Width(125)))
+                            using (new EditorGUI.DisabledScope(true))
                             {
-                                editMeshCreater.SaveAsBlendshape(blendShapeName);
-                                ReloadMesh(false);
-                                editMeshCreater.ResetCaches();
+                                EditorGUILayout.Toggle("Save All", false);
+                                EditorGUILayout.Toggle("Generate New Mesh", true);
+                            }
+                        }
+                        else
+                        {
+                            isSaveAll = EditorGUILayout.Toggle("Save All", isSaveAll);
+                            isGenerateNewMesh = EditorGUILayout.Toggle("Generate New Mesh", isGenerateNewMesh);
+                        }
+                        using (new EditorGUILayout.HorizontalScope())
+                        {
+                            isDecimateBone = EditorGUILayout.ToggleLeft("Decimate Bone", isDecimateBone,GUILayout.Width(130));
+                            using (new EditorGUI.DisabledScope(!isDecimateBone))
+                            {
+                                EditorGUILayout.LabelField("  ",GUILayout.Width(20));
+                                decimateBoneMode =
+                                    (DecimateBoneMode) EditorGUILayout.EnumPopup("", decimateBoneMode,
+                                        GUILayout.Width(150));
+                            }
+                        }
+                        using (new EditorGUILayout.HorizontalScope())
+                        {
+                            isCombineMesh = EditorGUILayout.ToggleLeft("Combine Mesh", isCombineMesh,GUILayout.Width(130));
+                            using (new EditorGUI.DisabledScope(!isCombineMesh))
+                            {
+                                EditorGUILayout.LabelField("  ",GUILayout.Width(20));
+                                combineMeshMode =
+                                    (CombineMeshMode) EditorGUILayout.EnumPopup("", combineMeshMode,
+                                        GUILayout.Width(150));
+                            }
+                        }
+                        using (new EditorGUILayout.HorizontalScope())
+                        {
+                            isMergeBone = EditorGUILayout.ToggleLeft("Change Bone",isMergeBone,GUILayout.Width(130));
+                            using (new EditorGUI.DisabledScope(!isMergeBone))
+                            {
+                                EditorGUILayout.LabelField("  ",GUILayout.Width(20));
+                                using (new EditorGUI.DisabledScope(originHuman == null))
+                                {
+                                    targetHuman = (Animator) EditorGUILayout.ObjectField("", targetHuman, typeof(Animator), true, GUILayout.Width(100));
+                                    using (new EditorGUI.DisabledScope(targetHuman == null))
+                                    {
+                                        mergeBoneMode = (MergeBoneMode) EditorGUILayout.EnumPopup("", mergeBoneMode, GUILayout.Width(50));
+                                    }
+                                }
                             }
                         }
                     }
-                    
+
                     using (new EditorGUILayout.HorizontalScope())
                     {
-                        EditorGUILayout.LabelField("SaveAll",GUILayout.Width(50));
-                        isSaveAll = EditorGUILayout.Toggle("", isSaveAll,GUILayout.Width(50));
                         using (new EditorGUI.DisabledScope(editMeshCreater == null && !isSaveAll))
                         {
-                            if (GUILayout.Button("Save"))
+                            if (GUILayout.Button("Export"))
                             {
                                 SaveAll(()=>Save());
                             }
                         }
                     }
-                    
-                    EditorGUILayout.Space();
-                    
                 }
 
                 using (new EditorGUILayout.VerticalScope())
                 {
                     if (avatarMonitor != null)
                     {
-                        var avatarMonitorWidth = displayRawData ? 750 : 300;
+                        var avatarMonitorWidth = extendRawdata ? 750 : 300;
                         avatarMonitor.Display( (int) position.width-avatarMonitorWidth, (int) position.height-10,rotateButton,moveButton);
                         if (editIndex != -1)
                         {
@@ -659,7 +653,7 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
                     }
                 }
                 
-                if (displayRawData)
+                if (extendRawdata)
                 {
                     using (new EditorGUILayout.VerticalScope())
                     {
@@ -800,7 +794,7 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
 
         void SaveAll(Action saveAction)
         {
-            if (isSaveAll)
+            if (isSaveAll && !(isCombineMesh && combineMeshMode == CombineMeshMode.CombineAllMesh))
             {
                 int max = rends.Length;
                 for (int i = 0; i < max; i++)
@@ -815,20 +809,73 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
             }
         }
 
-        bool Save(Action onSave = null)
+        bool Save()
         {
             var path = EditorUtility.SaveFilePanel("Save", "Assets", rends[editIndex].name+"_Edit", "mesh");
             if (string.IsNullOrWhiteSpace(path)) return false;
             path = FileUtil.GetProjectRelativePath(path);
             var dir = Path.GetDirectoryName(path);
-            var file = Path.GetFileName(path).Split('.')[0];
+            var file = Path.GetFileNameWithoutExtension(path);
                             
             DestroyEditMesh();
             DestroyControllPoint();
+            ReloadMesh(false);
+
+            MeshCreater mc = new MeshCreater(editMeshCreater);
+            if (isCombineMesh)
+            {
+                if (combineMeshMode == CombineMeshMode.CombineSubMesh)
+                {
+                    mc = CombineMaterial(mc,dir,file);
+                }
+                else if(combineMeshMode == CombineMeshMode.CombineAllMesh)
+                {
+                    mc = CombineMesh(dir, file);
+                }
+                else if (combineMeshMode == CombineMeshMode.TextureAtlas)
+                {
+                    mc = TextureAtlas(mc,dir, file);
+                }
+            }
+
+            if (isMergeBone)
+            {
+                if (mergeBoneMode == MergeBoneMode.Merge)
+                {
+                    //var sm = SaveMeshCreater(meshsCreaters[editIndex],dir,file);
+                    mc = MergeBone( mc, dir, file);
+                }
+                else if(mergeBoneMode == MergeBoneMode.RootConstraint)
+                {
+                    mc = CombineBone( mc, dir, file);
+                }
+            }
+
+            if (isDecimateBone)
+            {
+                if (decimateBoneMode == DecimateBoneMode.DeleateNonHumanoidBones)
+                {
+                    if (rends[editIndex] is SkinnedMeshRenderer)
+                    {
+                        DisableNonHumanBone(rends[editIndex] as SkinnedMeshRenderer);
+                    }
+                    mc = DeleateDisableBone(mc);
+                }
+                else if (decimateBoneMode == DecimateBoneMode.DeleateDisableBones)
+                {
+                    mc = DeleateDisableBone(mc);
+                }
+            }
+
+            if (isGenerateNewMesh || (isCombineMesh && combineMeshMode == CombineMeshMode.CombineAllMesh))
+            {
+                var sm = SaveMeshCreater(mc,dir,file);
+            }
+            else
+            {
+                defaultMeshs[editIndex] = SaveMeshCreater(mc,dir,file,rends[editIndex]);
+            }
             
-            onSave?.Invoke();
-            
-            defaultMeshs[editIndex] = SaveMeshCreater(meshsCreaters[editIndex],dir,file,rends[editIndex]);;
             return true;
         }
         
@@ -840,7 +887,7 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
         /// <param name="file"></param>
         /// <param name="rend"></param>
         /// <returns></returns>
-        Mesh SaveMeshCreater(MeshCreater mc,string dir,string file,Renderer rend = null,Transform root = null)
+        Mesh SaveMeshCreater(MeshCreater mc,string dir,string file,Renderer rend)
         {
             if (isRandomizeVertex)
             {
@@ -863,82 +910,69 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
 
             return m;
         }
+        SkinnedMeshRenderer SaveMeshCreater(MeshCreater mc,string dir,string file)
+        {
+            if (isRandomizeVertex)
+            {
+                var mat = new Material(Shader.Find("HhotateA/Decryption"));
+                var p = Path.GetDirectoryName(AssetDatabase.GetAssetPath(Shader.Find("HhotateA/Decryption")));
+                File.WriteAllText(Path.Combine(p,"Keys.cginc"), mc.Encryption(mat));
+                mc.MaterialAtlas(Path.Combine(dir,file));
+                mc.CombineMesh();
+            }
 
-        void CombineMesh()
-        {
-            var path = EditorUtility.SaveFilePanel("Save", "Assets", "CombineMesh", "mesh");
-            if (string.IsNullOrWhiteSpace(path)) return;
-            path = FileUtil.GetProjectRelativePath(path);
-            var dir = Path.GetDirectoryName(path);
-            var file = System.IO.Path.GetFileNameWithoutExtension(path);
-            
-            if (rends.FirstOrDefault(r => r.name == file))
-            {
-                for (int i = 0; i < 999; i++)
-                {
-                    var n = file + "_" + i;
-                    if (rends.FirstOrDefault(r => r.name == n) == null)
-                    {
-                        file = n;
-                        break;
-                    }
-                }
-            }
-            var meshCreater = new MeshCreater(avatar.transform,meshsCreaters);
-            var m = meshCreater.Save(Path.Combine(dir, file + ".mesh"));
-                
-            var sm = meshCreater.ToSkinMesh(file,avatar.transform);
-            
-            sm.transform.position = rends[0].transform.position;
-            sm.transform.rotation = rends[0].transform.rotation;
-            
-            var smsm = sm.GetComponent<SkinnedMeshRenderer>();
-            smsm.SetMesh(m);
-            // editmeshCreaterの切り替え
-            AddRend(smsm);
-        }
-        void CombineMaterial()
-        {
-            var path = EditorUtility.SaveFilePanel("Save", "Assets", "CombineMesh", "mesh");
-            if (string.IsNullOrWhiteSpace(path)) return;
-            path = FileUtil.GetProjectRelativePath(path);
-            var dir = Path.GetDirectoryName(path);
-            var file = System.IO.Path.GetFileNameWithoutExtension(path);
-            
-            if (rends.FirstOrDefault(r => r.name == file))
-            {
-                for (int i = 0; i < 999; i++)
-                {
-                    var n = file + "_" + i;
-                    if (rends.FirstOrDefault(r => r.name == n) == null)
-                    {
-                        file = n;
-                        break;
-                    }
-                }
-            }
-            editMeshCreater.CombineMesh();
-            var m = editMeshCreater.Save(Path.Combine(dir, file + ".mesh"));
-                
+            mc.Create(false);
+            var m = mc.Save(Path.Combine(dir, file + ".mesh"));
+
             var sm = editMeshCreater.ToSkinMesh(file,avatar.transform);
-            
+        
             sm.transform.position = rends[0].transform.position;
             sm.transform.rotation = rends[0].transform.rotation;
-            
             var smsm = sm.GetComponent<SkinnedMeshRenderer>();
             smsm.SetMesh(m);
             // editmeshCreaterの切り替え
             AddRend(smsm);
+
+            return smsm;
         }
 
-        void TextureAtlas()
+        MeshCreater CombineMesh(string dir,string file)
         {
-            var path = EditorUtility.SaveFilePanel("Save", "Assets", "CombineMaterial", "png");
-            if (string.IsNullOrWhiteSpace(path)) return;
-            path = FileUtil.GetProjectRelativePath(path);
-            var dir = Path.GetDirectoryName(path);
-            var file = System.IO.Path.GetFileNameWithoutExtension(path);
-            
+            if (rends.FirstOrDefault(r => r.name == file))
+            {
+                for (int i = 0; i < 999; i++)
+                {
+                    var n = file + "_" + i;
+                    if (rends.FirstOrDefault(r => r.name == n) == null)
+                    {
+                        file = n;
+                        break;
+                    }
+                }
+            }
+            var mc = new MeshCreater(avatar.transform,meshsCreaters.Where(m=>m.RendBone.gameObject.activeSelf).ToArray());
+            return mc;
+        }
+        MeshCreater CombineMaterial(MeshCreater mc,string dir,string file)
+        {
+            if (rends.FirstOrDefault(r => r.name == file))
+            {
+                for (int i = 0; i < 999; i++)
+                {
+                    var n = file + "_" + i;
+                    if (rends.FirstOrDefault(r => r.name == n) == null)
+                    {
+                        file = n;
+                        break;
+                    }
+                }
+            }
+            mc.CombineMesh();
+            return mc;
+        }
+
+        MeshCreater TextureAtlas(MeshCreater mc,string dir,string file)
+        {
             if (rends.FirstOrDefault(r => r.name == file))
             {
                 for (int i = 0; i < 999; i++)
@@ -952,17 +986,8 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
                 }
             }
             
-            editMeshCreater.MaterialAtlas(Path.Combine(dir,file));
-            var m = editMeshCreater.Save(Path.Combine(dir, file + ".mesh"));
-            var sm = editMeshCreater.ToSkinMesh(file,avatar.transform);
-            
-            sm.transform.position = rends[0].transform.position;
-            sm.transform.rotation = rends[0].transform.rotation;
-            
-            var smsm = sm.GetComponent<SkinnedMeshRenderer>();
-            smsm.SetMesh(m);
-            // editmeshCreaterの切り替え
-            AddRend(smsm);
+            mc.MaterialAtlas(Path.Combine(dir,file));
+            return mc;
         }
         
         /// <summary>
@@ -1014,7 +1039,7 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
                         {
                             ResetSelectTransform(mc);
                             ReloadMesh(false, mc, controll_vertexes);
-                        }, isSelectOverlappingVertexes && activeExperimentalAlpha);
+                        }, isSelectOverlappingVertexes);
                     });
                 }
             }
@@ -1032,7 +1057,7 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
                         {
                             ResetSelectTransform(mc);
                             ReloadMesh(false, mc, controll_vertexes);
-                        }, isSelectOverlappingVertexes && activeExperimentalAlpha);
+                        }, isSelectOverlappingVertexes);
                     });
                 }
             }
@@ -1112,7 +1137,7 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
                 }
             }
 
-            if (displayRawData)
+            if (extendRawdata)
             {
                 if (Event.current.type == EventType.MouseDown && Event.current.button == drawButton)
                 {
@@ -1568,66 +1593,21 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
             ReloadMesh(false);
         }
 
-        enum MergeBoneMode
-        {
-            combinate,
-            merge,
-            constraint,
-            //move
-        }
-
         /// <summary>
         /// ボーンの参照先を変更する
         /// </summary>
-        void MergeBone()
+        MeshCreater MergeBone(MeshCreater mc,string dir,string file)
         {
-            // 先ずセーブ情報取得
-            var path = EditorUtility.SaveFilePanel("Save", "Assets", rends[editIndex].name+"_Edit", "mesh");
-            if (string.IsNullOrWhiteSpace(path)) return;
-            path = FileUtil.GetProjectRelativePath(path);
-            var dir = Path.GetDirectoryName(path);
-            var file = Path.GetFileName(path).Split('.')[0];
-                
-            var sm = editMeshCreater.ToSkinMesh(file,avatar.transform);
-            
-            sm.transform.position = rends[0].transform.position;
-            sm.transform.rotation = rends[0].transform.rotation;
-            
-            // editMeshCreaterの切り替え
-            var smsm = sm.GetComponent<SkinnedMeshRenderer>();
-            AddRend(smsm);
-            
             // ここからボーンの参照
-            smsm.bones = editMeshCreater.ChangeBones(targetHuman,originHuman,true);
-            smsm.rootBone = editMeshCreater.RootBone;
-            
-            var m = editMeshCreater.Save(Path.Combine(dir, file + ".mesh"));
-            defaultMeshs[editIndex] = m;
-            rends[editIndex].SetMesh(m);
-            sm.transform.SetParent(targetHuman.transform);
+            mc.ChangeBones(targetHuman,originHuman,true);
+            return mc;
         }
         
         /// <summary>
         /// ボーンの参照先を，コンストレイントボーンに変更する
         /// </summary>
-        void CombineBone()
+        MeshCreater CombineBone(MeshCreater mc,string dir,string file)
         {
-            // 先ずセーブ情報取得
-            var path = EditorUtility.SaveFilePanel("Save", "Assets", rends[editIndex].name+"_Edit", "mesh");
-            if (string.IsNullOrWhiteSpace(path)) return;
-            path = FileUtil.GetProjectRelativePath(path);
-            var dir = Path.GetDirectoryName(path);
-            var file = Path.GetFileName(path).Split('.')[0];
-            
-            var sm = editMeshCreater.ToSkinMesh(file,avatar.transform);
-            
-            sm.transform.position = rends[0].transform.position;
-            sm.transform.rotation = rends[0].transform.rotation;
-            
-            // editMeshCreaterの切り替え
-            var smsm = sm.GetComponent<SkinnedMeshRenderer>();
-            AddRend(smsm);
-            
             // ここからボーンの参照
             var t = targetHuman.GetHumanBones();
             var o = originHuman.GetHumanBones();
@@ -1638,9 +1618,7 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
             p.localRotation = Quaternion.identity;
             p.localScale = Vector3.one;
             
-            var boneTable = new Dictionary<Transform,Transform>();
-            
-            smsm.bones = editMeshCreater.ChangeBones(targetHuman,originHuman, 
+            mc.ChangeBones(targetHuman,originHuman, 
                 true,b =>
                 {
                     var bp = b.parent;
@@ -1666,14 +1644,7 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
                 {
                     editMeshCreater.RootBone = rb;
                 });
-
-            smsm.bones = editMeshCreater.ApplyBoneTable(boneTable).ToArray();
-            smsm.rootBone = editMeshCreater.RootBone;
-
-            var m = editMeshCreater.Save(Path.Combine(dir, file + ".mesh"));
-            defaultMeshs[editIndex] = m;
-            rends[editIndex].SetMesh(m);
-            sm.transform.SetParent(targetHuman.transform);
+            return mc;
         }
         
         /// <summary>
@@ -1749,28 +1720,10 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
         /// ヒエラルキー上で非アクティブなボーンを参照から外す
         /// </summary>
         /// <param name="rend"></param>
-        void DeleateDisableBone()
+        MeshCreater DeleateDisableBone(MeshCreater mc)
         {
-            // 先ずセーブ情報取得
-            var path = EditorUtility.SaveFilePanel("Save", "Assets", rends[editIndex].name+"_Edit", "mesh");
-            if (string.IsNullOrWhiteSpace(path)) return;
-            path = FileUtil.GetProjectRelativePath(path);
-            var dir = Path.GetDirectoryName(path);
-            var file = Path.GetFileName(path).Split('.')[0];
-            
-            var sm = editMeshCreater.ToSkinMesh(file,avatar.transform);
-            
-            sm.transform.position = rends[0].transform.position;
-            sm.transform.rotation = rends[0].transform.rotation;
-            
-            // editMeshCreaterの切り替え
-            var smsm = sm.GetComponent<SkinnedMeshRenderer>();
-            AddRend(smsm);
-            
-            smsm.bones = editMeshCreater.MergeDisableBones();
-
-            smsm.sharedMesh = editMeshCreater.Save(Path.Combine(dir,file+".mesh"));
-            ReloadMesh(false);
+            mc.MergeDisableBones();
+            return mc;
         }
 
         void GetRawData(int vid)

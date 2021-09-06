@@ -112,6 +112,41 @@ namespace HhotateA.AvatarModifyTools.Core
             AddMesh(mesh);
         }
         
+        public MeshCreater(MeshCreater mc)
+        {
+            rendBone = mc.rendBone;
+            var defaultVertexs = new List<Vector3>();
+            var editVertexs = new List<Vector3>();
+
+            var offset = vertexs.Count;
+
+            bool isSkinnedMesh = mc.meshTransforms.Any(t => t == null);
+            
+            var boneTable = AddBones(mc.bones.ToArray());
+
+            var us = mc.GetUVList();
+            for (int i = 0; i < mc.vertexs.Count; i++)
+            {
+                AddVertex(isSkinnedMesh ? mc.rendBone.TransformDirection(mc.vertexs[i]) : mc.vertexs[i], 
+                    isSkinnedMesh ? mc.rendBone.TransformDirection(mc.normals[i]) : mc.normals[i],
+                    mc.tangents[i],mc.colors[i],us[i],mc.boneWeights[i],boneTable.ToArray());
+            }
+
+            for (int i = 0; i < mc.triangles.Count; i++)
+            {
+                AddSubMesh(mc.triangles[i],mc.materials[i],mc.meshTransforms[i],offset);
+            }
+            
+            defaultVertexs.AddRange(mc.DefaultVertexs());
+            editVertexs.AddRange(mc.EditVertexs());
+            for (int i = 0; i < mc.blendShapes.Count; ++i)
+            {
+                blendShapes.Add(mc.blendShapes[i].AddOffset(offset));
+            }
+
+            AddCaches();
+        }
+        
         /// <summary>
         /// 複数のMeshCreaterを合体する
         /// </summary>
