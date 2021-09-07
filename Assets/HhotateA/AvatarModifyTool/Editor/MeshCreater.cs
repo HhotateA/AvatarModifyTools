@@ -82,18 +82,19 @@ namespace HhotateA.AvatarModifyTools.Core
         
         public MeshCreater(Renderer rend)
         {
-            if (rend.GetType() == typeof(SkinnedMeshRenderer))
+            if (rend is SkinnedMeshRenderer)
             {
                 var mesh = rend as SkinnedMeshRenderer;
                 var originMesh = mesh.sharedMesh;
                 name = mesh.name;
                 rendBone = rend.transform;
+                rootBone = mesh.rootBone;
                 AddSkinnedMesh(mesh);
                 // skinmesh はbakeするので いらないかも？
                 Create(originMesh);
             }
             else
-            if (rend.GetType() == typeof(MeshRenderer))
+            if (rend is MeshRenderer)
             {
                 var mesh = rend.GetComponent<MeshFilter>() as MeshFilter;
                 var originMesh = mesh.sharedMesh;
@@ -126,9 +127,7 @@ namespace HhotateA.AvatarModifyTools.Core
             var us = mc.GetUVList();
             for (int i = 0; i < mc.vertexs.Count; i++)
             {
-                AddVertex(isSkinnedMesh ? mc.rendBone.TransformDirection(mc.vertexs[i]) : mc.vertexs[i], 
-                    isSkinnedMesh ? mc.rendBone.TransformDirection(mc.normals[i]) : mc.normals[i],
-                    mc.tangents[i],mc.colors[i],us[i],mc.boneWeights[i]);
+                AddVertex( mc.vertexs[i] ,  mc.normals[i], mc.tangents[i], mc.colors[i], us[i], mc.boneWeights[i]);
             }
 
             for (int i = 0; i < mc.triangles.Count; i++)
@@ -203,8 +202,7 @@ namespace HhotateA.AvatarModifyTools.Core
 
             var boneTable = AddBones(rend.bones);
 
-            var blendWeights = Enumerable.Range(0, rend.sharedMesh.blendShapeCount)
-                .Select(n => rend.GetBlendShapeWeight(n)).ToArray();
+            var blendWeights = Enumerable.Range(0, rend.sharedMesh.blendShapeCount).Select(n => rend.GetBlendShapeWeight(n)).ToArray();
             
             AddMesh(rend.sharedMesh,rend.sharedMaterials,boneTable,null,blendWeights);
             
@@ -253,9 +251,16 @@ namespace HhotateA.AvatarModifyTools.Core
             {
                 AddSubMesh(origin.GetTriangles(i).ToList(),mats?.Length > i ? mats[i] : new Material(Shader.Find("Unlit/Texture")),subMeshBone,offset);
             }
+
+            if (blendWeights == null)
+            {
+                blendWeights = new float[0];
+            }
+            if (blendWeights.Length != origin.blendShapeCount)
+            {
+                blendWeights = new float[origin.blendShapeCount];
+            }
             
-            if(blendWeights==null) blendWeights = new float[0];
-            if(blendWeights.Length!=origin.blendShapeCount) blendWeights = new float[origin.blendShapeCount];
             for (int i = 0; i < origin.blendShapeCount; ++i)
             {
                 blendShapes.Add(new BlendShapeData(origin,i,offset,blendWeights[i]));
@@ -881,6 +886,14 @@ namespace HhotateA.AvatarModifyTools.Core
                 }
             }
         }
+        public void TransformMatrix(List<int> verts, Matrix4x4 mat)
+        {
+            foreach (var v in verts)
+            {
+                vertexs[v] = mat * new Vector4(vertexs[v].x,vertexs[v].y,vertexs[v].z,1f);
+            }
+        }
+        
         /// <summary>
         /// 頂点の属するTriangleにTransformを適応する
         /// </summary>
@@ -1005,14 +1018,6 @@ namespace HhotateA.AvatarModifyTools.Core
                     vertexs[v].y*scale.y,
                     vertexs[v].z*scale.z);
                 vertexs[v] = vertexs[v] + wp;
-            }
-        }
-        
-        public void TransformMatrix(List<int> verts, Matrix4x4 mat)
-        {
-            foreach (var v in verts)
-            {
-                vertexs[v] = mat * new Vector4(vertexs[v].x,vertexs[v].y,vertexs[v].z,1f);
             }
         }
 
