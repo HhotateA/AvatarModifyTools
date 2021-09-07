@@ -119,8 +119,6 @@ namespace HhotateA.AvatarModifyTools.Core
             rootBone = mc.rootBone;
             var defaultVertexs = new List<Vector3>();
             var editVertexs = new List<Vector3>();
-
-            bool isSkinnedMesh = mc.meshTransforms.Any(t => t == null);
             
             AddBones(mc.bones.ToArray());
 
@@ -167,9 +165,17 @@ namespace HhotateA.AvatarModifyTools.Core
                 var us = mc.GetUVList();
                 for (int i = 0; i < mc.vertexs.Count; i++)
                 {
-                    AddVertex(isSkinnedMesh ? mc.rendBone.TransformDirection(mc.vertexs[i]) : mc.vertexs[i], 
-                        isSkinnedMesh ? mc.rendBone.TransformDirection(mc.normals[i]) : mc.normals[i],
-                        mc.tangents[i],mc.colors[i],us[i],mc.boneWeights[i],boneTable.ToArray());
+                    if (isSkinnedMesh)
+                    {
+                        AddVertex(root.InverseTransformPoint(mc.rendBone.TransformPoint(mc.vertexs[i])) ,
+                            root.InverseTransformPoint(mc.rendBone.TransformPoint(mc.normals[i])),
+                            mc.tangents[i],mc.colors[i],us[i],mc.boneWeights[i],boneTable.ToArray());
+                    }
+                    else
+                    {
+                        AddVertex( mc.vertexs[i] ,  mc.normals[i], mc.tangents[i], mc.colors[i], us[i], mc.boneWeights[i]);
+                    }
+                    //AddVertex( mc.vertexs[i] ,  mc.normals[i], mc.tangents[i], mc.colors[i], us[i], mc.boneWeights[i]);
                 }
 
                 for (int i = 0; i < mc.triangles.Count; i++)
@@ -181,7 +187,7 @@ namespace HhotateA.AvatarModifyTools.Core
                 editVertexs.AddRange(mc.EditVertexs());
                 for (int i = 0; i < mc.blendShapes.Count; ++i)
                 {
-                    blendShapes.Add(mc.blendShapes[i].AddOffset(offset));
+                    blendShapes.Add(mc.blendShapes[i].AddOffset(offset).TransformRoot(mc.rendBone,root));
                 }
             }
 
@@ -1242,6 +1248,10 @@ namespace HhotateA.AvatarModifyTools.Core
                         // ベイクにTransformが適応されるので逆変換
                         // 方向を治してからscaleを補正している（たぶん）
                         vertexs[i + offset] = root.InverseTransformVector(root.TransformDirection(vs[i]));
+                    }
+                    for (int i = 0; i < blendShapes.Count; ++i)
+                    {
+                        blendShapes[i].TransformRoot(root);
                     }
                 }
             }
@@ -2890,6 +2900,24 @@ namespace HhotateA.AvatarModifyTools.Core
         public BlendShapeData AddOffset(int i)
         {
             this.offset += i;
+            return this;
+        }
+
+        public BlendShapeData TransformRoot(Transform from,Transform to)
+        {
+            this.vertices = vertices.Select(v=>
+                to.InverseTransformPoint(
+                from.TransformPoint(
+                    v))).ToList();
+            this.normals = normals.Select(n=>to.InverseTransformDirection(from.TransformDirection(n))).ToList();
+            this.tangents = tangents.Select(t=>to.InverseTransformDirection(from.TransformDirection(t))).ToList();
+            return this;
+        }
+        public BlendShapeData TransformRoot(Transform to)
+        {
+            // this.vertices = vertices.Select(v=>  to.InverseTransformPoint(v)).ToList();
+            this.normals = normals.Select(n=> to.InverseTransformDirection(n)).ToList();
+            // this.tangents = tangents.Select(t=> to.InverseTransformDirection(t)).ToList();
             return this;
         }
 
