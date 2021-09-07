@@ -126,16 +126,15 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
 
         // MergeBone機能用
         private bool isMergeBone = false;
-        private Animator originHuman;
-        private Animator targetHuman;
+        /*private Animator originHuman;
+        private Animator targetHuman;*/
+        private GameObject targetHuman;
         private MergeBoneMode mergeBoneMode;
         enum MergeBoneMode
         {
             None,
             Merge,
-            //Constraint,
-            RootConstraint,
-            //Move
+            Constraint,
         }
         
         private bool isCombineMesh = false;
@@ -586,7 +585,17 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
                         else
                         {
                             isSaveAll = EditorGUILayout.Toggle("Save All", isSaveAll);
-                            isGenerateNewMesh = EditorGUILayout.Toggle("Generate New Mesh", isGenerateNewMesh);
+                            if (isMergeBone && mergeBoneMode != MergeBoneMode.None)
+                            {
+                                using (new EditorGUI.DisabledScope(true))
+                                {
+                                    EditorGUILayout.Toggle("Generate New Mesh", true);
+                                }
+                            }
+                            else
+                            {
+                                isGenerateNewMesh = EditorGUILayout.Toggle("Generate New Mesh", isGenerateNewMesh);
+                            }
                         }
                         using (new EditorGUILayout.HorizontalScope())
                         {
@@ -616,13 +625,10 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
                             using (new EditorGUI.DisabledScope(!isMergeBone))
                             {
                                 EditorGUILayout.LabelField("  ",GUILayout.Width(20));
-                                using (new EditorGUI.DisabledScope(originHuman == null))
+                                targetHuman = (GameObject) EditorGUILayout.ObjectField("", targetHuman, typeof(GameObject), true, GUILayout.Width(100));
+                                using (new EditorGUI.DisabledScope(targetHuman == null))
                                 {
-                                    targetHuman = (Animator) EditorGUILayout.ObjectField("", targetHuman, typeof(Animator), true, GUILayout.Width(100));
-                                    using (new EditorGUI.DisabledScope(targetHuman == null))
-                                    {
-                                        mergeBoneMode = (MergeBoneMode) EditorGUILayout.EnumPopup("", mergeBoneMode, GUILayout.Width(50));
-                                    }
+                                    mergeBoneMode = (MergeBoneMode) EditorGUILayout.EnumPopup("", mergeBoneMode, GUILayout.Width(50));
                                 }
                             }
                         }
@@ -638,6 +644,7 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
                             }
                         }
                     }
+                    EditorGUILayout.Space();
                 }
 
                 using (new EditorGUILayout.VerticalScope())
@@ -771,8 +778,6 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
             if(avatarMonitor!=null) avatarMonitor.Release();
             avatarMonitor = new AvatarMonitor(anim.transform);
             
-            originHuman = anim.GetComponent<Animator>();
-            if(originHuman != null) originHuman = originHuman.isHuman ? originHuman : null;
             editIndex = -1;
         }
 
@@ -845,7 +850,7 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
                     //var sm = SaveMeshCreater(meshsCreaters[editIndex],dir,file);
                     mc = MergeBone( mc, dir, file);
                 }
-                else if(mergeBoneMode == MergeBoneMode.RootConstraint)
+                else if(mergeBoneMode == MergeBoneMode.Constraint)
                 {
                     mc = CombineBone( mc, dir, file);
                 }
@@ -867,9 +872,21 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
                 }
             }
 
-            if (isGenerateNewMesh || (isCombineMesh && combineMeshMode == CombineMeshMode.CombineAllMesh))
+            if (isCombineMesh && combineMeshMode == CombineMeshMode.CombineAllMesh)
             {
                 var sm = SaveMeshCreater(mc,dir,file);
+                AddRend(sm);
+            }
+            else if (isMergeBone && mergeBoneMode != MergeBoneMode.None)
+            {
+                var sm = SaveMeshCreater(mc,dir,file);
+                sm.transform.SetParent(targetHuman.transform);
+                AddRend(sm);
+            }
+            else if (isGenerateNewMesh)
+            {
+                var sm = SaveMeshCreater(mc,dir,file);
+                AddRend(sm);
             }
             else
             {
@@ -910,6 +927,7 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
 
             return m;
         }
+        
         SkinnedMeshRenderer SaveMeshCreater(MeshCreater mc,string dir,string file)
         {
             if (isRandomizeVertex)
@@ -924,68 +942,29 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
             mc.Create(false);
             var m = mc.Save(Path.Combine(dir, file + ".mesh"));
 
-            var sm = editMeshCreater.ToSkinMesh(file,avatar.transform);
+            var sm = mc.ToSkinMesh(file,avatar.transform);
         
             sm.transform.position = rends[0].transform.position;
             sm.transform.rotation = rends[0].transform.rotation;
             var smsm = sm.GetComponent<SkinnedMeshRenderer>();
             smsm.SetMesh(m);
-            // editmeshCreaterの切り替え
-            AddRend(smsm);
 
             return smsm;
         }
 
         MeshCreater CombineMesh(string dir,string file)
         {
-            if (rends.FirstOrDefault(r => r.name == file))
-            {
-                for (int i = 0; i < 999; i++)
-                {
-                    var n = file + "_" + i;
-                    if (rends.FirstOrDefault(r => r.name == n) == null)
-                    {
-                        file = n;
-                        break;
-                    }
-                }
-            }
             var mc = new MeshCreater(avatar.transform,meshsCreaters.Where(m=>m.RendBone.gameObject.activeSelf).ToArray());
             return mc;
         }
         MeshCreater CombineMaterial(MeshCreater mc,string dir,string file)
         {
-            if (rends.FirstOrDefault(r => r.name == file))
-            {
-                for (int i = 0; i < 999; i++)
-                {
-                    var n = file + "_" + i;
-                    if (rends.FirstOrDefault(r => r.name == n) == null)
-                    {
-                        file = n;
-                        break;
-                    }
-                }
-            }
             mc.CombineMesh();
             return mc;
         }
 
         MeshCreater TextureAtlas(MeshCreater mc,string dir,string file)
         {
-            if (rends.FirstOrDefault(r => r.name == file))
-            {
-                for (int i = 0; i < 999; i++)
-                {
-                    var n = file + "_" + i;
-                    if (rends.FirstOrDefault(r => r.name == n) == null)
-                    {
-                        file = n;
-                        break;
-                    }
-                }
-            }
-            
             mc.MaterialAtlas(Path.Combine(dir,file));
             return mc;
         }
@@ -1599,7 +1578,7 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
         MeshCreater MergeBone(MeshCreater mc,string dir,string file)
         {
             // ここからボーンの参照
-            mc.ChangeBones(targetHuman,originHuman,true);
+            mc.ChangeBones(targetHuman,avatar,true);
             return mc;
         }
         
@@ -1609,8 +1588,8 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
         MeshCreater CombineBone(MeshCreater mc,string dir,string file)
         {
             // ここからボーンの参照
-            var t = targetHuman.GetHumanBones();
-            var o = originHuman.GetHumanBones();
+            var t = targetHuman.GetBones();
+            var o = avatar.GetBones();
             var p = targetHuman.transform.Find(avatar.name + "_bones") ??
                 new GameObject(avatar.name + "_bones").transform;
             p.SetParent(targetHuman.transform);
@@ -1618,7 +1597,7 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
             p.localRotation = Quaternion.identity;
             p.localScale = Vector3.one;
             
-            mc.ChangeBones(targetHuman,originHuman, 
+            mc.ChangeBones(targetHuman,avatar, 
                 true,b =>
                 {
                     var bp = b.parent;
@@ -1652,8 +1631,8 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
         /// </summary>
         void ConstraintBone()
         {
-            var t = targetHuman.GetHumanBones();
-            var o = originHuman.GetHumanBones();
+            var t = targetHuman.GetBones();
+            var o = avatar.GetBones();
             for (int i = 0; i < t.Length; i++)
             {
                 if (t[i] && o[i])
@@ -1665,22 +1644,6 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
                     };
                     var c = o[i].gameObject.AddComponent<ParentConstraint>();
                     c.AddSource(s);
-                }
-            }
-        }
-        
-        /// <summary>
-        /// ボーンを参照先に移動する
-        /// </summary>
-        void MoveBone()
-        {
-            var t = targetHuman.GetHumanBones();
-            var o = originHuman.GetHumanBones();
-            for (int i = 0; i < t.Length; i++)
-            {
-                if (t[i] && o[i])
-                {
-                    o[i].transform.SetPositionAndRotation(t[i].position,o[i].rotation);
                 }
             }
         }
@@ -1705,13 +1668,10 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
         /// <param name="rend"></param>
         void DisableNonHumanBone(SkinnedMeshRenderer rend)
         {
-            if (originHuman != null)
+            var humanBones = avatar.GetBones();
+            foreach (var bone in rend.bones)
             {
-                var humanBones = originHuman.GetHumanBones();
-                foreach (var bone in rend.bones)
-                {
-                    if(!humanBones.Contains(bone)) bone.gameObject.SetActive(false);
-                }
+                if(!humanBones.Contains(bone)) bone.gameObject.SetActive(false);
             }
             ReloadMesh(false);
         }

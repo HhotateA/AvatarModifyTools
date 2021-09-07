@@ -8,6 +8,7 @@ This software is released under the MIT License.
 http://opensource.org/licenses/mit-license.php
 */
 using System;
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
 using Object = UnityEngine.Object;
@@ -41,7 +42,7 @@ namespace HhotateA.AvatarModifyTools.Core
         public static string texturePreviewShader = "e422dd8b39cd79343b42ffba228bb53b";
         public static string texturePainterShader = "3cfd9a4da725f0c41b16979b05bd5a53";
 
-        public static string[] VRChatParams = new string[]
+        public static string[] vrchatParams = new string[]
         {
             "IsLocal",
             "Viseme",
@@ -78,6 +79,110 @@ namespace HhotateA.AvatarModifyTools.Core
             "Expression15",
             "Expression16",
         };
+
+        public static string[][] boneNamePatterns = new string[][]
+        {
+            new string[] { "Hips","Hip"},
+            new string[] { "LeftUpperLeg","Leg_L","Leg_Left","UpperLeg_L","UpperLeg_Left"},
+            new string[] { "RightUpperLeg","Leg_R","Leg_Right","UpperLeg_R","UpperLeg_Right"},
+            new string[] { "LeftLowerLeg","Knee_L","Knee_Left","LowerLeg_L","LowerLeg_Left"},
+            new string[] { "RightLowerLeg","Knee_R","Knee_Right","LowerLeg_R","LowerLeg_Right"},
+            new string[] { "LeftFoot","Foot_L","Foot_Left"},
+            new string[] { "RightFoot","Foot_R","Foot_Right"},
+            new string[] { "Spines","Spine"},
+            new string[] { "Chest","Chest"},
+            new string[] { "Neck"},
+            new string[] { "Head"},
+            new string[] { "LeftShoulder","Shoulder_L","Shoulder_Left"},
+            new string[] { "RightShoulder","Shoulder_R","Shoulder_Right"},
+            new string[] { "LeftUpperArm","Arm_L","Arm_Left","UpperArm_L","UpperArm_Left"},
+            new string[] { "RightUpperArm","Arm_R","Arm_Right","UpperArm_R","UpperArm_Right"},
+            new string[] { "LeftLowerArm","LowerArm_L","LowerArm_Left"},
+            new string[] { "RightLowerArm","LowerArm_R","LowerArm_Right"},
+            new string[] { "LeftHand","Hand_L","Hand_Left","Hand_Left"},
+            new string[] { "RightHand","Hand_R","Hand_R","Hand_Right"},
+            new string[] { "LeftToes","ToeIK_L","Toe_L","Toe_Left","Toes_L","Toes_Left"},
+            new string[] { "RightToes","ToeIK_R","Toe_R","Toe_Right","Toes_R","Toes_Right"},
+            new string[] { "LeftEye","Eye_L","Eye_Left"},
+            new string[] { "RightEye","Eye_R","Eye_Right"},
+            new string[] { "Jaw"},
+            new string[] { "LeftThumbProximal","ProximalThumb_L","ProximalThumb_Left"},
+            new string[] { "LeftThumbIntermediate","IntermediateThumb_L","IntermediateThumb_Left"},
+            new string[] { "LeftThumbDistal","DistalThumb_L","DistalThumb_Left"},
+            new string[] { "LeftIndexProximal","ProximalIndex_L","ProximalIndex_Left"},
+            new string[] { "LeftIndexIntermediate","IntermediateIndex_L","IntermediateIndex_Left"},
+            new string[] { "LeftIndexDistal","DistalIndex_L","DistalIndex_Left"},
+            new string[] { "LeftMiddleProximal","ProximalMiddle_L","ProximalMiddle_Left"},
+            new string[] { "LeftMiddleIntermediate","IntermediateMiddle_L","IntermediateMiddle_Left"},
+            new string[] { "LeftMiddleDistal","DistalMiddle_L","DistalMiddle_Left"},
+            new string[] { "LeftRingProximal","ProximalRing_L","ProximalRing_Left"},
+            new string[] { "LeftRingIntermediate","IntermediateRing_L","IntermediateRing_Left"},
+            new string[] { "LeftRingDistal","DistalRing_L","DistalRing_Left"},
+            new string[] { "LeftLittleProximal","ProximalLittle_L","ProximalLittle_Left"},
+            new string[] { "LeftLittleIntermediate","IntermediateLittle_L","IntermediateLittle_Left"},
+            new string[] { "LeftLittleDistal","DistalLittle_L","DistalLittle_Left"},
+            new string[] { "RightThumbProximal","ProximalThumb_R","ProximalThumb_Right"},
+            new string[] { "RightThumbIntermediate","IntermediateThumb_R","IntermediateThumb_Right"},
+            new string[] { "RightThumbDistal","DistalThumb_R","DistalThumb_Right"},
+            new string[] { "RightIndexProximal","ProximalIndex_R","ProximalIndex_Right"},
+            new string[] { "RightIndexIntermediate","IntermediateIndex_R","IntermediateIndex_Right"},
+            new string[] { "RightIndexDistal","DistalIndex_R","DistalIndex_Right"},
+            new string[] { "RightMiddleProximal","ProximalMiddle_R","ProximalMiddle_Right"},
+            new string[] { "RightMiddleIntermediate","IntermediateMiddle_R","IntermediateMiddle_Right"},
+            new string[] { "RightMiddleDistal","DistalMiddle_R","DistalMiddle_Right"},
+            new string[] { "RightRingProximal","ProximalRing_R","ProximalRing_Right"},
+            new string[] { "RightRingIntermediate","IntermediateRing_R","IntermediateRing_Right"},
+            new string[] { "RightRingDistal","DistalRing_R","DistalRing_Right"},
+            new string[] { "RightLittleProximal","ProximalLittle_R","ProximalLittle_Right"},
+            new string[] { "RightLittleIntermediate","IntermediateLittle_R","IntermediateLittle_Right"},
+            new string[] { "RightLittleDistal","DistalLittle_R","DistalLittle_Right"},
+            new string[] { "UpperChest"},
+            new string[] { "LastBone"},
+        };
+
+        public static Transform[] GetBones(this GameObject root)
+        {
+            Transform[] bones = new Transform[Enum.GetValues(typeof(HumanBodyBones)).Length];
+            var anim = root.GetComponent<Animator>();
+            foreach (HumanBodyBones humanBone in Enum.GetValues(typeof(HumanBodyBones)))
+            {
+                if (humanBone == HumanBodyBones.LastBone) continue;
+                Transform bone = null;
+                if (anim != null)
+                {
+                    if (anim.isHuman)
+                    {
+                        bone = anim.GetBoneTransform(humanBone);
+                    }
+                }
+
+                if (bone == null)
+                {
+                    var boneNames = boneNamePatterns.FirstOrDefault(b => b[0] == humanBone.ToString());
+                    if(boneNames == null) continue;
+                    foreach (var boneName in boneNames)
+                    {
+                        root.transform.RecursionInChildren(t =>
+                        {
+                            if (bone == null)
+                            {
+                                string s = boneName.Replace(".", "").Replace("_", "").Replace(" ", "").ToUpper();
+                                string d = t.gameObject.name.Replace(".", "").Replace("_", "").Replace(" ", "").ToUpper();
+                                if (s == d)
+                                {
+                                    bone = t;
+                                }
+                            }
+                        });
+                        if (bone != null) break;
+                    }
+                }
+
+                bones[(int) humanBone] = bone;
+            }
+
+            return bones;
+        }
     }
 
     public static class AssetUtility
@@ -128,7 +233,7 @@ namespace HhotateA.AvatarModifyTools.Core
 
             return path;
         }
-        public static Transform RecursiveFindChild(this Transform parent, string childName)
+        public static Transform FindInChildren(this Transform parent, string childName)
         {
             foreach (Transform child in parent)
             {
@@ -138,7 +243,7 @@ namespace HhotateA.AvatarModifyTools.Core
                 }
                 else
                 {
-                    Transform found = RecursiveFindChild(child, childName);
+                    Transform found = FindInChildren(child, childName);
                     if (found != null)
                     {
                         return found;
@@ -146,6 +251,15 @@ namespace HhotateA.AvatarModifyTools.Core
                 }
             }
             return null;
+        }
+        
+        public static void RecursionInChildren(this Transform parent, Action<Transform> onFind)
+        {
+            onFind?.Invoke(parent);
+            foreach (Transform child in parent)
+            {
+                child.RecursionInChildren(onFind);
+            }
         }
         public static string GetAssetDir(this ScriptableObject asset)
         {

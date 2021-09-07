@@ -115,33 +115,32 @@ namespace HhotateA.AvatarModifyTools.Core
         public MeshCreater(MeshCreater mc)
         {
             rendBone = mc.rendBone;
+            rootBone = mc.rootBone;
             var defaultVertexs = new List<Vector3>();
             var editVertexs = new List<Vector3>();
 
-            var offset = vertexs.Count;
-
             bool isSkinnedMesh = mc.meshTransforms.Any(t => t == null);
             
-            var boneTable = AddBones(mc.bones.ToArray());
+            AddBones(mc.bones.ToArray());
 
             var us = mc.GetUVList();
             for (int i = 0; i < mc.vertexs.Count; i++)
             {
                 AddVertex(isSkinnedMesh ? mc.rendBone.TransformDirection(mc.vertexs[i]) : mc.vertexs[i], 
                     isSkinnedMesh ? mc.rendBone.TransformDirection(mc.normals[i]) : mc.normals[i],
-                    mc.tangents[i],mc.colors[i],us[i],mc.boneWeights[i],boneTable.ToArray());
+                    mc.tangents[i],mc.colors[i],us[i],mc.boneWeights[i]);
             }
 
             for (int i = 0; i < mc.triangles.Count; i++)
             {
-                AddSubMesh(mc.triangles[i],mc.materials[i],mc.meshTransforms[i],offset);
+                AddSubMesh(mc.triangles[i],mc.materials[i],mc.meshTransforms[i]);
             }
             
             defaultVertexs.AddRange(mc.DefaultVertexs());
             editVertexs.AddRange(mc.EditVertexs());
             for (int i = 0; i < mc.blendShapes.Count; ++i)
             {
-                blendShapes.Add(mc.blendShapes[i].AddOffset(offset));
+                blendShapes.Add(mc.blendShapes[i]);
             }
 
             AddCaches();
@@ -1313,17 +1312,17 @@ namespace HhotateA.AvatarModifyTools.Core
         /// </summary>
         /// <param name="target"></param>
         /// <param name="origin"></param>
-        public Transform[] ChangeBones(Animator target, Animator origin, bool nameMatch = false,Action<Transform> additiveBone = null,Action<Transform> changeRootBone = null)
+        public Transform[] ChangeBones(GameObject target, GameObject origin, bool nameMatch = false,Action<Transform> additiveBone = null,Action<Transform> changeRootBone = null)
         {
             var boneTable = new Dictionary<Transform, Transform>();
             boneTable.Add(origin.transform,target.transform);
+            var targetBones = target.GetBones();
+            var originBones = origin.GetBones();
             foreach (HumanBodyBones bone in Enum.GetValues(typeof(HumanBodyBones)))
             {
-                if(bone == HumanBodyBones.LastBone) continue;
-                if (target.GetBoneTransform(bone) != null &&
-                    origin.GetBoneTransform(bone) != null)
+                if (targetBones[(int)bone] != null && originBones[(int)bone] != null)
                 {
-                    boneTable.Add(origin.GetBoneTransform(bone),target.GetBoneTransform(bone));
+                    boneTable.Add(originBones[(int)bone],targetBones[(int)bone]);
                 }
             }
 
@@ -1363,10 +1362,13 @@ namespace HhotateA.AvatarModifyTools.Core
                 newBindPoses.Add(bindPose);
             }
 
-            if (boneTable.ContainsKey(rootBone))
+            if (rootBone)
             {
-                rootBone = boneTable[rootBone];
-                changeRootBone?.Invoke(rootBone);
+                if (boneTable.ContainsKey(rootBone))
+                {
+                    rootBone = boneTable[rootBone];
+                    changeRootBone?.Invoke(rootBone);
+                }
             }
 
             bones = newBones;
@@ -2663,24 +2665,6 @@ namespace HhotateA.AvatarModifyTools.Core
             }
 
             return copy;
-        }
-        
-        public static Transform FindInChildren(this Transform parnet, string name)
-        {
-            foreach (Transform child in parnet)
-            {
-                if (child.name == name)
-                {
-                    return child;
-                }
-                else
-                {
-                    var cn = child.FindInChildren(name);
-                    if (cn != null) return cn;
-                }
-            }
-
-            return null;
         }
 
         public static List<float> ComputeBasis(Vector3 pos,List<Vector3> vertex)
