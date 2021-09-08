@@ -1817,7 +1817,7 @@ namespace HhotateA.AvatarModifyTools.Core
         public string GetSafeParam(string param)
         {
             if (String.IsNullOrWhiteSpace(param)) return "";
-            if (EnvironmentVariable.VRChatParams.Contains(param)) return param;
+            if (EnvironmentVariable.vrchatParams.Contains(param)) return param;
             if (RenameParameters)
             {
                 param = GetNihongoHash(param);

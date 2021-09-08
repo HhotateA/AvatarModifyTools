@@ -632,7 +632,8 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                                     var conflict = FindConflict();
                                     if (conflict.Count > 0)
                                     {
-                                        status.Warning("Detect Conflict Layer : " + conflict[0]);
+                                        //status.Warning("Detect Conflict Layer : " + conflict[0]);
+                                        status.Warning("Complete Setup (Detect Conflict Layers)");
                                         foreach (var c in conflict)
                                         {
                                             Debug.LogWarning("Detect Conflict Layer : " + c);

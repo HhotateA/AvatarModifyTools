@@ -179,31 +179,31 @@ namespace HhotateA.AvatarModifyTools.GrabableItem
         {
             while (true)
             {
-                var wp = avatar.transform.RecursiveFindChild(EnvironmentGUIDs.prefix + saveName + "_WorldPoint");
+                var wp = avatar.transform.FindInChildren(EnvironmentGUIDs.prefix + saveName + "_WorldPoint");
                 if (wp)
                 {
                     DestroyImmediate(wp.gameObject);
                     continue;
                 }
-                var wa = avatar.transform.RecursiveFindChild(EnvironmentGUIDs.prefix + saveName + "_WorldAnchor");
+                var wa = avatar.transform.FindInChildren(EnvironmentGUIDs.prefix + saveName + "_WorldAnchor");
                 if (wa)
                 {
                     DestroyImmediate(wa.gameObject);
                     continue;
                 }
-                var ia = avatar.transform.RecursiveFindChild(EnvironmentGUIDs.prefix + saveName + "_ItemShip");
+                var ia = avatar.transform.FindInChildren(EnvironmentGUIDs.prefix + saveName + "_ItemShip");
                 if (ia)
                 {
                     DestroyImmediate(ia.gameObject);
                     continue;
                 }
-                var ha = avatar.transform.RecursiveFindChild(EnvironmentGUIDs.prefix + saveName + "_HandAnchor");
+                var ha = avatar.transform.FindInChildren(EnvironmentGUIDs.prefix + saveName + "_HandAnchor");
                 if (ha)
                 {
                     DestroyImmediate(ha.gameObject);
                     continue;
                 }
-                var ra = avatar.transform.RecursiveFindChild(EnvironmentGUIDs.prefix + saveName + "_RootAnchor");
+                var ra = avatar.transform.FindInChildren(EnvironmentGUIDs.prefix + saveName + "_RootAnchor");
                 if (ra)
                 {
                     DestroyImmediate(ra.gameObject);
