@@ -2905,18 +2905,15 @@ namespace HhotateA.AvatarModifyTools.Core
 
         public BlendShapeData TransformRoot(Transform from,Transform to)
         {
-            this.vertices = vertices.Select(v=>
-                to.InverseTransformPoint(
-                from.TransformPoint(
-                    v))).ToList();
-            this.normals = normals.Select(n=>to.InverseTransformDirection(from.TransformDirection(n))).ToList();
-            this.tangents = tangents.Select(t=>to.InverseTransformDirection(from.TransformDirection(t))).ToList();
+            this.vertices = vertices.Select(v=> to.InverseTransformPoint( from.TransformPoint( v))).ToList();
+            // this.normals = normals.Select(n=> from.TransformDirection( to.InverseTransformDirection( n))).ToList();
+            // this.tangents = tangents.Select(t=> to.InverseTransformDirection( from.TransformDirection( t))).ToList();
             return this;
         }
         public BlendShapeData TransformRoot(Transform to)
         {
             // this.vertices = vertices.Select(v=>  to.InverseTransformPoint(v)).ToList();
-            this.normals = normals.Select(n=> to.InverseTransformDirection(n)).ToList();
+            // this.normals = normals.Select(n=> to.InverseTransformDirection(n)).ToList();
             // this.tangents = tangents.Select(t=> to.InverseTransformDirection(t)).ToList();
             return this;
         }
@@ -3039,8 +3036,8 @@ namespace HhotateA.AvatarModifyTools.Core
                 if (i >= offset && i < offset + vertices.Count)
                 {
                     blendShapeVertices.Add(vertices[i - offset]);
-                    blendShapeNormals.Add(normals[i - offset]);
-                    blendShapeTangets.Add(tangents[i - offset]);
+                    blendShapeNormals.Add(normals[i - offset]*0.01f);
+                    blendShapeTangets.Add(tangents[i - offset]*0.01f);
                 }
                 else
                 {
