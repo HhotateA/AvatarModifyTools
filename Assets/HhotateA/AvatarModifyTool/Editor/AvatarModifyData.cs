@@ -9,6 +9,7 @@ http://opensource.org/licenses/mit-license.php
 */
 using UnityEditor.Animations;
 using UnityEngine;
+using UnityEngine.Serialization;
 #if VRC_SDK_VRCSDK3
 using VRC.SDK3.Avatars.ScriptableObjects;
 #endif
@@ -18,7 +19,7 @@ namespace HhotateA.AvatarModifyTools.Core
     [CreateAssetMenu(menuName = "HhotateA/AvatarModifyData")]
     public class AvatarModifyData : ScriptableObject
     {
-        public string name = "AvatarModifyData";
+        [FormerlySerializedAs("name")] public string saveName = "AvatarModifyData";
         public AnimatorController locomotion_controller;
         public AnimatorController idle_controller;
         public AnimatorController gesture_controller;

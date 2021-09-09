@@ -1565,7 +1565,6 @@ namespace HhotateA.AvatarModifyTools.Core
         
         bool HasKeyframeAnimation(AnimationClip clip, string[] path, string attribute = "")
         {
-            bool hasPath = false;
             using (var o = new SerializedObject(clip))
             {
                 var curves = o.FindProperty("m_FloatCurves");
@@ -1591,49 +1590,6 @@ namespace HhotateA.AvatarModifyTools.Core
                         }
                     }
                 }
-
-                /*var i = o.GetIterator();
-                while (i.Next(true))
-                {
-                    if (i.name == "curve")
-                    {
-                        var a = i.FindPropertyRelative("attribute");
-                        var p = i.FindPropertyRelative("path");
-                        if(a!=null) Debug.Log(a.stringValue);
-                        if(p!=null) Debug.Log(p.stringValue);
-                    }
-                    /*if (String.IsNullOrWhiteSpace(attribute))
-                    {
-                        if (i.name == "curve" && i.propertyType == SerializedPropertyType.String)
-                        {
-                            if (i.stringValue == path)
-                            {
-                                return true;
-                            }
-                        }
-                    }
-                    else
-                    {
-                        if (i.name == "attribute" && i.propertyType == SerializedPropertyType.String)
-                        {
-                            if (i.stringValue.StartsWith(attribute))
-                            {
-                                Debug.Log(i.stringValue);
-                                i.Next(true);
-                                Debug.Log(i.stringValue);
-                                if (i.name == "path" && i.propertyType == SerializedPropertyType.String)
-                                {
-                                    Debug.Log(i.stringValue);
-                                    if (i.stringValue == path)
-                                    {
-                                        return true;
-                                    }
-                                }
-                            }
-                        }
-                    }#1#
-                }
-            }*/
             }
 
             return false;
@@ -1817,7 +1773,7 @@ namespace HhotateA.AvatarModifyTools.Core
         public string GetSafeParam(string param)
         {
             if (String.IsNullOrWhiteSpace(param)) return "";
-            if (EnvironmentVariable.VRChatParams.Contains(param)) return param;
+            if (EnvironmentVariable.vrchatParams.Contains(param)) return param;
             if (RenameParameters)
             {
                 param = GetNihongoHash(param);

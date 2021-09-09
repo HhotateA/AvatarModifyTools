@@ -41,7 +41,7 @@ namespace HhotateA.AvatarModifyTools.Core
             TitleStyle("HhotateA.AvatarModifyTools.Core");
 #if VRC_SDK_VRCSDK3
             if(data==null) return;
-            EditorGUILayout.LabelField("DATA : " + data.name);
+            EditorGUILayout.LabelField("DATA : " + data.saveName);
             AvatartField("Avatar");
             if (ShowOptions())
             {

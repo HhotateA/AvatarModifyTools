@@ -35,7 +35,6 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         private List<MenuElement> menuElements => data.menuElements;
         private SerializedProperty prop;
         ReorderableList menuReorderableList;
-        private bool syncInactiveItems = true;
 
         private bool displayItemMode = true;
         private bool displaySyncTransition = false;
@@ -632,7 +631,8 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                                     var conflict = FindConflict();
                                     if (conflict.Count > 0)
                                     {
-                                        status.Warning("Detect Conflict Layer : " + conflict[0]);
+                                        //status.Warning("Detect Conflict Layer : " + conflict[0]);
+                                        status.Warning("Complete Setup (Detect Conflict Layers)");
                                         foreach (var c in conflict)
                                         {
                                             Debug.LogWarning("Detect Conflict Layer : " + c);

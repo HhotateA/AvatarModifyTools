@@ -38,10 +38,6 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserMakeupSystem
         bool[] shapes = new bool[0];
         Vector2 matScroll = Vector2.zero;
         Vector2 shapeScroll = Vector2.zero;
-        
-        private bool writeDefault = false;
-        private bool notRecommended = false;
-        private bool keepOldAsser = false;
 
         int taskDone = 0;
         int taskTodo = 0;
@@ -628,7 +624,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserMakeupSystem
 #endif
         
         
-        async Task SyncHSVTexture(Texture tex,string path,Vector3 hsv,Action<Texture> onSave)
+        async void SyncHSVTexture(Texture tex,string path,Vector3 hsv,Action<Texture> onSave)
         {
             var texcreater = new TextureCreator(tex);
             await Task.Delay(100);
@@ -644,7 +640,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserMakeupSystem
             onSave?.Invoke(t);
         }
         
-        async Task SyncGrayTexture(Texture tex,string path,Action<Texture> onSave)
+        async void SyncGrayTexture(Texture tex,string path,Action<Texture> onSave)
         {
             var texcreater = new TextureCreator(tex);
             await Task.Delay(100);
