@@ -2364,6 +2364,34 @@ namespace HhotateA.AvatarModifyTools.Core
             meshTransforms = newTrans;
         }
 
+        /// <summary>
+        /// メッシュを結合する
+        /// </summary>
+        /// <param name="path"></param>
+        public void ForceCombine(string path = null)
+        {
+            var newTriangles = new List<List<int>>();
+            var newTrans = new List<Transform>();
+            
+            var ts = new List<int>();
+            for (int i = 0; i < triangles.Count; i++)
+            {
+                if (meshTransforms[i]!=null)
+                {
+                    TrianglesTransform(triangles[i], rootBone ?? rendBone, meshTransforms[i]);
+                }
+                
+                ts.AddRange(triangles[i]);
+            }
+
+            newTriangles.Add(ts);
+            newTrans.Add(null);
+
+            materials = new List<Material>(){materials[0]};
+            triangles = newTriangles;
+            meshTransforms = newTrans;
+        }
+
         public int GenerateWeightVertex(List<int> vs,Vector3? wp_null = null)
         {
             var wp = wp_null ?? ComputeWeightPoint(vs);
