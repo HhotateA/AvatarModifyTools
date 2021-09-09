@@ -38,10 +38,6 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserMakeupSystem
         bool[] shapes = new bool[0];
         Vector2 matScroll = Vector2.zero;
         Vector2 shapeScroll = Vector2.zero;
-        
-        private bool writeDefault = false;
-        private bool notRecommended = false;
-        private bool keepOldAsser = false;
 
         int taskDone = 0;
         int taskTodo = 0;
