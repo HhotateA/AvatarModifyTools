@@ -123,6 +123,9 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
             DeleateDisableBones,
             DeleateNonHumanoidBones,
         }
+        
+        // mesh simpler
+        private float meshSimplerQuality = 0.5f;
 
         // MergeBone機能用
         private bool isMergeBone = false;
@@ -390,14 +393,31 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
                                     // 精度悪い，重い
                                     using (new EditorGUILayout.HorizontalScope())
                                     {
-                                        triangleCount =
-                                            EditorGUILayout.IntField("", triangleCount, GUILayout.Width(155));
+                                        triangleCount = EditorGUILayout.IntField("", triangleCount, GUILayout.Width(155));
                                         if (GUILayout.Button("Decimate", GUILayout.Width(125)))
                                         {
                                             Decimate();
                                         }
                                     }
                                 }
+                                
+#if UnityMeshSimplifier
+                                using (new EditorGUILayout.HorizontalScope())
+                                {
+                                    meshSimplerQuality = EditorGUILayout.FloatField("", meshSimplerQuality, GUILayout.Width(155));
+                                    if (GUILayout.Button("MeshSimplifier", GUILayout.Width(125)))
+                                    {
+                                        var meshSimplifier = new UnityMeshSimplifier.MeshSimplifier();
+                                        meshSimplifier.Initialize(rends[editIndex].GetMesh());
+                                        meshSimplifier.SimplifyMesh(meshSimplerQuality);
+                                        rends[editIndex].SetMesh(meshSimplifier.ToMesh());
+                                        meshsCreaters[editIndex] = new MeshCreater(rends[editIndex]);
+                                        SelectMeshCreater(editIndex);
+                                    }
+                                }
+#else
+                                EditorGUILayout.TextField("https://github.com/Whinarn/UnityMeshSimplifier.git");
+#endif
                             }
                     
                             EditorGUILayout.Space();
