@@ -119,7 +119,6 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
         private DecimateBoneMode decimateBoneMode;
         enum DecimateBoneMode
         {
-            None,
             DeleateDisableBones,
             DeleateNonHumanoidBones,
         }
@@ -135,7 +134,6 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
         private MergeBoneMode mergeBoneMode;
         enum MergeBoneMode
         {
-            None,
             Merge,
             Constraint,
         }
@@ -144,10 +142,17 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
         private CombineMeshMode combineMeshMode;
         enum CombineMeshMode
         {
-            None,
             CombineAllMesh,
-            CombineSubMesh,
-            TextureAtlas,
+            CombineActiveMesh,
+        }
+
+        private bool isCombineMaterial = false;
+        private CombineMaterialMode combineMaterialMode;
+        enum CombineMaterialMode
+        {
+            ByMaterial,
+            ByShader,
+            ForceCombine,
         }
         
         // 不安定項目を非有効化する設定
@@ -594,61 +599,90 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
                     extendSaveOption = EditorGUILayout.Foldout(extendSaveOption, "Save Option");
                     if (extendSaveOption)
                     {
-                        if (isCombineMesh && combineMeshMode == CombineMeshMode.CombineAllMesh)
+                        using (new EditorGUILayout.HorizontalScope())
                         {
-                            using (new EditorGUI.DisabledScope(true))
+                            EditorGUILayout.LabelField("",GUILayout.Width(5));
+
+                            using (new EditorGUILayout.VerticalScope())
                             {
-                                EditorGUILayout.Toggle("Save All", false);
-                                EditorGUILayout.Toggle("Generate New Mesh", true);
-                            }
-                        }
-                        else
-                        {
-                            isSaveAll = EditorGUILayout.Toggle("Save All", isSaveAll);
-                            if (isMergeBone && mergeBoneMode != MergeBoneMode.None)
-                            {
-                                using (new EditorGUI.DisabledScope(true))
+                                if (isCombineMesh)
                                 {
-                                    EditorGUILayout.Toggle("Generate New Mesh", true);
+                                    using (new EditorGUI.DisabledScope(true))
+                                    {
+                                        EditorGUILayout.Toggle("Save All", false);
+                                        EditorGUILayout.Toggle("Generate New Mesh", true);
+                                    }
                                 }
-                            }
-                            else
-                            {
-                                isGenerateNewMesh = EditorGUILayout.Toggle("Generate New Mesh", isGenerateNewMesh);
-                            }
-                        }
-                        using (new EditorGUILayout.HorizontalScope())
-                        {
-                            isDecimateBone = EditorGUILayout.ToggleLeft("Decimate Bone", isDecimateBone,GUILayout.Width(130));
-                            using (new EditorGUI.DisabledScope(!isDecimateBone))
-                            {
-                                EditorGUILayout.LabelField("  ",GUILayout.Width(20));
-                                decimateBoneMode =
-                                    (DecimateBoneMode) EditorGUILayout.EnumPopup("", decimateBoneMode,
-                                        GUILayout.Width(150));
-                            }
-                        }
-                        using (new EditorGUILayout.HorizontalScope())
-                        {
-                            isCombineMesh = EditorGUILayout.ToggleLeft("Combine Mesh", isCombineMesh,GUILayout.Width(130));
-                            using (new EditorGUI.DisabledScope(!isCombineMesh))
-                            {
-                                EditorGUILayout.LabelField("  ",GUILayout.Width(20));
-                                combineMeshMode =
-                                    (CombineMeshMode) EditorGUILayout.EnumPopup("", combineMeshMode,
-                                        GUILayout.Width(150));
-                            }
-                        }
-                        using (new EditorGUILayout.HorizontalScope())
-                        {
-                            isMergeBone = EditorGUILayout.ToggleLeft("Change Bone",isMergeBone,GUILayout.Width(130));
-                            using (new EditorGUI.DisabledScope(!isMergeBone))
-                            {
-                                EditorGUILayout.LabelField("  ",GUILayout.Width(20));
-                                targetHuman = (GameObject) EditorGUILayout.ObjectField("", targetHuman, typeof(GameObject), true, GUILayout.Width(100));
-                                using (new EditorGUI.DisabledScope(targetHuman == null))
+                                else
                                 {
-                                    mergeBoneMode = (MergeBoneMode) EditorGUILayout.EnumPopup("", mergeBoneMode, GUILayout.Width(50));
+                                    isSaveAll = EditorGUILayout.Toggle("Save All", isSaveAll);
+                                    if (isMergeBone)
+                                    {
+                                        using (new EditorGUI.DisabledScope(true))
+                                        {
+                                            EditorGUILayout.Toggle("Generate New Mesh", true);
+                                        }
+                                    }
+                                    else
+                                    {
+                                        isGenerateNewMesh =
+                                            EditorGUILayout.Toggle("Generate New Mesh", isGenerateNewMesh);
+                                    }
+                                }
+
+                                using (new EditorGUILayout.HorizontalScope())
+                                {
+                                    isDecimateBone = EditorGUILayout.ToggleLeft("Decimate Bone", isDecimateBone,
+                                        GUILayout.Width(130));
+                                    using (new EditorGUI.DisabledScope(!isDecimateBone))
+                                    {
+                                        EditorGUILayout.LabelField("  ", GUILayout.Width(20));
+                                        decimateBoneMode =
+                                            (DecimateBoneMode) EditorGUILayout.EnumPopup("", decimateBoneMode,
+                                                GUILayout.Width(145));
+                                    }
+                                }
+
+                                using (new EditorGUILayout.HorizontalScope())
+                                {
+                                    isCombineMesh = EditorGUILayout.ToggleLeft("Combine Mesh", isCombineMesh,
+                                        GUILayout.Width(130));
+                                    using (new EditorGUI.DisabledScope(!isCombineMesh))
+                                    {
+                                        EditorGUILayout.LabelField("  ", GUILayout.Width(20));
+                                        combineMeshMode =
+                                            (CombineMeshMode) EditorGUILayout.EnumPopup("", combineMeshMode,
+                                                GUILayout.Width(145));
+                                    }
+                                }
+
+                                using (new EditorGUILayout.HorizontalScope())
+                                {
+                                    isCombineMaterial = EditorGUILayout.ToggleLeft("Combine Materials",
+                                        isCombineMaterial,
+                                        GUILayout.Width(130));
+                                    using (new EditorGUI.DisabledScope(!isCombineMaterial))
+                                    {
+                                        EditorGUILayout.LabelField("  ", GUILayout.Width(20));
+                                        combineMaterialMode =
+                                            (CombineMaterialMode) EditorGUILayout.EnumPopup("", combineMaterialMode,
+                                                GUILayout.Width(145));
+                                    }
+                                }
+
+                                using (new EditorGUILayout.HorizontalScope())
+                                {
+                                    isMergeBone =
+                                        EditorGUILayout.ToggleLeft("Change Bone", isMergeBone, GUILayout.Width(130));
+                                    using (new EditorGUI.DisabledScope(!isMergeBone))
+                                    {
+                                        EditorGUILayout.LabelField("  ", GUILayout.Width(20));
+                                        targetHuman = (GameObject) EditorGUILayout.ObjectField("", targetHuman,
+                                            typeof(GameObject), true, GUILayout.Width(95));
+                                        mergeBoneMode =
+                                            (MergeBoneMode) EditorGUILayout.EnumPopup("", mergeBoneMode,
+                                                GUILayout.Width(50));
+                                    }
                                 }
                             }
                         }
@@ -849,21 +883,33 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
             MeshCreater mc = new MeshCreater(editMeshCreater);
             if (isCombineMesh)
             {
-                if (combineMeshMode == CombineMeshMode.CombineSubMesh)
+                if (combineMeshMode == CombineMeshMode.CombineActiveMesh)
                 {
-                    mc = CombineMaterial(mc,dir,file);
+                    mc = new MeshCreater(avatar.transform,meshsCreaters.Where(m=>m.RendBone.gameObject.activeSelf).ToArray());
                 }
                 else if(combineMeshMode == CombineMeshMode.CombineAllMesh)
                 {
-                    mc = CombineMesh(dir, file);
-                }
-                else if (combineMeshMode == CombineMeshMode.TextureAtlas)
-                {
-                    mc = TextureAtlas(mc,dir, file);
+                    mc = new MeshCreater(avatar.transform,meshsCreaters);
                 }
             }
 
-            if (isMergeBone)
+            if (isCombineMaterial)
+            {
+                if (combineMaterialMode == CombineMaterialMode.ByMaterial)
+                {
+                    mc.CombineMesh();
+                }
+                else if(combineMaterialMode == CombineMaterialMode.ByShader)
+                {
+                    mc.MaterialAtlas(Path.Combine(dir, file));
+                }
+                else if(combineMaterialMode == CombineMaterialMode.ForceCombine)
+                {
+                    mc.ForceCombine();
+                }
+            }
+
+            if (isMergeBone && targetHuman != null)
             {
                 if (mergeBoneMode == MergeBoneMode.Merge)
                 {
@@ -897,7 +943,7 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
                 var sm = SaveMeshCreater(mc,dir,file);
                 AddRend(sm);
             }
-            else if (isMergeBone && mergeBoneMode != MergeBoneMode.None)
+            else if (isMergeBone && targetHuman != null)
             {
                 var sm = SaveMeshCreater(mc,dir,file);
                 sm.transform.SetParent(targetHuman.transform);
@@ -970,23 +1016,6 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
             smsm.SetMesh(m);
 
             return smsm;
-        }
-
-        MeshCreater CombineMesh(string dir,string file)
-        {
-            var mc = new MeshCreater(avatar.transform,meshsCreaters.Where(m=>m.RendBone.gameObject.activeSelf).ToArray());
-            return mc;
-        }
-        MeshCreater CombineMaterial(MeshCreater mc,string dir,string file)
-        {
-            mc.CombineMesh();
-            return mc;
-        }
-
-        MeshCreater TextureAtlas(MeshCreater mc,string dir,string file)
-        {
-            mc.MaterialAtlas(Path.Combine(dir,file));
-            return mc;
         }
         
         /// <summary>
