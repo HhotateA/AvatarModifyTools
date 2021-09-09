@@ -15,6 +15,7 @@ using UnityEditor;
 using System.Threading.Tasks;
 using Random = UnityEngine.Random;
 using System.Threading;
+using UnityEngine.Rendering;
 
 namespace HhotateA.AvatarModifyTools.Core
 {
@@ -2151,6 +2152,14 @@ namespace HhotateA.AvatarModifyTools.Core
             
             Mesh combinedMesh = new Mesh();
             combinedMesh.SetVertices(vertexs);
+            if (vertexs.Count > 65535)
+            {
+                combinedMesh.indexFormat = IndexFormat.UInt32;
+            }
+            else
+            {
+                combinedMesh.indexFormat = IndexFormat.UInt16;
+            }
             combinedMesh.SetColors(colors);
             
             for (int i = 0; i < 8; i++)
