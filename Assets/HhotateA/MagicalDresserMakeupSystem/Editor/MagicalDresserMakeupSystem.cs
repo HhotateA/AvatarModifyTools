@@ -624,7 +624,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserMakeupSystem
 #endif
         
         
-        async Task SyncHSVTexture(Texture tex,string path,Vector3 hsv,Action<Texture> onSave)
+        async void SyncHSVTexture(Texture tex,string path,Vector3 hsv,Action<Texture> onSave)
         {
             var texcreater = new TextureCreator(tex);
             await Task.Delay(100);
@@ -640,7 +640,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserMakeupSystem
             onSave?.Invoke(t);
         }
         
-        async Task SyncGrayTexture(Texture tex,string path,Action<Texture> onSave)
+        async void SyncGrayTexture(Texture tex,string path,Action<Texture> onSave)
         {
             var texcreater = new TextureCreator(tex);
             await Task.Delay(100);

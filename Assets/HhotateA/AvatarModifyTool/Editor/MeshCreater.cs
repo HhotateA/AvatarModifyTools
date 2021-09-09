@@ -752,7 +752,7 @@ namespace HhotateA.AvatarModifyTools.Core
         /// <param name="onFinish"></param>
         /// <param name="overlapping"></param>
         /// <returns></returns>
-        public async Task ComputeLandVertexes(int vert, Action<int> onFind = null, Action<List<int>> onFinish = null, bool? overlapping = null)
+        public async void ComputeLandVertexes(int vert, Action<int> onFind = null, Action<List<int>> onFinish = null, bool? overlapping = null)
         {
             var frontier = new List<int>() {vert};
             var output = new List<int>();
