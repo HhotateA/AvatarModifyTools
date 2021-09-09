@@ -78,7 +78,7 @@ namespace HhotateA.AvatarModifyTools.EmoteMotionKit
                     rh.width /= 3;
                     using (var check = new EditorGUI.ChangeCheckScope())
                     {
-                        d.anim = (AnimationClip) EditorGUI.ObjectField(rh, "", d.anim, typeof(AnimationClip));
+                        d.anim = (AnimationClip) EditorGUI.ObjectField(rh, "", d.anim, typeof(AnimationClip), false);
                         if (check.changed)
                         {
                             SetPreviewAnimation(d.anim);

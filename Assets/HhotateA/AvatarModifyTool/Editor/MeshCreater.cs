@@ -15,6 +15,7 @@ using UnityEditor;
 using System.Threading.Tasks;
 using Random = UnityEngine.Random;
 using System.Threading;
+using UnityEngine.Rendering;
 
 namespace HhotateA.AvatarModifyTools.Core
 {
@@ -751,7 +752,7 @@ namespace HhotateA.AvatarModifyTools.Core
         /// <param name="onFinish"></param>
         /// <param name="overlapping"></param>
         /// <returns></returns>
-        public async Task ComputeLandVertexes(int vert, Action<int> onFind = null, Action<List<int>> onFinish = null, bool? overlapping = null)
+        public async void ComputeLandVertexes(int vert, Action<int> onFind = null, Action<List<int>> onFinish = null, bool? overlapping = null)
         {
             var frontier = new List<int>() {vert};
             var output = new List<int>();
@@ -2151,6 +2152,14 @@ namespace HhotateA.AvatarModifyTools.Core
             
             Mesh combinedMesh = new Mesh();
             combinedMesh.SetVertices(vertexs);
+            if (vertexs.Count > 65535)
+            {
+                combinedMesh.indexFormat = IndexFormat.UInt32;
+            }
+            else
+            {
+                combinedMesh.indexFormat = IndexFormat.UInt16;
+            }
             combinedMesh.SetColors(colors);
             
             for (int i = 0; i < 8; i++)
@@ -2361,6 +2370,34 @@ namespace HhotateA.AvatarModifyTools.Core
             }
             triangles = newTriangles;
             materials = newMats;
+            meshTransforms = newTrans;
+        }
+
+        /// <summary>
+        /// メッシュを結合する
+        /// </summary>
+        /// <param name="path"></param>
+        public void ForceCombine(string path = null)
+        {
+            var newTriangles = new List<List<int>>();
+            var newTrans = new List<Transform>();
+            
+            var ts = new List<int>();
+            for (int i = 0; i < triangles.Count; i++)
+            {
+                if (meshTransforms[i]!=null)
+                {
+                    TrianglesTransform(triangles[i], rootBone ?? rendBone, meshTransforms[i]);
+                }
+                
+                ts.AddRange(triangles[i]);
+            }
+
+            newTriangles.Add(ts);
+            newTrans.Add(null);
+
+            materials = new List<Material>(){materials[0]};
+            triangles = newTriangles;
             meshTransforms = newTrans;
         }
 

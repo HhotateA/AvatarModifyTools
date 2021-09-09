@@ -35,7 +35,6 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         private List<MenuElement> menuElements => data.menuElements;
         private SerializedProperty prop;
         ReorderableList menuReorderableList;
-        private bool syncInactiveItems = true;
 
         private bool displayItemMode = true;
         private bool displaySyncTransition = false;
