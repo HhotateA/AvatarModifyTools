@@ -94,6 +94,9 @@ namespace HhotateA.AvatarModifyTools.TailMover
         private float testRotX = 0f;
         private float testRotY = 0f;
 
+        private float idleSpeed = 0.1f;
+        private float idleInertia = 0.03f;
+
         private string dataname = "TailMover";
 
         private void OnEnable()
@@ -123,8 +126,8 @@ namespace HhotateA.AvatarModifyTools.TailMover
             if (defaultRots==null) return;
             if (!expandRotSetting)
             {
-                if(enableTestRotX) testRotX = Mathf.Sin(Time.fixedTime*2f);
-                if(enableTestRotY) testRotY = Mathf.Sin(Time.fixedTime);
+                if(enableTestRotX) testRotX = Mathf.Sin(Time.fixedTime * idleSpeed/0.1f);
+                if(enableTestRotY) testRotY = Mathf.Sin(Time.fixedTime * (idleSpeed+idleInertia)/0.1f);
                 RotTail(testRotX,testRotY);
             }
         }
@@ -319,12 +322,9 @@ namespace HhotateA.AvatarModifyTools.TailMover
                         }
 
                         curveWeight = EditorGUILayout.CurveField(curveWeight);
-                        var x =
-                            EditorGUILayout.Slider("XAngle", tailRots[(int) tailControll].x, -90f, 90f);
-                        var y =
-                            EditorGUILayout.Slider("YAngle", tailRots[(int) tailControll].y, -90f, 90f);
-                        var z =
-                            EditorGUILayout.Slider("ZAngle", tailRots[(int) tailControll].z, -90f, 90f);
+                        var x = EditorGUILayout.Slider("XAngle", tailRots[(int) tailControll].x, -90f, 90f);
+                        var y = EditorGUILayout.Slider("YAngle", tailRots[(int) tailControll].y, -90f, 90f);
+                        var z = EditorGUILayout.Slider("ZAngle", tailRots[(int) tailControll].z, -90f, 90f);
                         isHumanoidAnimation = EditorGUILayout.Toggle("IsHumanoid", isHumanoidAnimation);
                         if (check.changed)
                         {
@@ -367,6 +367,20 @@ namespace HhotateA.AvatarModifyTools.TailMover
                 }
                 
                 EditorGUILayout.Space();
+
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    EditorGUILayout.LabelField("   ",GUILayout.Width(50));
+                    EditorGUILayout.LabelField("Idle Speed",GUILayout.Width(100));
+                    idleSpeed = EditorGUILayout.FloatField( idleSpeed,GUILayout.Width(75));
+                    EditorGUILayout.LabelField("   ",GUILayout.ExpandWidth(true),GUILayout.MinWidth(25));
+                    EditorGUILayout.LabelField("idle Inertia",GUILayout.Width(100));
+                    idleInertia = EditorGUILayout.FloatField( idleInertia,GUILayout.Width(75));
+                    EditorGUILayout.LabelField("   ",GUILayout.Width(50));
+                }
+
+                EditorGUILayout.Space();
+                
                 if (ShowOptions())
                 {
                     if (GUILayout.Button("Force Revert"))
@@ -765,23 +779,25 @@ namespace HhotateA.AvatarModifyTools.TailMover
             RotTail(
                 enableTestRotX ? -1f : testRotX,
                 enableTestRotY ? -1f : testRotY);
-            RecordAnimation(move,0.0f, -1f);
+            RecordAnimation(move,0f*idleSpeed + 0f*idleInertia, -1f);
             RotTail(
                 enableTestRotX ? 0f : testRotX,
                 enableTestRotY ? 0f : testRotY);
-            RecordAnimation(move,0.1f, 1f);
+            RecordAnimation(move,1f*idleSpeed + 0f*idleInertia, 1f);
             RotTail(
                 enableTestRotX ? 1f : testRotX,
                 enableTestRotY ? 1f : testRotY);
-            RecordAnimation(move,0.2f, -1f);
+            RecordAnimation(move,2f*idleSpeed + 0f*idleInertia, -1f);
+            RecordAnimation(move,2f*idleSpeed + 1f*idleInertia, -1f);
             RotTail(
                 enableTestRotX ? 0f : testRotX,
                 enableTestRotY ? 0f : testRotY);
-            RecordAnimation(move,0.3f, 1f);
+            RecordAnimation(move,3f*idleSpeed + 1f*idleInertia, 1f);
             RotTail(
                 enableTestRotX ? -1f : testRotX,
                 enableTestRotY ? -1f : testRotY);
-            RecordAnimation(move,0.4f, -1f);
+            RecordAnimation(move,4f*idleSpeed + 1f*idleInertia, -1f);
+            RecordAnimation(move,4f*idleSpeed + 2f*idleInertia, -1f);
             
             var idle = new AnimationClipCreator("Idle",avatar.gameObject);
             

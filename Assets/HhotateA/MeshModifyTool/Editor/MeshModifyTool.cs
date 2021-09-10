@@ -62,6 +62,12 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
         AvatarMonitor avatarMonitor;
         private const int previewLayer = 2;
         private Vector2 rendsScroll = Vector2.zero;
+        private bool viewOption = false;
+        private Material wireFrameMaterial;
+        Color wireFrameColor = Color.white;
+        private Material[] defaultMaterials;
+        private Material[] normalMaterials;
+        private float normalAlpha = 0f;
         
         // スカルプトモード，ペン設定
         private MeshPenTool.ExtraTool penMode = MeshPenTool.ExtraTool.Default;
@@ -104,7 +110,7 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
         // 各種設定項目
         private bool isSelectVertex = true;
         private bool isRandomizeVertex = false;
-        private bool isRealtimeTransform = false;
+        private bool isRealtimeTransform = true;
         private bool isSelectOverlappingVertexes = true;
         private bool isVertexRemove = false;
         
@@ -353,6 +359,48 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
                             extendExperimental = EditorGUILayout.Foldout(extendExperimental, "Experimentals");
                             if (extendExperimental)
                             {
+                                using (var check = new EditorGUI.ChangeCheckScope())
+                                {
+                                    wireFrameColor = EditorGUILayout.ColorField("Wire Frame Color", wireFrameColor);
+                                    normalAlpha = EditorGUILayout.Slider("Normal",normalAlpha,0f,1f);
+                                    if (check.changed)
+                                    {
+                                        if (wireFrameMaterial != null)
+                                        {
+                                            wireFrameMaterial.SetColor("_Color",wireFrameColor);
+                                        }
+                                        
+                                        if (normalAlpha > 0.1f)
+                                        {
+                                            CreateNormalMesh();
+                                            foreach (var normalMaterial in normalMaterials)
+                                            {
+                                                normalMaterial.SetFloat("_NormalAlpha",normalAlpha);
+                                            }
+                                        }
+                                        else
+                                        {
+                                            rends[editIndex].sharedMaterials = defaultMaterials.ToArray();
+                                        }
+                                    }
+                                }
+                                
+                                if (editMeshCreater != null)
+                                {
+                                    using (var check = new EditorGUI.ChangeCheckScope())
+                                    {
+                                        var isRecalculateNormals = EditorGUILayout.Toggle("Recalculate Normals", editMeshCreater.IsRecalculateNormals);
+                                        if (check.changed)
+                                        {
+                                            foreach (var meshsCreater in meshsCreaters)
+                                            {
+                                                meshsCreater.IsRecalculateNormals = isRecalculateNormals;
+                                                meshsCreater.IsRecalculateBlendShapeNormals = isRecalculateNormals;
+                                            }
+                                        }
+                                    }
+                                }
+                                
                                 isVertexRemove = EditorGUILayout.Toggle("Delete Vertex", isVertexRemove);
                                 
                                 extendRawdata = EditorGUILayout.Toggle("View Raw Data", extendRawdata);
@@ -406,38 +454,17 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
                                     }
                                 }
                                 
-#if UnityMeshSimplifier
                                 using (new EditorGUILayout.HorizontalScope())
                                 {
                                     meshSimplerQuality = EditorGUILayout.FloatField("", meshSimplerQuality, GUILayout.Width(155));
                                     if (GUILayout.Button("MeshSimplifier", GUILayout.Width(125)))
                                     {
-                                        var meshSimplifier = new UnityMeshSimplifier.MeshSimplifier();
+                                        var meshSimplifier = new ThirdParty.MeshSimplifier.MeshSimplifier();
                                         meshSimplifier.Initialize(rends[editIndex].GetMesh());
                                         meshSimplifier.SimplifyMesh(meshSimplerQuality);
                                         rends[editIndex].SetMesh(meshSimplifier.ToMesh());
                                         meshsCreaters[editIndex] = new MeshCreater(rends[editIndex]);
                                         SelectMeshCreater(editIndex);
-                                    }
-                                }
-#else
-                                EditorGUILayout.TextField("https://github.com/Whinarn/UnityMeshSimplifier.git");
-#endif
-                            }
-                    
-                            EditorGUILayout.Space();
-
-                            using (new EditorGUILayout.HorizontalScope())
-                            {
-                                blendShapeName = EditorGUILayout.TextField("", blendShapeName,GUILayout.Width(155));
-
-                                using (new EditorGUI.DisabledScope(!editMeshCreater?.CanUndo() ?? true))
-                                {
-                                    if (GUILayout.Button("SaveAsBlendShape",GUILayout.Width(125)))
-                                    {
-                                        editMeshCreater.SaveAsBlendshape(blendShapeName);
-                                        ReloadMesh(false);
-                                        editMeshCreater.ResetCaches();
                                     }
                                 }
                             }
@@ -683,6 +710,21 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
                                             (MergeBoneMode) EditorGUILayout.EnumPopup("", mergeBoneMode,
                                                 GUILayout.Width(50));
                                     }
+                                }
+                            }
+                        }
+
+                        using (new EditorGUILayout.HorizontalScope())
+                        {
+                            blendShapeName = EditorGUILayout.TextField("", blendShapeName,GUILayout.Width(155));
+
+                            using (new EditorGUI.DisabledScope(!editMeshCreater?.CanUndo() ?? true))
+                            {
+                                if (GUILayout.Button("SaveAsBlendShape",GUILayout.Width(125)))
+                                {
+                                    editMeshCreater.SaveAsBlendshape(blendShapeName);
+                                    ReloadMesh(false);
+                                    editMeshCreater.ResetCaches();
                                 }
                             }
                         }
@@ -974,8 +1016,8 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
         {
             if (isRandomizeVertex)
             {
-                var mat = new Material(Shader.Find("HhotateA/Decryption"));
-                var p = Path.GetDirectoryName(AssetDatabase.GetAssetPath(Shader.Find("HhotateA/Decryption")));
+                var mat = new Material(AssetUtility.LoadAssetAtGuid<Shader>(EnvironmentGUIDs.DecryptionShader));
+                var p = Path.GetDirectoryName(AssetDatabase.GetAssetPath(AssetUtility.LoadAssetAtGuid<Shader>(EnvironmentGUIDs.DecryptionShader)));
                 File.WriteAllText(Path.Combine(p,"Keys.cginc"), mc.Encryption(mat));
                 mc.MaterialAtlas(Path.Combine(dir,file));
                 mc.CombineMesh();
@@ -998,8 +1040,8 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
         {
             if (isRandomizeVertex)
             {
-                var mat = new Material(Shader.Find("HhotateA/Decryption"));
-                var p = Path.GetDirectoryName(AssetDatabase.GetAssetPath(Shader.Find("HhotateA/Decryption")));
+                var mat = new Material(AssetUtility.LoadAssetAtGuid<Shader>(EnvironmentGUIDs.DecryptionShader));
+                var p = Path.GetDirectoryName(AssetDatabase.GetAssetPath(AssetUtility.LoadAssetAtGuid<Shader>(EnvironmentGUIDs.DecryptionShader)));
                 File.WriteAllText(Path.Combine(p,"Keys.cginc"), mc.Encryption(mat));
                 mc.MaterialAtlas(Path.Combine(dir,file));
                 mc.CombineMesh();
@@ -1211,7 +1253,7 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
             
             controllPoint_from = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             controllPoint_from.name = "EditVertex_From";
-            controllPoint_from.transform.localScale = new Vector3(0.009f,0.009f,0.009f);
+            controllPoint_from.transform.localScale = new Vector3(0.009f,0.009f,0.009f) * avatarMonitor.GetBound;
             controllPoint_from.transform.SetParent(mc.RendBone);
             controllPoint_from.transform.localPosition = pos;
             controllPoint_from.hideFlags = HideFlags.HideAndDontSave;
@@ -1223,7 +1265,7 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
             {                        
                 controllPoint_to = GameObject.CreatePrimitive(PrimitiveType.Sphere);
                 controllPoint_to.name = "EditVertex_To";
-                controllPoint_to.transform.localScale = new Vector3(0.01f,0.01f,0.01f);
+                controllPoint_to.transform.localScale = new Vector3(0.01f,0.01f,0.01f) * avatarMonitor.GetBound;
                 controllPoint_to.transform.SetParent(mc.RendBone);
                 controllPoint_to.transform.localPosition = pos;
                 controllPoint_to.hideFlags = HideFlags.HideAndDontSave;
@@ -1319,11 +1361,11 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
         {
             if (isVec)
             {
-                mc.TransformMesh(from, to, brushPower, brushWidth, brushStrength);
+                mc.TransformMesh(from, to, brushPower*avatarMonitor.GetBound, brushWidth*avatarMonitor.GetBound, brushStrength);
             }
             else
             {
-                mc.TransformMesh(from, to, brushWidth, brushStrength);
+                mc.TransformMesh(from, to, brushWidth*avatarMonitor.GetBound, brushStrength);
             }
         }
 
@@ -1413,6 +1455,7 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
         /// </summary>
         void DestroyControllMeshes()
         {
+            DestroyNormalMesh();
             DestroyEditMesh();
             DestroySelectMesh();
             DestroyControllPoint();
@@ -1446,6 +1489,15 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
                 ResetSelect();
                 SetEditMesh(mc,CreateEditMesh(mc, verts));
             }
+
+            defaultMaterials = rend.sharedMaterials.ToArray();
+            normalMaterials = rends[editIndex].sharedMaterials.Select(mat =>
+            {
+                var m = new Material(AssetUtility.LoadAssetAtGuid<Material>(EnvironmentGUIDs.NormalMaterial));
+                m.mainTexture = mat.mainTexture;
+                return m;
+            }).ToArray();
+            CreateNormalMesh();
             
             if(cashes) mc.AddCaches();
             
@@ -1461,7 +1513,6 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
             }
 
             triangleCount = mc.TrianglesCount();
-
         }
         
         /// <summary>
@@ -1486,10 +1537,13 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
                 controllMesh_editCollider = controllMesh_edit.GetComponent<MeshCollider>();
                 controllMesh_editFilter = controllMesh_edit.GetComponent<MeshFilter>();
                 var rend = controllMesh_edit.GetComponent<MeshRenderer>();
-                var mat = new Material(Shader.Find("HhotateA/OverlayWireFrame"));
-                mat.SetFloat("_ZTest",4);
-                rend.sharedMaterials = Enumerable.Range(0,rend.sharedMaterials.Length).
-                    Select(_=> mat).ToArray();
+                if (wireFrameMaterial == null)
+                {
+                    wireFrameMaterial = new Material(AssetUtility.LoadAssetAtGuid<Material>(EnvironmentGUIDs.OverlayWireFrameMaterial));
+                    wireFrameMaterial.SetFloat("_ZTest",4);
+                    wireFrameMaterial.SetColor("_Color",wireFrameColor);
+                }
+                rend.sharedMaterials = Enumerable.Range(0,rend.sharedMaterials.Length).Select(_=> wireFrameMaterial).ToArray();
             }
             
             controllMesh_editFilter.sharedMesh = mesh;
@@ -1524,6 +1578,28 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
             }
         }
 
+        void CreateNormalMesh()
+        {
+            if (editIndex < 0) return;
+            if (normalAlpha > 0.1f)
+            {
+                rends[editIndex].sharedMaterials = normalMaterials;
+            }
+            else
+            {
+                rends[editIndex].sharedMaterials = defaultMaterials.ToArray();
+            }
+        }
+
+        void DestroyNormalMesh()
+        {
+            if (editIndex < 0) return;
+            if (defaultMaterials != null)
+            {
+                rends[editIndex].sharedMaterials = defaultMaterials.ToArray();
+            }
+        }
+
         /// <summary>
         /// メッシュ編集モード用メッシュの更新
         /// </summary>
@@ -1535,7 +1611,7 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
                 controllMesh_select.hideFlags = HideFlags.DontSave;
                 controllMesh_selectFilter = controllMesh_select.GetComponent<MeshFilter>();
                 var rend = controllMesh_select.GetComponent<MeshRenderer>();
-                var mat = new Material(Shader.Find("HhotateA/OverlayWireFrame"));
+                var mat = new Material(AssetUtility.LoadAssetAtGuid<Material>(EnvironmentGUIDs.OverlayWireFrameMaterial));
                 mat.SetFloat("_ZTest",2);
                 rend.sharedMaterials = Enumerable.Range(0,rend.sharedMaterials.Length).
                     Select(_=> mat).ToArray();
