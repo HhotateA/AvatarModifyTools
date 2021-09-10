@@ -104,7 +104,7 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
         // 各種設定項目
         private bool isSelectVertex = true;
         private bool isRandomizeVertex = false;
-        private bool isRealtimeTransform = false;
+        private bool isRealtimeTransform = true;
         private bool isSelectOverlappingVertexes = true;
         private bool isVertexRemove = false;
         
@@ -353,6 +353,22 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
                             extendExperimental = EditorGUILayout.Foldout(extendExperimental, "Experimentals");
                             if (extendExperimental)
                             {
+                                if (editMeshCreater != null)
+                                {
+                                    using (var check = new EditorGUI.ChangeCheckScope())
+                                    {
+                                        var isRecalculateNormals = EditorGUILayout.Toggle("Recalculate Normals", editMeshCreater.IsRecalculateNormals);
+                                        if (check.changed)
+                                        {
+                                            foreach (var meshsCreater in meshsCreaters)
+                                            {
+                                                meshsCreater.IsRecalculateNormals = isRecalculateNormals;
+                                                meshsCreater.IsRecalculateBlendShapeNormals = isRecalculateNormals;
+                                            }
+                                        }
+                                    }
+                                }
+                                
                                 isVertexRemove = EditorGUILayout.Toggle("Delete Vertex", isVertexRemove);
                                 
                                 extendRawdata = EditorGUILayout.Toggle("View Raw Data", extendRawdata);
@@ -423,23 +439,6 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
 #else
                                 EditorGUILayout.TextField("https://github.com/Whinarn/UnityMeshSimplifier.git");
 #endif
-                            }
-                    
-                            EditorGUILayout.Space();
-
-                            using (new EditorGUILayout.HorizontalScope())
-                            {
-                                blendShapeName = EditorGUILayout.TextField("", blendShapeName,GUILayout.Width(155));
-
-                                using (new EditorGUI.DisabledScope(!editMeshCreater?.CanUndo() ?? true))
-                                {
-                                    if (GUILayout.Button("SaveAsBlendShape",GUILayout.Width(125)))
-                                    {
-                                        editMeshCreater.SaveAsBlendshape(blendShapeName);
-                                        ReloadMesh(false);
-                                        editMeshCreater.ResetCaches();
-                                    }
-                                }
                             }
                         }
                     }
@@ -683,6 +682,21 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
                                             (MergeBoneMode) EditorGUILayout.EnumPopup("", mergeBoneMode,
                                                 GUILayout.Width(50));
                                     }
+                                }
+                            }
+                        }
+
+                        using (new EditorGUILayout.HorizontalScope())
+                        {
+                            blendShapeName = EditorGUILayout.TextField("", blendShapeName,GUILayout.Width(155));
+
+                            using (new EditorGUI.DisabledScope(!editMeshCreater?.CanUndo() ?? true))
+                            {
+                                if (GUILayout.Button("SaveAsBlendShape",GUILayout.Width(125)))
+                                {
+                                    editMeshCreater.SaveAsBlendshape(blendShapeName);
+                                    ReloadMesh(false);
+                                    editMeshCreater.ResetCaches();
                                 }
                             }
                         }

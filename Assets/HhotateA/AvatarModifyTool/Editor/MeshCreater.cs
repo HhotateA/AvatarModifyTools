@@ -42,6 +42,9 @@ namespace HhotateA.AvatarModifyTools.Core
         // その他メッシュの固有情報
         List<BlendShapeData> blendShapes = new List<BlendShapeData>();
         Transform rendBone; // 追加したRendererのTransform
+
+        public bool IsRecalculateNormals { get; set; } = false;
+        public bool IsRecalculateBlendShapeNormals { get; set; } = false;
         public Transform RendBone
         {
             get
@@ -1629,12 +1632,7 @@ namespace HhotateA.AvatarModifyTools.Core
                 }
             }
 
-            var v = new List<Vector3>();
-            foreach (var vertex in vertexs)
-            {
-                v.Add(vertex);
-            }
-            vertexsCaches.Add(v);
+            vertexsCaches.Add(vertexs.ToList());
             currentCacheIndex = vertexsCaches.Count-1;
             //ApplyNormalsDiff();
             //ApplyNormals();
@@ -1649,7 +1647,7 @@ namespace HhotateA.AvatarModifyTools.Core
         public void TransformAtDefault(List<Vector3> mesh,int offset)
         {
             AddCaches();
-            var vs = vertexsCaches[0].Copy();
+            var vs = vertexsCaches[0].ToList();
             for (int i = 0; i < mesh.Count; i++)
             {
                 vs[i + offset] = mesh[i];
@@ -2183,8 +2181,12 @@ namespace HhotateA.AvatarModifyTools.Core
             }
 
             combinedMesh.SetNormals(normals);
-
             combinedMesh.SetTangents(tangents);
+            if (IsRecalculateNormals)
+            {
+                combinedMesh.RecalculateNormals();
+                combinedMesh.RecalculateTangents();
+            }
 
             asset = combinedMesh;
             
@@ -2241,7 +2243,15 @@ namespace HhotateA.AvatarModifyTools.Core
         /// <returns></returns>
         public Mesh SaveAsBlendshape(string blendshapeName)
         {
-            blendShapes.Add(new BlendShapeData(blendshapeName,DefaultVertexs(),EditVertexs()));
+            if (IsRecalculateBlendShapeNormals)
+            {
+                var mesh = Create(false);
+                blendShapes.Add(new BlendShapeData(blendshapeName,DefaultVertexs(),EditVertexs(),mesh));
+            }
+            else
+            {
+                blendShapes.Add(new BlendShapeData(blendshapeName,DefaultVertexs(),EditVertexs()));
+            }
             TransformMesh(DefaultVertexs().ToArray());
             return Create();
         }
@@ -2468,7 +2478,7 @@ namespace HhotateA.AvatarModifyTools.Core
                 if (ws.Any(w => w < 0.1f) && isSelectVertex)
                 {
                     // 辺に近い場合，辺分割
-                    var edge = vs.Copy();
+                    var edge = vs.ToList();
                     for (int i = 0; i < 3; i++)
                     {
                         if (ws[i] < 0.1f)
@@ -2697,28 +2707,6 @@ namespace HhotateA.AvatarModifyTools.Core
             return ts;
         }
 
-        public static List<Vector3> Copy(this List<Vector3> origin)
-        {
-            var copy = new List<Vector3>();
-            foreach (var o in origin)
-            {
-                copy.Add(o);
-            }
-
-            return copy;
-        }
-
-        public static List<int> Copy(this List<int> origin)
-        {
-            var copy = new List<int>();
-            foreach (var o in origin)
-            {
-                copy.Add(o);
-            }
-
-            return copy;
-        }
-
         public static List<float> ComputeBasis(Vector3 pos,List<Vector3> vertex)
         {
             var output = new List<float>();
@@ -2914,23 +2902,62 @@ namespace HhotateA.AvatarModifyTools.Core
         public BlendShapeData(
             string name,
             List<Vector3> srcVertices,
-            List<Vector3> destVertices)
+            List<Vector3> destVertices,
+            Mesh mesh = null)
         {
-            if (srcVertices.Count == destVertices.Count)
+            if (mesh == null)
             {
-                var blendShapeVertices = new List<Vector3>();
-                var blendShapeNormals = new List<Vector3>();
-                var blendShapeTangents = new List<Vector3>();
-                for (int i = 0; i < srcVertices.Count; i++)
+                if (srcVertices.Count == destVertices.Count)
                 {
-                    blendShapeVertices.Add(destVertices[i]-srcVertices[i]);
-                    blendShapeNormals.Add(Vector3.zero);
-                    blendShapeTangents.Add(Vector3.zero);
+                    var blendShapeVertices = new List<Vector3>();
+                    var blendShapeNormals = new List<Vector3>();
+                    var blendShapeTangents = new List<Vector3>();
+                    for (int i = 0; i < srcVertices.Count; i++)
+                    {
+                        blendShapeVertices.Add(destVertices[i]-srcVertices[i]);
+                        blendShapeNormals.Add(Vector3.zero);
+                        blendShapeTangents.Add(Vector3.zero);
+                    }
+                    this.vertices = blendShapeVertices;
+                    this.normals = blendShapeNormals;
+                    this.tangents = blendShapeTangents;
+                    this.name = name;
                 }
-                this.vertices = blendShapeVertices;
-                this.normals = blendShapeNormals;
-                this.tangents = blendShapeTangents;
-                this.name = name;
+            }
+            else
+            {
+                mesh.SetVertices(srcVertices);
+                mesh.RecalculateNormals();
+                mesh.RecalculateTangents();
+                List<Vector3> srcNormals = new List<Vector3>();
+                List<Vector4> srcTangents = new List<Vector4>();
+                mesh.GetNormals(srcNormals);
+                mesh.GetTangents(srcTangents);
+                
+                mesh.SetVertices(destVertices);
+                mesh.RecalculateNormals();
+                mesh.RecalculateTangents();
+                List<Vector3> destNormals = new List<Vector3>();
+                List<Vector4> destTangents = new List<Vector4>();
+                mesh.GetNormals(destNormals);
+                mesh.GetTangents(destTangents);
+                
+                if (srcVertices.Count == destVertices.Count)
+                {
+                    var blendShapeVertices = new List<Vector3>();
+                    var blendShapeNormals = new List<Vector3>();
+                    var blendShapeTangents = new List<Vector3>();
+                    for (int i = 0; i < srcVertices.Count; i++)
+                    {
+                        blendShapeVertices.Add(destVertices[i] - srcVertices[i]);
+                        blendShapeNormals.Add((destNormals[i] - srcNormals[i])*100f);
+                        blendShapeTangents.Add((destTangents[i] - srcTangents[i])*100f);
+                    }
+                    this.vertices = blendShapeVertices;
+                    this.normals = blendShapeNormals;
+                    this.tangents = blendShapeTangents;
+                    this.name = name;
+                }
             }
         }
 
