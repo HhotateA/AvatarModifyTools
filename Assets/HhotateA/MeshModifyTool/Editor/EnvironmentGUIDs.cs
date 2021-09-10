@@ -20,5 +20,11 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
         public static string unSelectLandToolIcon = "0a05c27f8b748874f8c8a001841555cd";
         public static string selectVertexToolIcon = "f1ed57a871c76eb458353aec0d255979";
         public static string unSelectVertexToolIcon = "69b440a5753b0864d9ab6f9591898c87";
+
+        public static string OverlayWireFrameMaterial = "72599d5587d7e884e913270a9ee3c7a9";
+        public static string OverlayWireFrameShader = "30838279cd9f48e44b7a0f4ec8a136b7";
+        public static string NormalMaterial = "36b5737e3feb34140a1e1cd3ae74e723";
+        public static string NormalShader = "f1d02cd55522e1a42a2091c06c0c61b1";
+        public static string DecryptionShader = "dcfc409e8ed65fb47b32acd47f44a5d8";
     }
 }

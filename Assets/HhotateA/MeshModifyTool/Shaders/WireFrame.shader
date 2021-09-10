@@ -7,7 +7,7 @@ Copyright (c) 2021 @HhotateA_xR
 This software is released under the MIT License.
 http://opensource.org/licenses/mit-license.php
 */
-Shader "HhotateA/OverlayWireFrame"
+Shader "HhotateA/MeshModifyTool/OverlayWireFrame"
 {
     Properties
     {
@@ -17,6 +17,7 @@ Shader "HhotateA/OverlayWireFrame"
     SubShader
     {
         //Offset 0, -1
+        Tags {"Queue"="Overlay"}
         ZTest [_ZTest]
 
         Pass
@@ -46,6 +47,7 @@ Shader "HhotateA/OverlayWireFrame"
             }
 
             fixed4 _Color;
+            float _NormalAlpha;
 
             [maxvertexcount(6)]
             void geom(triangle appdata input[3], inout LineStream<v2f> outStream)
@@ -71,6 +73,7 @@ Shader "HhotateA/OverlayWireFrame"
 
             fixed4 frag (v2f i) : SV_Target
             {
+                clip(0.99-_NormalAlpha);
                 return _Color * i.color;
             }
             ENDCG
