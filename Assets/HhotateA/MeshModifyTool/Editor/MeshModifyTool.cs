@@ -412,7 +412,7 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
                                     meshSimplerQuality = EditorGUILayout.FloatField("", meshSimplerQuality, GUILayout.Width(155));
                                     if (GUILayout.Button("MeshSimplifier", GUILayout.Width(125)))
                                     {
-                                        var meshSimplifier = new UnityMeshSimplifier.MeshSimplifier();
+                                        var meshSimplifier = new ThirdParty.MeshSimplifier.MeshSimplifier();
                                         meshSimplifier.Initialize(rends[editIndex].GetMesh());
                                         meshSimplifier.SimplifyMesh(meshSimplerQuality);
                                         rends[editIndex].SetMesh(meshSimplifier.ToMesh());
