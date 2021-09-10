@@ -1225,7 +1225,7 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
             
             controllPoint_from = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             controllPoint_from.name = "EditVertex_From";
-            controllPoint_from.transform.localScale = new Vector3(0.009f,0.009f,0.009f);
+            controllPoint_from.transform.localScale = new Vector3(0.009f,0.009f,0.009f) * avatarMonitor.GetBound;
             controllPoint_from.transform.SetParent(mc.RendBone);
             controllPoint_from.transform.localPosition = pos;
             controllPoint_from.hideFlags = HideFlags.HideAndDontSave;
@@ -1237,7 +1237,7 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
             {                        
                 controllPoint_to = GameObject.CreatePrimitive(PrimitiveType.Sphere);
                 controllPoint_to.name = "EditVertex_To";
-                controllPoint_to.transform.localScale = new Vector3(0.01f,0.01f,0.01f);
+                controllPoint_to.transform.localScale = new Vector3(0.01f,0.01f,0.01f) * avatarMonitor.GetBound;
                 controllPoint_to.transform.SetParent(mc.RendBone);
                 controllPoint_to.transform.localPosition = pos;
                 controllPoint_to.hideFlags = HideFlags.HideAndDontSave;
@@ -1333,11 +1333,11 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
         {
             if (isVec)
             {
-                mc.TransformMesh(from, to, brushPower, brushWidth, brushStrength);
+                mc.TransformMesh(from, to, brushPower*avatarMonitor.GetBound, brushWidth*avatarMonitor.GetBound, brushStrength);
             }
             else
             {
-                mc.TransformMesh(from, to, brushWidth, brushStrength);
+                mc.TransformMesh(from, to, brushWidth*avatarMonitor.GetBound, brushStrength);
             }
         }
 
