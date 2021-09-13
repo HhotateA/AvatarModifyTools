@@ -91,13 +91,14 @@ namespace HhotateA.AvatarModifyTools.Core
         {
             if (margin > 0)
             {
-                var resizedTexture = new Texture2D(newWidth-2*margin, newHeight-2*margin);
-                Graphics.ConvertTexture(srcTexture, resizedTexture);
-                var marginedTexture = new Texture2D(newWidth, newHeight);
+                var tempTex = new Texture2D(newWidth-2*margin, newHeight-2*margin);
+                Graphics.ConvertTexture(srcTexture, tempTex);
+                var resizedTexture = new Texture2D(newWidth, newHeight);
                 // 透明で上書き
-                marginedTexture.SetPixels(0, 0, newWidth, newHeight, Enumerable.Repeat<Color>(Color.clear, newWidth * newHeight).ToArray());
-                marginedTexture.SetPixels(margin, margin, newWidth - margin, newHeight - margin, GetTexturePixels(resizedTexture));
-                return marginedTexture;
+                resizedTexture.SetPixels(0, 0, newWidth, newHeight, Enumerable.Repeat<Color>(Color.clear, newWidth * newHeight).ToArray());
+                resizedTexture.SetPixels(margin, margin, newWidth-2*margin, newHeight-2*margin, GetTexturePixels(tempTex));
+                resizedTexture.Apply();
+                return resizedTexture;
             }
             else
             {

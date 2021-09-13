@@ -16,32 +16,32 @@ MonoBehaviour:
   emojis:
   - name: "\u306D\u3053\u307E\u3058\u3093\u30B9\u30BF\u30F3\u30D7"
     emoji: {fileID: 2800000, guid: aed590b13d313b346acd622f8547a341, type: 3}
-    count: 1
-    lifetime: 0
-    scale: 0.4
-    speed: 0
+    count: 10
+    lifetime: 2
+    scale: 0.3
+    speed: 1
     prefab: {fileID: 0}
     audio: {fileID: 0}
   - name: "\u307E\u308B"
     emoji: {fileID: 2800000, guid: 0be5fcbf15bf1954e8b868f86e8dc460, type: 3}
     count: 1
-    lifetime: 0
-    scale: 0.4
+    lifetime: 2
+    scale: 0.5
     speed: 0
     prefab: {fileID: 0}
     audio: {fileID: 0}
   - name: "\u3070\u3064"
     emoji: {fileID: 2800000, guid: 043e3a45016ddf440a53087a5b418ea4, type: 3}
     count: 1
-    lifetime: 0
-    scale: 0.4
+    lifetime: 2
+    scale: 0.5
     speed: 0
     prefab: {fileID: 0}
     audio: {fileID: 0}
   - name: "\u3042\u305D\u307C"
     emoji: {fileID: 2800000, guid: a898c1a1de831ed44bc1f9a922aca8ae, type: 3}
     count: 1
-    lifetime: 0
+    lifetime: 2
     scale: 0.4
     speed: 0
     prefab: {fileID: 0}
@@ -49,7 +49,7 @@ MonoBehaviour:
   - name: "\u3082\u30FC\u3063"
     emoji: {fileID: 2800000, guid: 285af4e860e537d4fa771f495dfe5307, type: 3}
     count: 1
-    lifetime: 0
+    lifetime: 2
     scale: 0.4
     speed: 0
     prefab: {fileID: 0}
@@ -57,7 +57,7 @@ MonoBehaviour:
   - name: "\u3059\u3084\u3041"
     emoji: {fileID: 2800000, guid: ad86141e2b7321f4d8e85e0e5f6d279f, type: 3}
     count: 1
-    lifetime: 0
+    lifetime: 2
     scale: 0.4
     speed: 0
     prefab: {fileID: 0}
@@ -65,7 +65,7 @@ MonoBehaviour:
   - name: 
     emoji: {fileID: 2800000, guid: ed64d96ffa0d6bd41a2a796330e25d4d, type: 3}
     count: 1
-    lifetime: 0
+    lifetime: 3
     scale: 0.4
     speed: 0
     prefab: {fileID: 0}
