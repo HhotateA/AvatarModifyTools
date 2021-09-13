@@ -31,8 +31,15 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
             this.emoji = emoji;
         }
 
-        [SerializeField] public string name;
-        [SerializeField] public Texture emoji;
+        public string name;
+        public Texture emoji;
+        public int count;
+        public float lifetime = 2f;
+        public float scale = 0.4f;
+        public float speed = 0f;
+        public GameObject prefab;
+        public AudioClip audio;
+
 
         public Texture2D ToTexture2D()
         {

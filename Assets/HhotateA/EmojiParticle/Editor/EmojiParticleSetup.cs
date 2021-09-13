@@ -70,16 +70,70 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
                     r.height -= 4;
                     r.y += 2;
                     var d = data.emojis[i];
-                    var nameRect = r;
+                    var recth = r;
                     var emojiRect = r;
-                    emojiRect.width = emojiRect.height;
+                    emojiRect.width = emojiRect.height + 25;
                     emojiRect.x = r.width - emojiRect.width;
-                    nameRect.height /= 3;
-                    nameRect.y += nameRect.height;
-                    nameRect.width = r.width - emojiRect.width - 30;
-                    nameRect.x += 0;
-                    d.name = EditorGUI.TextField(nameRect,"", d.name);
+                    recth.height /= 3;
+                    recth.width = r.width - emojiRect.width;
+                    
+                    var rectw = recth;
+                    rectw.width -= 50;
+                    d.name = EditorGUI.TextField(rectw,"", d.name);
+                    rectw.x += rectw.width;
+                    rectw.width /= 2;
+
+                    rectw = recth;
+                    rectw.y += rectw.height;
+                    rectw.width = recth.width / 2;
+                    rectw.width /= 6;
+                    rectw.x += rectw.width;
+                    rectw.width *= 2;
+                    EditorGUI.LabelField(rectw,"Count");
+                    rectw.x += rectw.width;
+                    rectw.width =  rectw.width * 2 / 3;
+                    EditorGUI.IntField(rectw, d.count);
+                    rectw.x += rectw.width;
+                    
+                    rectw.width = recth.width / 2;
+                    rectw.width /= 6;
+                    rectw.x += rectw.width;
+                    rectw.width *= 2;
+                    EditorGUI.LabelField(rectw,"Scale");
+                    rectw.x += rectw.width;
+                    rectw.width =  rectw.width * 2 / 3;
+                    EditorGUI.FloatField(rectw, d.scale);
+                    
+                    rectw = recth;
+                    rectw.y += 2 * rectw.height;
+                    rectw.width = recth.width / 2;
+                    rectw.width /= 6;
+                    rectw.x += rectw.width;
+                    rectw.width *= 2;
+                    EditorGUI.LabelField(rectw,"LifeTime");
+                    rectw.x += rectw.width;
+                    rectw.width =  rectw.width * 2 / 3;
+                    EditorGUI.FloatField(rectw, d.lifetime);
+                    rectw.x += rectw.width;
+                    
+                    rectw.width = recth.width / 2;
+                    rectw.width /= 6;
+                    rectw.x += rectw.width;
+                    rectw.width *= 2;
+                    EditorGUI.LabelField(rectw,"Speed");
+                    rectw.x += rectw.width;
+                    rectw.width =  rectw.width * 2 / 3;
+                    EditorGUI.FloatField(rectw, d.speed);
+
+                    emojiRect.width = emojiRect.height;
                     d.emoji = (Texture2D) EditorGUI.ObjectField(emojiRect,"",d.emoji,typeof(Texture2D),true);
+                    emojiRect.x += emojiRect.width;
+                    emojiRect.height /= 3;
+                    EditorGUI.LabelField(emojiRect,"Objects");
+                    emojiRect.y += emojiRect.height;
+                    d.prefab = (GameObject) EditorGUI.ObjectField(emojiRect, d.prefab,typeof(GameObject), false);
+                    emojiRect.y += emojiRect.height;
+                    d.audio = (AudioClip) EditorGUI.ObjectField(emojiRect, d.audio,typeof(AudioClip), false);
                 },
                 onRemoveCallback = l => data.emojis.RemoveAt(l.index),
                 onAddCallback = l => data.emojis.Add(new IconElement("",null))
@@ -232,7 +286,7 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
     
             // 結合テクスチャの作成
             var textures = data.emojis.Select(icon=>icon.ToTexture2D()).ToArray();
-            var combinatedTexture = TextureCombinater.CombinateSaveTexture(textures,Path.Combine(fileDir,data.saveName+"_tex"+".png"),tilling);
+            var combinatedTexture = TextureCombinater.CombinateSaveTexture(textures,Path.Combine(fileDir,data.saveName+"_tex"+".png"),tilling,1);
             combinatedTexture.name = data.saveName+"_tex";
             // マテリアルの作成
             var combinatedMaterial = SaveParticleMaterial(combinatedTexture);
@@ -308,23 +362,41 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
             {
                 var anim = new AnimationClipCreator("Emoji_Anim"+i,avatar.gameObject);
                 var v = (float) i / (float) (tilling * tilling);
-                /*
-                anim.CreateAnimation(ps,"UVModule.startFrame.scalar",0f,v,0f);
-                var k = new Dictionary<float, float>();
-                k.Add(0f,0f);
-                k.Add(1f/60f,1f);
-                k.Add(2.1f,1f);
-                anim.CreateAnimation(ps.gameObject, "m_IsActive", 0f, 0f, 0f, k);
-                */
-                anim.AddKeyframe(0f, ps,"UVModule.startFrame.scalar",v,0f);
                 anim.AddKeyframe_Gameobject(ps.gameObject, 0f, false);
+                anim.AddKeyframe(0f, ps,"UVModule.startFrame.scalar",v);
+                anim.AddKeyframe(0f, ps,"InitialModule.startLifetime.scalar",data.emojis[i].lifetime);
+                anim.AddKeyframe(0f, ps,"EmissionModule.m_Bursts.Array.data[0].countCurve.scalar",data.emojis[i].count);
+                anim.AddKeyframe(0f, ps,"InitialModule.startSize.scalar",data.emojis[i].scale);
+                anim.AddKeyframe(0f, ps,"InitialModule.startSpeed.scalar",data.emojis[i].speed);
                 anim.AddKeyframe_Gameobject(ps.gameObject, 1f/60f, true);
-                anim.AddKeyframe_Gameobject(ps.gameObject, 2f, true);
+                anim.AddKeyframe_Gameobject(ps.gameObject, data.emojis[i].lifetime+1f/60f, true);
                 var a = anim.CreateAsset(settingsPath, true);
                 controller.AddState("Emoji_"+i,a);
                 // 0はデフォルトなので+1
                 controller.AddTransition("Any", "Emoji_" + i, param, i + 1, true,false);
                 controller.AddTransition("Emoji_" + i,"Reset",true );
+                if (data.emojis[i].prefab != null || data.emojis[i].audio != null)
+                {
+                    var pre = new GameObject("Obj"+i);
+                    pre.transform.SetParent(ps.transform);
+                    pre.transform.position = Vector3.zero;
+                    pre.transform.rotation = Quaternion.identity;
+                    reset.AddKeyframe_Gameobject(pre,0f,false);
+                    reset.AddKeyframe_Gameobject(pre,1f/60f,false);
+                    anim.AddKeyframe_Gameobject(pre,0f,true);
+                    anim.AddKeyframe_Gameobject(pre,data.emojis[i].lifetime,true);
+                    if (data.emojis[i].prefab != null)
+                    {
+                        GameObject.Instantiate(data.emojis[i].prefab as GameObject,pre.transform);
+                    }
+                    if(data.emojis[i].audio != null)
+                    {
+                        var audio = pre.AddComponent<AudioSource>();
+                        audio.clip = data.emojis[i].audio;
+                        audio.loop = false;
+                        audio.playOnAwake = true;
+                    }
+                }
             }
             controller.LayerMask(AvatarMaskBodyPart.Body,false,false);
             controller.LayerTransformMask(avatar.gameObject,false);
