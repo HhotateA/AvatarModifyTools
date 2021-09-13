@@ -25,6 +25,15 @@ namespace HhotateA.AvatarModifyTools.Core
 
         private const int previewLayer = 2;
 
+        private float dragSpeed = 0.001f;
+        private float scrollSpeed = 0.01f;
+        private float rotateSpeed = 0.1f;
+
+        private float layRange = 50f;
+
+        private float bound = 1f;
+        public float GetBound => bound;
+
         public AvatarMonitor(Transform root)
         {
             baseObject = new GameObject("CameraRoot");
@@ -44,7 +53,21 @@ namespace HhotateA.AvatarModifyTools.Core
             camera = c.AddComponent<Camera>();
             targetTexture = new RenderTexture(1000, 1000, 1);
             camera.targetTexture = targetTexture;
-            camera.nearClipPlane = 0.01f;
+
+            var bounds = GetMaxBounds(root.gameObject);
+            bound = Mathf.Max(bounds.extents.x , bounds.extents.y , bounds.extents.z);
+            camera.nearClipPlane = bound*0.01f;
+            camera.farClipPlane = bound*10f;
+        }
+        
+        Bounds GetMaxBounds(GameObject g) {
+            var renderers = g.GetComponentsInChildren<Renderer>();
+            if (renderers.Length == 0) return new Bounds(g.transform.position, Vector3.zero);
+            var b = renderers[0].bounds;
+            foreach (Renderer r in renderers) {
+                b.Encapsulate(r.bounds);
+            }
+            return b;
         }
 
         ~AvatarMonitor()
@@ -98,7 +121,7 @@ namespace HhotateA.AvatarModifyTools.Core
                 {
                     // Drag
                     var r = baseObject.transform.rotation;
-                    baseObject.transform.RotateAround(baseObject.transform.position, Vector3.up, e.delta.x * 0.1f);
+                    baseObject.transform.RotateAround(baseObject.transform.position, Vector3.up, e.delta.x * rotateSpeed);
                     baseObject.transform.RotateAround(baseObject.transform.position, baseObject.transform.right,
                         e.delta.y * 0.1f);
                 }
@@ -108,16 +131,16 @@ namespace HhotateA.AvatarModifyTools.Core
                     // Drag
                     var r = baseObject.transform.rotation;
                     baseObject.transform.position =
-                        baseObject.transform.position + camera.transform.up * e.delta.y * 0.001f;
+                        baseObject.transform.position + camera.transform.up * e.delta.y * dragSpeed * bound;
                     baseObject.transform.position =
-                        baseObject.transform.position + camera.transform.right * -e.delta.x * 0.001f;
+                        baseObject.transform.position + camera.transform.right * -e.delta.x * dragSpeed * bound;
                 }
 
 
                 if (e.type == EventType.ScrollWheel)
                 {
                     baseObject.transform.position =
-                        baseObject.transform.position + camera.transform.forward * -e.delta.y * 0.01f;
+                        baseObject.transform.position + camera.transform.forward * -e.delta.y * scrollSpeed * bound;
                 }
 
                 /*
@@ -157,7 +180,7 @@ namespace HhotateA.AvatarModifyTools.Core
 
         public void GetHit(MeshCollider meshCollider, Ray ray, Action<Vector3> onHit = null)
         {
-            var hits = Physics.RaycastAll(ray, 1f, 1 << previewLayer);
+            var hits = Physics.RaycastAll(ray, bound*layRange, 1 << previewLayer);
 
             foreach (var hit in hits)
             {
@@ -179,7 +202,7 @@ namespace HhotateA.AvatarModifyTools.Core
                 var p = new Vector3(e.mousePosition.x - rect.x, targetTexture.height - e.mousePosition.y + rect.y,
                     1f);
                 var ray = camera.ScreenPointToRay(p);
-                var hits = Physics.RaycastAll(ray, 1f, 1 << previewLayer);
+                var hits = Physics.RaycastAll(ray, bound*layRange, 1 << previewLayer);
 
                 foreach (var hit in hits)
                 {
@@ -203,7 +226,7 @@ namespace HhotateA.AvatarModifyTools.Core
                 var p = new Vector3(e.mousePosition.x - rect.x, targetTexture.height - e.mousePosition.y + rect.y,
                     1f);
                 var ray = camera.ScreenPointToRay(p);
-                var hits = Physics.RaycastAll(ray, 1f, 1 << previewLayer);
+                var hits = Physics.RaycastAll(ray, bound*layRange, 1 << previewLayer);
 
                 foreach (var hit in hits)
                 {
@@ -226,12 +249,12 @@ namespace HhotateA.AvatarModifyTools.Core
             {
                 var p = new Vector3(e.mousePosition.x - rect.x, rect.height - e.mousePosition.y + rect.y,1f);
                 var ray = camera.ScreenPointToRay(p);
-                var hits = Physics.RaycastAll(ray, 1f, 1 << previewLayer);
+                var hits = Physics.RaycastAll(ray, bound*layRange, 1 << previewLayer);
                 
                 // drag前
                 var pd = new Vector3(e.mousePosition.x - rect.x - e.delta.x, rect.height - e.mousePosition.y + rect.y + e.delta.y,1f);
                 var rayd = camera.ScreenPointToRay(pd);
-                var hitsd = Physics.RaycastAll(rayd, 1f, 1 << previewLayer);
+                var hitsd = Physics.RaycastAll(rayd, bound*layRange, 1 << previewLayer);
 
                 foreach (var hit in hits)
                 {
@@ -267,7 +290,7 @@ namespace HhotateA.AvatarModifyTools.Core
                 // Drag
                 var p = new Vector3(e.mousePosition.x - rect.x, targetTexture.height - e.mousePosition.y + rect.y,1f);
                 
-                var hits = Physics.RaycastAll(camera.ScreenPointToRay(p), 1f, 1 << previewLayer);
+                var hits = Physics.RaycastAll(camera.ScreenPointToRay(p), bound*layRange, 1 << previewLayer);
 
                 foreach (var hit in hits)
                 {
@@ -296,7 +319,7 @@ namespace HhotateA.AvatarModifyTools.Core
 
         public void GetVertexPosition(MeshCollider meshCollider, Ray ray, Action<Vector3> onhit = null)
         {
-            var hits = Physics.RaycastAll(ray, 1f, 1 << previewLayer);
+            var hits = Physics.RaycastAll(ray, bound*layRange, 1 << previewLayer);
 
             foreach (var hit in hits)
             {

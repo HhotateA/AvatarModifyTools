@@ -83,6 +83,24 @@ namespace HhotateA.AvatarModifyTools.Core
         {
             return rect.Contains(pos);
         }
+
+        public void MouseOverlay(Texture tex,float scale = 1f,float rotate = 0f)
+        {
+            var e = Event.current;
+            if (rect.Contains(e.mousePosition))
+            {
+                var p = new Vector3(e.mousePosition.x - rect.x, rect.height - e.mousePosition.y + rect.y,1f);
+                var uv = new Vector2(p.x/rect.width,p.y/rect.height);
+                previewMaterial.SetTexture("_Overlay",tex);
+                previewMaterial.SetVector("_OverlayUV",new Vector4(uv.x-0.5f,uv.y-0.5f,1f,1f));
+                previewMaterial.SetFloat("_OverlayScale",scale);
+                previewMaterial.SetFloat("_OverlayRotate",rotate);
+            }
+            else
+            {
+                previewMaterial.SetTexture("_Overlay",null);
+            }
+        }
         
         public Vector2 Touch(Action<Vector2,Vector2> onDrag = null)
         {
