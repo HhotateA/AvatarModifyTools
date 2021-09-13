@@ -33,7 +33,7 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
 
         public string name;
         public Texture emoji;
-        public int count;
+        public int count = 1;
         public float lifetime = 2f;
         public float scale = 0.4f;
         public float speed = 0f;

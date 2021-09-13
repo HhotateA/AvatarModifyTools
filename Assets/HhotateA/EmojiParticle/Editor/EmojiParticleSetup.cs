@@ -92,7 +92,7 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
                     EditorGUI.LabelField(rectw,"Count");
                     rectw.x += rectw.width;
                     rectw.width =  rectw.width * 2 / 3;
-                    EditorGUI.IntField(rectw, d.count);
+                    d.count = EditorGUI.IntField(rectw, d.count);
                     rectw.x += rectw.width;
                     
                     rectw.width = recth.width / 2;
@@ -102,7 +102,7 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
                     EditorGUI.LabelField(rectw,"Scale");
                     rectw.x += rectw.width;
                     rectw.width =  rectw.width * 2 / 3;
-                    EditorGUI.FloatField(rectw, d.scale);
+                    d.scale = EditorGUI.FloatField(rectw, d.scale);
                     
                     rectw = recth;
                     rectw.y += 2 * rectw.height;
@@ -113,7 +113,7 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
                     EditorGUI.LabelField(rectw,"LifeTime");
                     rectw.x += rectw.width;
                     rectw.width =  rectw.width * 2 / 3;
-                    EditorGUI.FloatField(rectw, d.lifetime);
+                    d.lifetime = EditorGUI.FloatField(rectw, d.lifetime);
                     rectw.x += rectw.width;
                     
                     rectw.width = recth.width / 2;
@@ -123,7 +123,7 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
                     EditorGUI.LabelField(rectw,"Speed");
                     rectw.x += rectw.width;
                     rectw.width =  rectw.width * 2 / 3;
-                    EditorGUI.FloatField(rectw, d.speed);
+                    d.speed = EditorGUI.FloatField(rectw, d.speed);
 
                     emojiRect.width = emojiRect.height;
                     d.emoji = (Texture2D) EditorGUI.ObjectField(emojiRect,"",d.emoji,typeof(Texture2D),true);
