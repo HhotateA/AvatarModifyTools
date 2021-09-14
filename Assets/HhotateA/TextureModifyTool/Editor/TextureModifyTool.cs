@@ -595,7 +595,7 @@ namespace HhotateA.AvatarModifyTools.TextureModifyTool
                     textureCreators[i].SetLayerActive(0, true);
                     textureCreators[i].SetLayerActive(1, false);
                     textureCreators[i].SetLayerActive(2, true);
-                    textureCreators[i].ChangeEditLayer(2);
+                    textureCreators[i].ChangeEditLayer(0);
                     ReplaceMaterials(currentMaterials[i], editMaterials[i]);
                 }
             }
@@ -613,7 +613,7 @@ namespace HhotateA.AvatarModifyTools.TextureModifyTool
                 onReorderCallback = l => textureCreator.LayersUpdate(),
                 onRemoveCallback = l => textureCreator.DeleateLayer(l.index),
                 onAddCallback = l => textureCreator.AddLayer(),
-                onSelectCallback = l => textureCreator.ChangeEditLayer(l.index)
+                // onSelectCallback = l => textureCreator.ChangeEditLayer(l.index)
             };
         }
 
@@ -684,9 +684,16 @@ namespace HhotateA.AvatarModifyTools.TextureModifyTool
                 
                 if (pen.extraTool == TexturePenTool.ExtraTool.Default)
                 {
-                    if(straightMode && isDragBuffer)
+                    if(straightMode)
                     {
-                        texturePreviewer.PreviewLine(straightBuffer, uv, brushColors[colorIndex], pen.brushWidth*delta, pen.brushStrength);
+                        if (isDragBuffer)
+                        {
+                            texturePreviewer.PreviewLine(straightBuffer, uv, brushColors[colorIndex], pen.brushWidth, pen.brushStrength);
+                        }
+                        else
+                        {
+                            texturePreviewer.PreviewPoint( uv, brushColors[colorIndex], pen.brushWidth, pen.brushStrength);
+                        }
                     }
                     else
                     {
