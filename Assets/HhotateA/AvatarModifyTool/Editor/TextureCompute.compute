@@ -287,8 +287,8 @@ void DrawBox (uint3 id : SV_DispatchThreadID)
         if(min(_FromPoint.y,_ToPoint.y)<uv.y && uv.y<max(_FromPoint.y,_ToPoint.y))
         {
             concentration = 0.5;
-            if(abs(_FromPoint.x-uv.x)<0.01 || abs(_ToPoint.x-uv.x)<0.01 ||
-               abs(_FromPoint.y-uv.y)<0.01 || abs(_ToPoint.y-uv.y)<0.01 )
+            if(abs(_FromPoint.x-uv.x)<_BrushWidth || abs(_ToPoint.x-uv.x)<_BrushWidth ||
+               abs(_FromPoint.y-uv.y)<_BrushWidth || abs(_ToPoint.y-uv.y)<_BrushWidth )
             {
                 concentration = 1.0;
             }

@@ -25,7 +25,7 @@ namespace HhotateA.AvatarModifyTools.Core
         private Rect rect;
 
         private RenderTexture overlayTexture;
-
+        
         public TexturePreviewer(TextureCreator tc)
         {
             textureCreater = tc;
@@ -176,9 +176,7 @@ namespace HhotateA.AvatarModifyTools.Core
             }
             
             previewMaterial.SetVector("_Scale",scale);
-            
             previewMaterial.SetTexture("_Overlay",overlayTexture);
-            
             previewTexture.Initialize();
 
             return previewTexture;
@@ -191,12 +189,7 @@ namespace HhotateA.AvatarModifyTools.Core
 
         public void PreviewPoint(Vector2 uv, Color brushColor, float brushWidth, float brushStrength)
         {
-            if (overlayTexture == null)
-            {
-                overlayTexture = new RenderTexture( previewTexture.width, previewTexture.height,0,RenderTextureFormat.ARGBFloat, RenderTextureReadWrite.Default);
-                overlayTexture.enableRandomWrite = true;
-                overlayTexture.Create();
-            }
+            PreviewClear();
             if (0f < uv.x && uv.x < 1f &&
                 0f < uv.y && uv.y < 1f)
             {
@@ -221,12 +214,7 @@ namespace HhotateA.AvatarModifyTools.Core
         
         public void PreviewStamp(Texture stamp, Vector2 uv, Vector2 scale, Color col, float rot = 0f)
         {
-            if (overlayTexture == null)
-            {
-                overlayTexture = new RenderTexture( previewTexture.width, previewTexture.height,0,RenderTextureFormat.ARGBFloat, RenderTextureReadWrite.Default);
-                overlayTexture.enableRandomWrite = true;
-                overlayTexture.Create();
-            }
+            PreviewClear();
             if (0f < uv.x && uv.x < 1f &&
                 0f < uv.y && uv.y < 1f)
             {
@@ -250,14 +238,10 @@ namespace HhotateA.AvatarModifyTools.Core
                 compute.Dispatch(kernel, overlayTexture.width, overlayTexture.height, 1);
             }
         }
-        public void PreviewLine(Vector2 from,Vector2 to,Color brushColor,Gradient gradient,float brushWidth,float brushStrength)
+        
+        public void PreviewLine(Vector2 from,Vector2 to,Color brushColor,float brushWidth,float brushStrength)
         {
-            if (overlayTexture == null)
-            {
-                overlayTexture = new RenderTexture( previewTexture.width, previewTexture.height,0,RenderTextureFormat.ARGBFloat, RenderTextureReadWrite.Default);
-                overlayTexture.enableRandomWrite = true;
-                overlayTexture.Create();
-            }
+            PreviewClear();
             if (0f < from.x && from.x < 1f &&
                 0f < from.y && from.y < 1f &&
                 0f < to.x && to.x < 1f &&
@@ -270,7 +254,6 @@ namespace HhotateA.AvatarModifyTools.Core
                 compute.Dispatch(kernel, overlayTexture.width,overlayTexture.height,1);
                 
                 kernel = compute.FindKernel("DrawLine");
-                kernel = compute.FindKernel("DrawLine");
                 compute.SetInt("_Width",overlayTexture.width);
                 compute.SetInt("_Height",overlayTexture.height);
                 compute.SetVector("_Color",brushColor);
@@ -281,6 +264,44 @@ namespace HhotateA.AvatarModifyTools.Core
                 compute.SetFloat("_BrushPower",1f);
                 compute.SetTexture(kernel,"_ResultTex",overlayTexture);
                 compute.Dispatch(kernel, overlayTexture.width, overlayTexture.height, 1);
+            }
+        }
+        
+        public void PreviewBox(Vector2 from,Vector2 to,Color brushColor,float brushWidth,float brushStrength)
+        {
+            PreviewClear();
+            if (0f < from.x && from.x < 1f &&
+                0f < from.y && from.y < 1f &&
+                0f < to.x && to.x < 1f &&
+                0f < to.y && to.y < 1f)
+            {
+                var compute = GetComputeShader();
+                int kernel = compute.FindKernel("ClearColor");
+                compute.SetVector("_Color",Vector4.zero);
+                compute.SetTexture(kernel,"_ResultTex",overlayTexture);
+                compute.Dispatch(kernel, overlayTexture.width,overlayTexture.height,1);
+                
+                kernel = compute.FindKernel("DrawBox");
+                compute.SetInt("_Width",overlayTexture.width);
+                compute.SetInt("_Height",overlayTexture.height);
+                compute.SetVector("_Color",brushColor);
+                compute.SetVector("_FromPoint",from);
+                compute.SetVector("_ToPoint",to);
+                compute.SetFloat("_BrushWidth",brushWidth);
+                compute.SetFloat("_BrushStrength",brushStrength);
+                compute.SetFloat("_BrushPower",1f);
+                compute.SetTexture(kernel,"_ResultTex",overlayTexture);
+                compute.Dispatch(kernel, overlayTexture.width, overlayTexture.height, 1);
+            }
+        }
+
+        public void PreviewClear()
+        {
+            if (overlayTexture == null)
+            {
+                overlayTexture = new RenderTexture( previewTexture.width, previewTexture.height,0,RenderTextureFormat.ARGBFloat, RenderTextureReadWrite.Default);
+                overlayTexture.enableRandomWrite = true;
+                overlayTexture.Create();
             }
         }
     }
