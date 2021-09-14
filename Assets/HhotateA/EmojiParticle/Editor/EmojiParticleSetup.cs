@@ -129,7 +129,7 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
                     d.emoji = (Texture2D) EditorGUI.ObjectField(emojiRect,"",d.emoji,typeof(Texture2D),true);
                     emojiRect.x += emojiRect.width;
                     emojiRect.height /= 3;
-                    EditorGUI.LabelField(emojiRect,"Objects");
+                    EditorGUI.LabelField(emojiRect,"Options");
                     emojiRect.y += emojiRect.height;
                     d.prefab = (GameObject) EditorGUI.ObjectField(emojiRect, d.prefab,typeof(GameObject), false);
                     emojiRect.y += emojiRect.height;
