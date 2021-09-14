@@ -408,11 +408,14 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
                     }
                     if(data.emojis[i].audio != null)
                     {
-                        var audio = pre.AddComponent<AudioSource>();
+                        var o = Instantiate(AssetUtility.LoadAssetAtGuid<GameObject>(EnvironmentGUIDs.particleAudio) ,pre.transform);
+                        var audio = o.GetComponent<AudioSource>();
                         audio.clip = data.emojis[i].audio;
-                        audio.loop = false;
-                        audio.playOnAwake = true;
+                        o.transform.localPosition = Vector3.zero;
+                        o.transform.localRotation = Quaternion.identity;
                     }
+                    anim.AddKeyframe_Pos(0f,pre.transform,Vector3.zero);
+                    anim.AddKeyframe_Pos(data.emojis[i].lifetime,pre.transform,Vector3.forward*data.emojis[i].speed);
                 }
                 var a = anim.CreateAsset(settingsPath, true);
                 controller.AddState("Emoji_"+i,a);
