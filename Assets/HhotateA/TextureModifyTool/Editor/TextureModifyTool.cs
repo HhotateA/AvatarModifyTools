@@ -547,8 +547,39 @@ namespace HhotateA.AvatarModifyTools.TextureModifyTool
                         }
                     }
                 }
+
+                if (true)
+                {
+                    avatarMonitor?.GetTriangle(editMeshCollider, (tri, pos) =>
+                    {
+                        var uv = meshCreater.GetUVDelta(editIndex, tri, pos);
+                        if (pen.extraTool == TexturePenTool.ExtraTool.StampPaste)
+                        {
+                            var delta = meshCreater.GetUVdelta(editIndex, tri, pos);
+                            var axi = meshCreater.GetUVAxi(editIndex, tri, avatarMonitor.WorldSpaceCameraUp()).normalized;
+                            texturePreviewer.PreviewStamp(pen.icon,uv,new Vector2(pen.brushWidth*pen.brushStrength,pen.brushWidth/pen.brushStrength)*delta, brushColor, -Mathf.Atan2(axi.y,axi.x)+pen.brushPower*Mathf.PI*2f);
+                        }
+                        else
+                        {
+                            texturePreviewer.PreviewPoint( uv, brushColor, pen.brushWidth, pen.brushStrength);
+                        }
+                    });
+                    {
+                        var uv = texturePreviewer.Touch();
+                        if (pen.extraTool == TexturePenTool.ExtraTool.StampPaste)
+                        {
+                            texturePreviewer.PreviewStamp(pen.icon, uv,
+                                new Vector2(pen.brushWidth * pen.brushStrength, pen.brushWidth / pen.brushStrength),
+                                brushColor, pen.brushPower * Mathf.PI * 2f);
+                        }
+                        else
+                        {
+                            texturePreviewer.PreviewPoint(uv, brushColor, pen.brushWidth, pen.brushStrength);
+                        }
+                    }
+                }
             }
-            editMaterials[editIndex].mainTexture = textureCreator?.GetTexture();
+            editMaterials[editIndex].mainTexture = texturePreviewer?.GetTexture();
         }
         
         void Setup()

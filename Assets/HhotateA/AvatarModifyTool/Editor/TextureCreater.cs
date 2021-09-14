@@ -24,7 +24,8 @@ namespace HhotateA.AvatarModifyTools.Core
         public List<LayerData> LayerDatas => layerDatas;
         public LayerData GetLayerData(int index) => layerDatas[index];
         private LayerData editLayer;
-        
+
+        private int maxLayer = 14;
         public TextureCreator(Texture baselayer)
         {
             name = baselayer.name;
@@ -46,8 +47,10 @@ namespace HhotateA.AvatarModifyTools.Core
             {
                 return layerDatas[index].texture;
             }
+            // SyncLayers(false);
             return targetTexture;
         }
+        
         public void SetLayers(List<LayerData> layers)
         {
             foreach (var layer in layerDatas)
@@ -87,7 +90,7 @@ namespace HhotateA.AvatarModifyTools.Core
             maskTexture.enableRandomWrite = true;
             maskTexture.Create();
             var currentRT = RenderTexture.active;
-            Graphics.Blit(targetTexture, maskTexture);
+            Graphics.Blit(GetTexture(), maskTexture);
             RenderTexture.active = currentRT;
             return maskTexture;
         }
@@ -172,7 +175,7 @@ namespace HhotateA.AvatarModifyTools.Core
 
         public void AddLayer(Texture tex = null)
         {
-            if(LayerCount() > 16) return;
+            if(LayerCount() > maxLayer) return;
             if (tex == null)
             {
                 var rt = new RenderTexture(targetTexture.width,targetTexture.height,0,RenderTextureFormat.ARGBFloat, RenderTextureReadWrite.Default);
@@ -192,7 +195,7 @@ namespace HhotateA.AvatarModifyTools.Core
         
         public void AddLayer(Color col,Gradient gradient = null)
         {
-            if(LayerCount() > 16) return;
+            if(LayerCount() > maxLayer) return;
             if(gradient==null) gradient = new Gradient();
             var rt = new RenderTexture(targetTexture.width,targetTexture.height,0,RenderTextureFormat.ARGBFloat, RenderTextureReadWrite.Default);
             rt.enableRandomWrite = true;
@@ -210,7 +213,7 @@ namespace HhotateA.AvatarModifyTools.Core
         }
         public void AddMask(Color col,Gradient gradient = null)
         {
-            if(LayerCount() > 16) return;
+            if(LayerCount() > maxLayer) return;
             if(gradient==null) gradient = new Gradient();
             var rt = new RenderTexture(targetTexture.width,targetTexture.height,0,RenderTextureFormat.ARGBFloat, RenderTextureReadWrite.Default);
             rt.enableRandomWrite = true;
@@ -231,7 +234,7 @@ namespace HhotateA.AvatarModifyTools.Core
 
         public Texture SyncLayers()
         {
-            for (int i = 0; i < 16; i++)
+            for (int i = 0; i < maxLayer; i++)
             {
                 if (i < LayerCount())
                 {
@@ -263,7 +266,7 @@ namespace HhotateA.AvatarModifyTools.Core
                     targetMaterial.SetTexture("_Layer"+i,null);
                 }
             }
-
+            
             return targetTexture;
         }
 

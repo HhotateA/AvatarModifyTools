@@ -8,9 +8,11 @@ This software is released under the MIT License.
 http://opensource.org/licenses/mit-license.php
 */
 #pragma kernel DrawUV
+#pragma kernel ClearColor
 #pragma kernel ClearColorGradient
 #pragma kernel DrawPoint
 #pragma kernel DrawLine
+#pragma kernel DrawBox
 #pragma kernel DrawLineGradient
 #pragma kernel TriangleFill
 #pragma kernel TriangleFillGradient
@@ -25,6 +27,8 @@ StructuredBuffer<float2> _UVs;
 StructuredBuffer<float4> _Vertices;
 StructuredBuffer<int> _Triangles;
 
+int _TriangleID;
+
 RWTexture2D<float4> _ResultTex;
 int _Width;
 int _Height;
@@ -36,6 +40,7 @@ float _BrushStrength;
 float _BrushWidth;
 float _BrushPower;
 
+float2 _Point;
 float2 _FromPoint;
 float2 _ToPoint;
 
@@ -245,12 +250,17 @@ void DrawUVPix (uint3 id : SV_DispatchThreadID)
 }
 
 [numthreads(1,1,1)]
+void ClearColor (uint3 id : SV_DispatchThreadID)
+{
+    _ResultTex[id.xy] = _Color;
+}
+
+[numthreads(1,1,1)]
 void ClearColorGradient (uint3 id : SV_DispatchThreadID)
 {
     _ResultTex[id.xy] = _Color * _Gradient[id.y];
 }
 
-float2 _Point;
 [numthreads(1,1,1)]
 void DrawPoint (uint3 id : SV_DispatchThreadID)
 {
@@ -268,6 +278,26 @@ void DrawLine (uint3 id : SV_DispatchThreadID)
 }
 
 [numthreads(1,1,1)]
+void DrawBox (uint3 id : SV_DispatchThreadID)
+{
+    float2 uv = float2(id.x/(float)_Width , id.y/(float)_Height);
+    float concentration = 0.0;
+    if(min(_FromPoint.x,_ToPoint.x)<uv.x && uv.x<max(_FromPoint.x,_ToPoint.x))
+    {
+        if(min(_FromPoint.y,_ToPoint.y)<uv.y && uv.y<max(_FromPoint.y,_ToPoint.y))
+        {
+            concentration = 0.5;
+            if(abs(_FromPoint.x-uv.x)<0.01 || abs(_ToPoint.x-uv.x)<0.01 ||
+               abs(_FromPoint.y-uv.y)<0.01 || abs(_ToPoint.y-uv.y)<0.01 )
+            {
+                concentration = 1.0;
+            }
+        }
+    }
+    PaintDist(id.xy,concentration,_Color);
+}
+
+[numthreads(1,1,1)]
 void DrawLineGradient (uint3 id : SV_DispatchThreadID)
 {
     float2 uv = float2(id.x/(float)_Width , id.y/(float)_Height);
@@ -277,7 +307,6 @@ void DrawLineGradient (uint3 id : SV_DispatchThreadID)
     PaintDist(id.xy,Concentration(dist),col);
 }
 
-int _TriangleID;
 [numthreads(1,1,1)]
 void TriangleFill (int3 id : SV_DispatchThreadID)
 {
@@ -447,192 +476,6 @@ void AreaExpansion (uint3 id : SV_DispatchThreadID)
         _SeedPixels[_Width*id.y+id.x] = 1;
     }
 }
-
-/*[numthreads(1,1,1)]
-void FillLine (uint3 id : SV_DispatchThreadID)
-{
-    int2 pix = id.xy;
-    if(_SeedPixels[_Width*id.y+id.x] == 2)
-    {
-        _SeedPixels[_Width*id.y+id.x] = 1;
-        
-        // 横方向
-        int2 left = pix - int2(1,0);
-        while (left.x>=0)
-        {
-            if(_SeedPixels[_Width*left.y+left.x] == 0)
-            {
-                if( distance(
-                    _BaseColor,
-                    _ResultTex[left])
-                    <= _ColorMargin)
-                {
-                    _SeedPixels[_Width*left.y+left.x] = 1;
-                }
-                else
-                {
-                    _SeedPixels[_Width*left.y+left.x] = -1;
-                    break;
-                }
-            }
-            else if(_SeedPixels[_Width*left.y+left.x] == -1)
-            {
-                break;
-            }
-            left = left - int2(1,0);
-        }
-        
-        int2 right = pix + int2(1,0);
-        while (right.x<_Width)
-        {
-            if(_SeedPixels[_Width*right.y+right.x] == 0)
-            {
-                if( distance(
-                    _BaseColor,
-                    _ResultTex[right])
-                    <= _ColorMargin)
-                {
-                    _SeedPixels[_Width*right.y+right.x] = 1;
-                }
-                else
-                {
-                    _SeedPixels[_Width*right.y+right.x] = -1;
-                    break;
-                }
-            }
-            else if(_SeedPixels[_Width*right.y+right.x] == -1)
-            {
-                break;
-            }
-            right = right + int2(1,0);
-        }
-
-        bool upperFill = false;
-        bool lowerFill = false;
-        for(int i = left.x+1; i < right.x-1; i++)
-        {
-            int2 upper = int2(i,left.y-1);
-            {
-                if(distance(_ResultTex[upper],_BaseColor)<=_ColorMargin)
-                {
-                    if(!upperFill && _SeedPixels[_Width*upper.y+upper.x] == 0)
-                    {
-                        _SeedPixels[_Width*upper.y+upper.x] = 2;
-                    }
-                    upperFill = true;
-                }
-                else
-                {
-                    upperFill = false;
-                }
-            }
-        
-            int2 lower = int2(i,left.y+1);
-            {
-                if(distance(_ResultTex[lower],_BaseColor)<=_ColorMargin)
-                {
-                    if(!lowerFill && _SeedPixels[_Width*lower.y+lower.x] == 0)
-                    {
-                        _SeedPixels[_Width*lower.y+lower.x] = 2;
-                    }
-                    lowerFill = true;
-                }
-                else
-                {
-                    lowerFill = false;
-                } 
-            }
-        }
-        
-        // 縦方向    
-        int2 down = pix - int2(0,1);
-        while (down.y>=0)
-        {
-            if(_SeedPixels[_Width*down.y+down.x] == 0)
-            {
-                if( distance(
-                    _BaseColor,
-                    _ResultTex[down])
-                    <= _ColorMargin)
-                {
-                    _SeedPixels[_Width*down.y+down.x] = 1;
-                }
-                else
-                {
-                    _SeedPixels[_Width*down.y+down.x] = -1;
-                    break;
-                }
-            }
-            else if(_SeedPixels[_Width*down.y+down.x] == -1)
-            {
-                break;
-            }
-            down = down - int2(0,1);
-        }
-        
-        int2 up = pix + int2(0,1);
-        while (up.y<_Height)
-        {
-            if(_SeedPixels[_Width*up.y+up.x] == 0)
-            {
-                if( distance(
-                    _BaseColor,
-                    _ResultTex[up])
-                    <= _ColorMargin)
-                {
-                    _SeedPixels[_Width*up.y+up.x] = 1;
-                }
-                else
-                {
-                    _SeedPixels[_Width*up.y+up.x] = -1;
-                    break;
-                }
-            }
-            else if(_SeedPixels[_Width*up.y+up.x] == -1)
-            {
-                break;
-            }
-            up = up + int2(0,1);
-        }
-
-        bool rightFill = false;
-        bool leftFill = false;
-        for(int j = down.y+1; j < up.y-1; j++)
-        {
-            int2 right = int2(down.x+1,j);
-            {
-                if(distance(_ResultTex[right],_BaseColor)<=_ColorMargin)
-                {
-                    if(!rightFill && _SeedPixels[_Width*right.y+right.x] == 0)
-                    {
-                        _SeedPixels[_Width*right.y+right.x] = 2;
-                    }
-                    rightFill = true;
-                }
-                else
-                {
-                    rightFill = false;
-                }
-            }
-        
-            int2 left = int2(down.x-1,j);
-            {
-                if(distance(_ResultTex[left],_BaseColor)<=_ColorMargin)
-                {
-                    if(!leftFill && _SeedPixels[_Width*left.y+left.x] == 0)
-                    {
-                        _SeedPixels[_Width*left.y+left.x] = 2;
-                    }
-                    leftFill = true;
-                }
-                else
-                {
-                    leftFill = false;
-                } 
-            }
-        }
-    }
-}*/
 
 [numthreads(1,1,1)]
 void SeedFill (uint3 id : SV_DispatchThreadID)

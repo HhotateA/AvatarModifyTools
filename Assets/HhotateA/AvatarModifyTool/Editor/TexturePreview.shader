@@ -50,7 +50,7 @@ Shader "HhotateA/TexturePreview"
                 uv += (_Scale.zw - _Scale.xy) * IN.localTexcoord.xy;
                 float4 col = tex2D(_MainTex, uv);
 		        if(uv.x<0.0 || 1.0<uv.x || uv.y<0.0 || 1.0<uv.y ) col.a = 0.0;
-                float2 overlayUV = saturate(TRANSFORM_TEX(IN.localTexcoord.xy, _Overlay));
+                /*float2 overlayUV = saturate(TRANSFORM_TEX(IN.localTexcoord.xy, _Overlay));
                 overlayUV += _OverlayUV.xy;
                 overlayUV -= float2(0.5,0.5);
                 overlayUV = float2( overlayUV.x*cos(_OverlayRotate) - overlayUV.y*sin(_OverlayRotate),
@@ -58,7 +58,8 @@ Shader "HhotateA/TexturePreview"
                 overlayUV /= _OverlayScale;
                 overlayUV /= _OverlayUV.zw;
                 overlayUV += float2(0.5,0.5);
-                float4 overlay = tex2D(_Overlay, overlayUV);
+                float4 overlay = tex2D(_Overlay, overlayUV);*/
+                float4 overlay = tex2D(_Overlay, uv);
                 return lerp(lerp(base,col,col.a),overlay,overlay.a);
             }
             ENDCG
