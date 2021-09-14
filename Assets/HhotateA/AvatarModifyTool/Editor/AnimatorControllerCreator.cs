@@ -285,6 +285,12 @@ namespace HhotateA.AvatarModifyTools.Core
             if (d != null) GetStateMachine().defaultState = d;
         }
 
+        public void SetMotion(string name, Motion motion)
+        {
+            var d = GetState(name);
+            if (d != null) d.motion = motion;
+        }
+        
         /// <summary>
         /// fromStateからtoStateへのTransitionを作成する
         /// </summary>
@@ -408,7 +414,6 @@ namespace HhotateA.AvatarModifyTools.Core
 
             AddTransition(from, to, new AnimatorCondition[1] {conditions}, hasExitTime, exitTime, duration);
         }
-
 
         /// <summary>
         /// 名前からStateを探す

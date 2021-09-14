@@ -134,6 +134,10 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
                     d.prefab = (GameObject) EditorGUI.ObjectField(emojiRect, d.prefab,typeof(GameObject), false);
                     emojiRect.y += emojiRect.height;
                     d.audio = (AudioClip) EditorGUI.ObjectField(emojiRect, d.audio,typeof(AudioClip), false);
+
+                    d.count = Mathf.Clamp(d.count, 1, 50);
+                    if (d.scale <= 0f) d.scale = 0.4f;
+                    if (d.lifetime < 1f / 60f) d.lifetime = 2f;
                 },
                 onRemoveCallback = l => data.emojis.RemoveAt(l.index),
                 onAddCallback = l => data.emojis.Add(new IconElement("",null))
@@ -208,8 +212,6 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
                         var mod = new AvatarModifyTool(avatar, AssetDatabase.GetAssetPath(data));
                         ApplySettings(mod).ModifyAvatar(modifyAsset,EnvironmentGUIDs.prefix);
 
-                        // ゴミ処理忘れずに
-                        DestroyImmediate(modifyAsset.items[0].prefab);
                         AssetDatabase.SaveAssets();
                         OnFinishSetup();
                     }
@@ -270,7 +272,7 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
         AvatarModifyData Setup(AvatarModifyData assets)
         {
             var settingsPath = AssetDatabase.GetAssetPath(data);
-            string fileDir = System.IO.Path.GetDirectoryName (settingsPath);
+            string fileDir = Path.GetDirectoryName (settingsPath);
 
             string param = data.saveName;
             
@@ -310,10 +312,18 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
                 Path.Combine(fileDir,data.saveName+"_icon"+".png"),
                 combinatedTexture,
                 256,256));
-            
+
+            if (overrideSettings)
+            {
+                var oldSettings = avatar.transform.FindInChildren(EnvironmentGUIDs.prefix + data.saveName);
+                if (oldSettings)
+                {
+                    DestroyImmediate(oldSettings);
+                }
+            }
             // オリジナルアセットのパーティクルコンポーネント差し替え
-            var prefab = Instantiate(assets.items[0].prefab);
-            prefab.name = EnvironmentGUIDs.prefix + assets.items[0].prefab.name + "_" + data.saveName;
+            var prefab = Instantiate(AssetUtility.LoadAssetAtGuid<GameObject>(EnvironmentGUIDs.particlePrefab));
+            prefab.name = EnvironmentGUIDs.prefix + data.saveName;
             var ps = prefab.GetComponentsInChildren<ParticleSystem>()[0];
             ps.GetComponent<ParticleSystemRenderer>().material = combinatedMaterial;
             var ts = ps.textureSheetAnimation;
@@ -321,28 +331,38 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
             ts.numTilesX = tilling;
             ts.numTilesY = tilling;
             ps.gameObject.SetActive(false);
-            
-            // 追従先差し替え
-            switch (target)
+
+            var human = avatar.GetComponent<Animator>();
+            if (human != null)
             {
-                case Target.Hip: 
-                    assets.items[0].target = HumanBodyBones.Hips;
-                    ps.transform.localPosition = new Vector3(0.0f,0.25f,0.25f);
-                    break;
-                case Target.Head: 
-                    assets.items[0].target = HumanBodyBones.Head;
-                    ps.transform.localPosition = new Vector3(0.0f,0.25f,0.25f);
-                    break;
-                case Target.RightHand: 
-                    assets.items[0].target = HumanBodyBones.RightHand;
-                    ps.transform.localPosition = Vector3.zero;
-                    break;
-                case Target.LeftHand: 
-                    assets.items[0].target = HumanBodyBones.LeftHand;
-                    ps.transform.localPosition = Vector3.zero;
-                    break;
+                // 追従先差し替え
+                switch (target)
+                {
+                    case Target.Hip: 
+                        //assets.items[0].target = HumanBodyBones.Hips;
+                        prefab.transform.SetParent(human.GetBoneTransform(HumanBodyBones.Hips));
+                        ps.transform.localPosition = new Vector3(0.0f,0.25f,0.25f);
+                        break;
+                    case Target.Head: 
+                        //assets.items[0].target = HumanBodyBones.Head;
+                        prefab.transform.SetParent(human.GetBoneTransform(HumanBodyBones.Head));
+                        ps.transform.localPosition = new Vector3(0.0f,0.25f,0.25f);
+                        break;
+                    case Target.RightHand: 
+                        //assets.items[0].target = HumanBodyBones.RightHand;
+                        prefab.transform.SetParent(human.GetBoneTransform(HumanBodyBones.RightHand));
+                        ps.transform.localPosition = Vector3.zero;
+                        break;
+                    case Target.LeftHand: 
+                        //assets.items[0].target = HumanBodyBones.LeftHand;
+                        prefab.transform.SetParent(human.GetBoneTransform(HumanBodyBones.LeftHand));
+                        ps.transform.localPosition = Vector3.zero;
+                        break;
+                }
+                prefab.transform.localPosition = Vector3.zero;
+                prefab.transform.localRotation = Quaternion.identity;
             }
-            
+
             // AnimationClipの作成
             var controller = new AnimatorControllerCreator("Emoji_Controller","EmojiParticle"+data.saveName);
             controller.AddParameter(param,AnimatorControllerParameterType.Int);
@@ -353,9 +373,8 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
             reset.AddKeyframe(1f/60f, ps,"UVModule.startFrame.scalar",0f);
             //reset.CreateAnimation(ps.gameObject,"m_IsActive",0f,0f,1f);
             //reset.CreateAnimation(ps,"UVModule.startFrame.scalar",0f,0f,0f);
-            var r = reset.CreateAsset(settingsPath, true);
-            controller.AddState("Idle",r);
-            controller.AddState("Reset",r);
+            controller.AddState("Idle",null);
+            controller.AddState("Reset",null);
             controller.SetDefaultState("Idle");
             controller.AddTransition("Reset","Idle",true);
             for (int i = 0; i < data.emojis.Count; i++)
@@ -370,24 +389,22 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
                 anim.AddKeyframe(0f, ps,"InitialModule.startSpeed.scalar",data.emojis[i].speed);
                 anim.AddKeyframe_Gameobject(ps.gameObject, 1f/60f, true);
                 anim.AddKeyframe_Gameobject(ps.gameObject, data.emojis[i].lifetime+1f/60f, true);
-                var a = anim.CreateAsset(settingsPath, true);
-                controller.AddState("Emoji_"+i,a);
-                // 0はデフォルトなので+1
-                controller.AddTransition("Any", "Emoji_" + i, param, i + 1, true,false);
-                controller.AddTransition("Emoji_" + i,"Reset",true );
                 if (data.emojis[i].prefab != null || data.emojis[i].audio != null)
                 {
                     var pre = new GameObject("Obj"+i);
-                    pre.transform.SetParent(ps.transform);
-                    pre.transform.position = Vector3.zero;
-                    pre.transform.rotation = Quaternion.identity;
+                    pre.transform.SetParent(prefab.transform);
+                    pre.transform.localPosition = Vector3.zero;
+                    pre.transform.localRotation = Quaternion.identity;
+                    pre.SetActive(false);
                     reset.AddKeyframe_Gameobject(pre,0f,false);
                     reset.AddKeyframe_Gameobject(pre,1f/60f,false);
                     anim.AddKeyframe_Gameobject(pre,0f,true);
                     anim.AddKeyframe_Gameobject(pre,data.emojis[i].lifetime,true);
                     if (data.emojis[i].prefab != null)
                     {
-                        GameObject.Instantiate(data.emojis[i].prefab as GameObject,pre.transform);
+                        var o = Instantiate(data.emojis[i].prefab ,pre.transform);
+                        o.transform.localPosition = Vector3.zero;
+                        o.transform.localRotation = Quaternion.identity;
                     }
                     if(data.emojis[i].audio != null)
                     {
@@ -397,7 +414,16 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
                         audio.playOnAwake = true;
                     }
                 }
+                var a = anim.CreateAsset(settingsPath, true);
+                controller.AddState("Emoji_"+i,a);
+                // 0はデフォルトなので+1
+                controller.AddTransition("Any", "Emoji_" + i, param, i + 1, true,false);
+                controller.AddTransition("Emoji_" + i,"Reset",true );
             }
+            var r = reset.CreateAsset(settingsPath, true);
+            controller.SetMotion("Idle",r);
+            controller.SetMotion("Reset",r);
+            
             controller.LayerMask(AvatarMaskBodyPart.Body,false,false);
             controller.LayerTransformMask(avatar.gameObject,false);
 
@@ -406,11 +432,6 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
                 newAssets.fx_controller = controller.CreateAsset(settingsPath, true);
                 newAssets.parameter = pc.CreateAsset(settingsPath,true);
                 newAssets.menu = menu.CreateAsset(settingsPath,true);
-                newAssets.items = new Item[1]{new Item()
-                {
-                    target = assets.items[0].target,
-                    prefab = prefab,
-                }};
             }
 
             return newAssets;
