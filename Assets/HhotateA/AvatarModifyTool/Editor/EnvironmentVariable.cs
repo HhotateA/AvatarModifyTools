@@ -168,7 +168,7 @@ namespace HhotateA.AvatarModifyTools.Core
                             {
                                 string s = boneName.Replace(".", "").Replace("_", "").Replace(" ", "").ToUpper();
                                 string d = t.gameObject.name.Replace(".", "").Replace("_", "").Replace(" ", "").ToUpper();
-                                if (s == d)
+                                if (d.Contains(s))
                                 {
                                     bone = t;
                                 }
