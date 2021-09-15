@@ -37,8 +37,8 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
         public float lifetime = 2f;
         public float scale = 0.4f;
         public float speed = 0f;
-        public GameObject prefab;
-        public AudioClip audio;
+        public GameObject effectPrefab;
+        public AudioClip effectAudio;
 
 
         public Texture2D ToTexture2D()

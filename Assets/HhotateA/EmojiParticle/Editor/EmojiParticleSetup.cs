@@ -131,9 +131,9 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
                     emojiRect.height /= 3;
                     EditorGUI.LabelField(emojiRect,"Options");
                     emojiRect.y += emojiRect.height;
-                    d.prefab = (GameObject) EditorGUI.ObjectField(emojiRect, d.prefab,typeof(GameObject), false);
+                    d.effectPrefab = (GameObject) EditorGUI.ObjectField(emojiRect, d.effectPrefab,typeof(GameObject), false);
                     emojiRect.y += emojiRect.height;
-                    d.audio = (AudioClip) EditorGUI.ObjectField(emojiRect, d.audio,typeof(AudioClip), false);
+                    d.effectAudio = (AudioClip) EditorGUI.ObjectField(emojiRect, d.effectAudio,typeof(AudioClip), false);
 
                     d.count = Mathf.Clamp(d.count, 1, 50);
                     if (d.scale <= 0f) d.scale = 0.4f;
@@ -318,7 +318,7 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
                 var oldSettings = avatar.transform.FindInChildren(EnvironmentGUIDs.prefix + data.saveName);
                 if (oldSettings)
                 {
-                    DestroyImmediate(oldSettings);
+                    DestroyImmediate(oldSettings.gameObject);
                 }
             }
             // オリジナルアセットのパーティクルコンポーネント差し替え
@@ -389,33 +389,51 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
                 anim.AddKeyframe(0f, ps,"InitialModule.startSpeed.scalar",data.emojis[i].speed);
                 anim.AddKeyframe_Gameobject(ps.gameObject, 1f/60f, true);
                 anim.AddKeyframe_Gameobject(ps.gameObject, data.emojis[i].lifetime+1f/60f, true);
-                if (data.emojis[i].prefab != null || data.emojis[i].audio != null)
+                
+                if (data.emojis[i].effectPrefab != null)
                 {
-                    var pre = new GameObject("Obj"+i);
-                    pre.transform.SetParent(prefab.transform);
-                    pre.transform.localPosition = Vector3.zero;
-                    pre.transform.localRotation = Quaternion.identity;
-                    pre.SetActive(false);
-                    reset.AddKeyframe_Gameobject(pre,0f,false);
-                    reset.AddKeyframe_Gameobject(pre,1f/60f,false);
-                    anim.AddKeyframe_Gameobject(pre,0f,true);
-                    anim.AddKeyframe_Gameobject(pre,data.emojis[i].lifetime,true);
-                    if (data.emojis[i].prefab != null)
+                    int index = data.emojis.Select(e => e.effectPrefab).Distinct().ToList()
+                        .FindIndex(e => e == data.emojis[i].effectPrefab);
+                    var o = prefab.transform.Find("Effect_"+index)?.gameObject;
+                    if (o == null)
                     {
-                        var o = Instantiate(data.emojis[i].prefab ,pre.transform);
+                        o = Instantiate(data.emojis[i].effectPrefab ,prefab.transform);
+                        o.name = "Effect_"+index;
                         o.transform.localPosition = Vector3.zero;
                         o.transform.localRotation = Quaternion.identity;
+                        o.SetActive(false);
+                        reset.AddKeyframe_Gameobject(o,0f,false);
+                        reset.AddKeyframe_Gameobject(o,1f/60f,false);
                     }
-                    if(data.emojis[i].audio != null)
+                    anim.AddKeyframe_Gameobject(o,0f,true);
+                    anim.AddKeyframe_Gameobject(o,data.emojis[i].lifetime,true);
+
+                    anim.AddKeyframe_Pos(0f,o.transform,Vector3.zero);
+                    anim.AddKeyframe_Pos(data.emojis[i].lifetime,o.transform,Vector3.forward*data.emojis[i].speed);
+                }
+
+                if (data.emojis[i].effectAudio != null)
+                {
+                    int index = data.emojis.Select(e => e.effectAudio).Distinct().ToList()
+                        .FindIndex(e => e == data.emojis[i].effectAudio);
+                    var o = prefab.transform.Find("SE_"+index)?.gameObject;
+                    if (o == null)
                     {
-                        var o = Instantiate(AssetUtility.LoadAssetAtGuid<GameObject>(EnvironmentGUIDs.particleAudio) ,pre.transform);
+                        o = Instantiate(AssetUtility.LoadAssetAtGuid<GameObject>(EnvironmentGUIDs.particleAudio) ,prefab.transform);
+                        o.name = "SE_"+index;
                         var audio = o.GetComponent<AudioSource>();
-                        audio.clip = data.emojis[i].audio;
+                        audio.clip = data.emojis[i].effectAudio;
                         o.transform.localPosition = Vector3.zero;
                         o.transform.localRotation = Quaternion.identity;
+                        o.SetActive(false);
+                        reset.AddKeyframe_Gameobject(o,0f,false);
+                        reset.AddKeyframe_Gameobject(o,1f/60f,false);
                     }
-                    anim.AddKeyframe_Pos(0f,pre.transform,Vector3.zero);
-                    anim.AddKeyframe_Pos(data.emojis[i].lifetime,pre.transform,Vector3.forward*data.emojis[i].speed);
+                    anim.AddKeyframe_Gameobject(o,0f,true);
+                    anim.AddKeyframe_Gameobject(o,data.emojis[i].lifetime,true);
+
+                    anim.AddKeyframe_Pos(0f,o.transform,Vector3.zero);
+                    anim.AddKeyframe_Pos(data.emojis[i].lifetime,o.transform,Vector3.forward*data.emojis[i].speed);
                 }
                 var a = anim.CreateAsset(settingsPath, true);
                 controller.AddState("Emoji_"+i,a);
