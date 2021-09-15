@@ -285,6 +285,12 @@ namespace HhotateA.AvatarModifyTools.Core
             if (d != null) GetStateMachine().defaultState = d;
         }
 
+        public void SetMotion(string name, Motion motion)
+        {
+            var d = GetState(name);
+            if (d != null) d.motion = motion;
+        }
+        
         /// <summary>
         /// fromStateからtoStateへのTransitionを作成する
         /// </summary>
@@ -408,7 +414,6 @@ namespace HhotateA.AvatarModifyTools.Core
 
             AddTransition(from, to, new AnimatorCondition[1] {conditions}, hasExitTime, exitTime, duration);
         }
-
 
         /// <summary>
         /// 名前からStateを探す
@@ -955,7 +960,7 @@ namespace HhotateA.AvatarModifyTools.Core
             },false);
         }
         
-        public void ParameterDriver(string stateName,string param,float? value,bool add = false,bool local = false)
+        public void ParameterDriver(string stateName,string param,float? value,bool add = false)
         {
             EditStateMachineBehaviour<VRCAvatarParameterDriver>(stateName, (controll) =>
             {
@@ -968,11 +973,11 @@ namespace HhotateA.AvatarModifyTools.Core
                     valueMax = value ?? 1f,
                     name = param
                 });
-                controll.localOnly = local;
+                if(value==null) controll.localOnly =  true;
             },false);
         }
         
-        public void ParameterDriver(string stateName,string param,float from,float to,float chance = 0f,bool local = false)
+        public void ParameterDriver(string stateName,string param,float from,float to,float chance = 0f)
         {
             EditStateMachineBehaviour<VRCAvatarParameterDriver>(stateName, (controll) =>
             {
@@ -982,9 +987,10 @@ namespace HhotateA.AvatarModifyTools.Core
                     value = 0f,
                     valueMin = from,
                     valueMax = to,
-                    name = param
+                    name = param,
+                    chance = chance
                 });
-                controll.localOnly = local;
+                controll.localOnly = true;
             },false);
         }
 

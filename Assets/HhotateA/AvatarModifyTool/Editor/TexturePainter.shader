@@ -11,6 +11,7 @@ Shader "HhotateA/TexturePainter"
 {
     Properties
     {
+        _Overlay ("_Overlay",2D) = "black" {}
         _Color0 ("Color", Color) = (1,1,1,1)
         _Color1 ("Color", Color) = (1,1,1,1)
         _Color2 ("Color", Color) = (1,1,1,1)
@@ -26,7 +27,7 @@ Shader "HhotateA/TexturePainter"
         _Color12 ("Color", Color) = (1,1,1,1)
         _Color13 ("Color", Color) = (1,1,1,1)
         _Color14 ("Color", Color) = (1,1,1,1)
-        _Color15 ("Color", Color) = (1,1,1,1)
+        //_Color15 ("Color", Color) = (1,1,1,1)
         _Comparison0 ("Color", Color) = (1,1,1,1)
         _Comparison1 ("Color", Color) = (1,1,1,1)
         _Comparison2 ("Color", Color) = (1,1,1,1)
@@ -42,7 +43,7 @@ Shader "HhotateA/TexturePainter"
         _Comparison12 ("Color", Color) = (1,1,1,1)
         _Comparison13 ("Color", Color) = (1,1,1,1)
         _Comparison14 ("Color", Color) = (1,1,1,1)
-        _Comparison15 ("Color", Color) = (1,1,1,1)
+        //_Comparison15 ("Color", Color) = (1,1,1,1)
         _Layer0 ("",2D) = "black" {}
         _Layer1 ("",2D) = "black" {}
         _Layer2 ("",2D) = "black" {}
@@ -58,7 +59,7 @@ Shader "HhotateA/TexturePainter"
         _Layer12 ("",2D) = "black" {}
         _Layer13 ("",2D) = "black" {}
         _Layer14 ("",2D) = "black" {}
-        _Layer15 ("",2D) = "black" {}
+        //_Layer15 ("",2D) = "black" {}
         _Mode0 ("",int) = 1
         _Mode1 ("",int) = 1
         _Mode2 ("",int) = 1
@@ -90,7 +91,7 @@ Shader "HhotateA/TexturePainter"
         _Alpha12 ("",int) = 1
         _Alpha13 ("",int) = 1
         _Alpha14 ("",int) = 1
-        _Alpha15 ("",int) = 1
+        //_Alpha15 ("",int) = 1
         _Settings0 ("Settings", vector) = (0,0,0,0)
         _Settings1 ("Settings", vector) = (0,0,0,0)
         _Settings2 ("Settings", vector) = (0,0,0,0)
@@ -106,7 +107,7 @@ Shader "HhotateA/TexturePainter"
         _Settings12 ("Settings", vector) = (0,0,0,0)
         _Settings13 ("Settings", vector) = (0,0,0,0)
         _Settings14 ("Settings", vector) = (0,0,0,0)
-        _Settings15 ("Settings", vector) = (0,0,0,0)
+        //_Settings15 ("Settings", vector) = (0,0,0,0)
         _Mask0 ("",int) = -1
         _Mask1 ("",int) = -1
         _Mask2 ("",int) = -1
@@ -122,7 +123,7 @@ Shader "HhotateA/TexturePainter"
         _Mask12 ("",int) = -1
         _Mask13 ("",int) = -1
         _Mask14 ("",int) = -1
-        _Mask15 ("",int) = -1
+        //_Mask15 ("",int) = -1
     }
 
     SubShader
@@ -183,6 +184,8 @@ Shader "HhotateA/TexturePainter"
             float4 _Layer0_ST,_Layer1_ST,_Layer2_ST,_Layer3_ST,_Layer4_ST,_Layer5_ST,_Layer6_ST,_Layer7_ST,_Layer8_ST,_Layer9_ST,_Layer10_ST,_Layer11_ST,_Layer12_ST,_Layer13_ST,_Layer14_ST,_Layer15_ST;
             int _Mode0,_Mode1,_Mode2,_Mode3,_Mode4,_Mode5,_Mode6,_Mode7,_Mode8,_Mode9,_Mode10,_Mode11,_Mode12,_Mode13,_Mode14,_Mode15;*/
 
+            sampler2D _Overlay;
+            float4 _Overlay_ST;
             Layer(0)
             Layer(1)
             Layer(2)
@@ -198,7 +201,7 @@ Shader "HhotateA/TexturePainter"
             Layer(12)
             Layer(13)
             Layer(14)
-            Layer(15)
+            //Layer(15)
 
             static float3 linecolumn[41]={
                                                                                                                 float3(-4.0, 0.0, 1.0),
@@ -349,8 +352,10 @@ Shader "HhotateA/TexturePainter"
                 LayerCol(col,12,mask);
                 LayerCol(col,13,mask);
                 LayerCol(col,14,mask);
-                LayerCol(col,15,mask);
-                return col;
+                //LayerCol(col,15,mask);
+                float4 overlay = tex2D(_Overlay, TRANSFORM_TEX(IN.localTexcoord.xy,_Overlay));
+                //return overlay;
+                return lerp(col,overlay,overlay.a);
             }
             ENDCG
         }

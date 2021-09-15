@@ -17,7 +17,7 @@ namespace HhotateA.AvatarModifyTools.Core
 {
     public static class EnvironmentVariable
     {
-        public static string version = "1.30.1";
+        public static string version = "1.30.3";
         public static string githubLink = "https://github.com/HhotateA/AvatarModifyTools";
         public static string icon = "1549a00a4e9d1734ca9f8862981c623f";
         public static string iconMat = "d8f2ec63ea255c24f8fe567fac92c852";
@@ -168,7 +168,7 @@ namespace HhotateA.AvatarModifyTools.Core
                             {
                                 string s = boneName.Replace(".", "").Replace("_", "").Replace(" ", "").ToUpper();
                                 string d = t.gameObject.name.Replace(".", "").Replace("_", "").Replace(" ", "").ToUpper();
-                                if (s == d)
+                                if (d.Contains(s))
                                 {
                                     bone = t;
                                 }

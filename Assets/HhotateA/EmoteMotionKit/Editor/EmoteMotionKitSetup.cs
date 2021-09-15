@@ -96,8 +96,8 @@ namespace HhotateA.AvatarModifyTools.EmoteMotionKit
                     rh.y += rh.height;
                     rh.width /= 9;
                     rh.width *= 2;
-                    d.isEmote = EditorGUI.Toggle(rh, d.isEmote);
-                    EditorGUI.LabelField(rh,"     Is Emote");
+                    d.isEmote = !EditorGUI.Toggle(rh, !d.isEmote);
+                    EditorGUI.LabelField(rh,"     Loop");
                     rh.x += rh.width;
                     rh.width = rh.width * 3 / 2;
                     rh.x += rh.width * 1 / 8;

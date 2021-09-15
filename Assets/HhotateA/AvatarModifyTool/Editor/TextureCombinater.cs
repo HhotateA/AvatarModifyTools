@@ -20,14 +20,14 @@ namespace HhotateA.AvatarModifyTools.Core
     {
         const int maxResolution = 4096;
 
-        public static Texture2D CombinateSaveTexture(Texture2D[] texs,string path = null,int tilling = 0)
+        public static Texture2D CombinateSaveTexture(Texture2D[] texs,string path = null,int tilling = 0,int margin = 0)
         {
-            var combinatedTexture = CombinateTextures(texs,tilling);
+            var combinatedTexture = CombinateTextures(texs,tilling,margin);
             if (!string.IsNullOrWhiteSpace(path)) combinatedTexture = ConvertToPngAndSave(path, combinatedTexture);
             return combinatedTexture;
         }
 
-        public static Texture2D CombinateTextures(Texture2D[] texs,int tilling = 0)
+        public static Texture2D CombinateTextures(Texture2D[] texs,int tilling = 0,int margin = 0)
         {
             if (tilling == 0)
             {
@@ -42,8 +42,8 @@ namespace HhotateA.AvatarModifyTools.Core
             List<Texture2D> resizedTexs = new List<Texture2D>();
             foreach (var tex in texs)
             {
-                if(tex==null) resizedTexs.Add(ResizeTexture(Texture2D.blackTexture, resolution, resolution));
-                else resizedTexs.Add(ResizeTexture(tex, resolution, resolution));
+                if(tex==null) resizedTexs.Add(ResizeTexture(Texture2D.blackTexture, resolution, resolution, margin));
+                else resizedTexs.Add(ResizeTexture(tex, resolution, resolution, margin));
             }
 
             Texture2D combinatedTexture = new Texture2D(resolution * tilling, resolution * tilling);
@@ -87,11 +87,25 @@ namespace HhotateA.AvatarModifyTools.Core
             return ConvertToPngAndSave(path, GetReadableTexture(srcTexture,newWidth,newHeight));
         }
 
-        public static Texture2D ResizeTexture(Texture2D srcTexture, int newWidth, int newHeight)
+        public static Texture2D ResizeTexture(Texture2D srcTexture, int newWidth, int newHeight,int margin = 0)
         {
-            var resizedTexture = new Texture2D(newWidth, newHeight);
-            Graphics.ConvertTexture(srcTexture, resizedTexture);
-            return resizedTexture;
+            if (margin > 0)
+            {
+                var tempTex = new Texture2D(newWidth-2*margin, newHeight-2*margin);
+                Graphics.ConvertTexture(srcTexture, tempTex);
+                var resizedTexture = new Texture2D(newWidth, newHeight);
+                // 透明で上書き
+                resizedTexture.SetPixels(0, 0, newWidth, newHeight, Enumerable.Repeat<Color>(Color.clear, newWidth * newHeight).ToArray());
+                resizedTexture.SetPixels(margin, margin, newWidth-2*margin, newHeight-2*margin, GetTexturePixels(tempTex));
+                resizedTexture.Apply();
+                return resizedTexture;
+            }
+            else
+            {
+                var resizedTexture = new Texture2D(newWidth, newHeight);
+                Graphics.ConvertTexture(srcTexture, resizedTexture);
+                return resizedTexture;
+            }
         }
         public static Texture2D ConvertToPngAndSave(string path,Texture2D tex)
         {

@@ -158,10 +158,10 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                         }
                         rh.x += rh.width+10;
                         rh.width = 20;
-                        //d.isRandom = EditorGUI.Toggle(rh, "", d.isRandom);
+                        d.isRandom = EditorGUI.Toggle(rh, "", d.isRandom);
                         rh.x += rh.width;
                         rh.width = 100;
-                        // EditorGUI.LabelField(rh, "Is Random");
+                        EditorGUI.LabelField(rh, "Is Random");
                     }
                     else
                     {
@@ -174,10 +174,10 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
 
                         rh.x += rh.width+10;
                         rh.width = 20;
-                        //data.layerSettingses[(int) d.layer].isRandom = EditorGUI.Toggle(rh, "", data.layerSettingses[(int) d.layer].isRandom);
+                        data.layerSettingses[(int) d.layer].isRandom = EditorGUI.Toggle(rh, "", data.layerSettingses[(int) d.layer].isRandom);
                         rh.x += rh.width;
                         rh.width = 100;
-                        // EditorGUI.LabelField(rh, "Is Random");
+                        EditorGUI.LabelField(rh, "Is Random");
                     }
 
                     r.y += 2;
