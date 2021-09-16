@@ -29,7 +29,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         public AvatarModifyData assets;
 
         public bool useMenuTemplate;
-        public MenuTemplate menuTemplate;
+        public List<MenuTemplate> menuTemplate;
 
         public bool idleOverride = true;
         public bool materialOverride = true;
@@ -106,7 +106,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
     {
         public string name;
         public Texture2D icon;
-        public List<MenuTemplate> childs;
+        public List<MenuTemplate> childs = new List<MenuTemplate>();
         public string menuGUID;
     }
 
