@@ -151,7 +151,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                         rh.width = 20;
                         d.SetLayer( EditorGUI.Toggle(rh, "", d.isToggle));
                         rh.x += rh.width;
-                        rh.width = 140;
+                        rh.width = 120;
                         using (new EditorGUI.DisabledScope(true))
                         {
                             EditorGUI.EnumPopup(rh, (ToggleGroup)0);
@@ -169,15 +169,22 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                         rh.width = 20;
                         d.SetLayer( EditorGUI.Toggle(rh, "", d.isToggle));
                         rh.x += rh.width;
-                        rh.width = 140;
+                        rh.width = 120;
                         d.SetLayer( (LayerGroup) EditorGUI.EnumPopup(rh, d.layer));
 
                         rh.x += rh.width+10;
                         rh.width = 20;
                         data.layerSettingses[(int) d.layer].isRandom = EditorGUI.Toggle(rh, "", data.layerSettingses[(int) d.layer].isRandom);
                         rh.x += rh.width;
-                        rh.width = 100;
-                        EditorGUI.LabelField(rh, "Is Random");
+                        rh.width = 60;
+                        using (new EditorGUI.DisabledScope(d.isTaboo))
+                        {
+                            EditorGUI.LabelField(rh, d.isTaboo ? "is Taboo" : "Is Random");
+                        }
+
+                        rh.x += rh.width+5;
+                        rh.width = 20;
+                        d.isTaboo = EditorGUI.Toggle(rh, "", d.isTaboo);
                     }
 
                     r.y += 2;
@@ -1197,7 +1204,17 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                     p.AddParam(param,menuElement.isDefault,menuElement.isSaved);
                     c.CreateLayer(param);
                     c.AddParameter(param,menuElement.isDefault);
-                    c.AddDefaultState("Default",null);
+                    if (menuElement.isRandom)
+                    {
+                        c.AddDefaultState("Initialize",null);
+                        c.AddState("Default",null);
+                        c.AddTransition("Initialize","Default");
+                        c.ParameterDriver("Initialize",param,0,1,0.5f);
+                    }
+                    else
+                    {
+                        c.AddDefaultState("Default",null);
+                    }
                     var activeAnim = new AnimationClipCreator(menuElement.name+"_Active",avatar.gameObject);
                     var activateAnim = new AnimationClipCreator(menuElement.name+"_Activate",avatar.gameObject);
                     var inactiveAnim = new AnimationClipCreator(menuElement.name+"_Inactive",avatar.gameObject);
@@ -1261,10 +1278,6 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                     c.AddTransition("Inactive","InactiveIdle");
                     c.AddTransition("InactiveIdle","Activate",param,true);
                     //m.AddToggle(menuElement.name,menuElement.icon,param);
-                    if (menuElement.isRandom)
-                    {
-                        c.ParameterDriver("Default",param,0,1,0.5f);
-                    }
                     menuElement.param = param;
                     menuElement.value = 1;
                 }
@@ -1277,7 +1290,8 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                 var param = data.saveName + "_" + layer.ToString();
                 p.AddParam(param,0,data.layerSettingses[(int) layer].isSaved);
                 c.CreateLayer(param);
-                c.AddDefaultState("Default",null);
+                
+                layerMenuElements = layerMenuElements.OrderBy(e => e.isTaboo ? 100 : 0).ToList();
                 
                 var d = data.layerSettingses[(int) layer].GetDefaultElement(data.menuElements);
                 if (d==null)
@@ -1287,6 +1301,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                         name = "Default",
                         activeItems = ComputeDefaultItems(layer),
                         isToggle = false,
+                        isTaboo = true,
                         layer = layer,
                     };
                     layerMenuElements.Insert(0,menu);
@@ -1295,6 +1310,20 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                 {
                     layerMenuElements.Remove(d);
                     layerMenuElements.Insert(0,d);
+                }
+                
+                if (data.layerSettingses[(int) layer].isRandom)
+                {
+                    c.AddDefaultState("Initialize",null);
+                    c.AddState("Default",null);
+                    c.AddTransition("Initialize","Default");
+                    c.ParameterDriver("Initialize",param,
+                        layerMenuElements[0].isTaboo ? 1 : 0,
+                        layerMenuElements.Count(e=>!e.isTaboo) + (layerMenuElements[0].isTaboo ? 1 : 0) );
+                }
+                else
+                {
+                    c.AddDefaultState("Default",null);
                 }
                 
                 for (int i = 0; i < layerMenuElements.Count; i++)
@@ -1391,10 +1420,6 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                         c.AddTransition(j.ToString() + "_Idle",j.ToString() + "to" + i.ToString() + "_Transition",param,i);
                         c.AddTransition(j.ToString() + "to" + i.ToString() + "_Transition",i.ToString() + "_Active");
                     }
-                }
-                if (data.layerSettingses[(int) layer].isRandom)
-                {
-                    c.ParameterDriver("Default",param,0,layerMenuElements.Count);
                 }
             }
 

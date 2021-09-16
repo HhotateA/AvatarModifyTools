@@ -28,6 +28,9 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         public LayerSettings[] layerSettingses;
         public AvatarModifyData assets;
 
+        public bool useMenuTemplate;
+        public MenuTemplate menuTemplate;
+
         public bool idleOverride = true;
         public bool materialOverride = true;
         public bool createAnimWhenNotChangedActive = false;
@@ -99,6 +102,15 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
     }
 
     [Serializable]
+    public class MenuTemplate
+    {
+        public string name;
+        public Texture2D icon;
+        public List<MenuTemplate> childs;
+        public string menuGUID;
+    }
+
+    [Serializable]
     public class LayerSettings
     {
         public bool isSaved = true;
@@ -146,6 +158,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         public bool isSaved = true;
         public bool isDefault = false;
         public bool isRandom = false;
+        public bool isTaboo = false;
         public string param = "";
         public int value = 0;
         public string guid;
