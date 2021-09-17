@@ -15,6 +15,7 @@ using HhotateA.AvatarModifyTools.Core;
 using UnityEditor;
 using UnityEngine.Serialization;
 using System.Reflection;
+using UnityEditor.IMGUI.Controls;
 
 namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
 {
@@ -29,7 +30,30 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         public AvatarModifyData assets;
 
         public bool useMenuTemplate;
-        public List<MenuTemplate> menuTemplate;
+        public List<MenuTemplate> menuTemplate = new List<MenuTemplate>();
+
+        public List<MenuTemplate> ReloadTemplates()
+        {
+            foreach (var menuElement in menuElements)
+            {
+                var template = MenuTemplate.FIndMenuElement(menuTemplate, menuElement.guid);
+                if (template == null)
+                {
+                    menuTemplate.Add(new MenuTemplate()
+                    {
+                        icon = menuElement.icon,
+                        name = menuElement.name,
+                        menuGUID = menuElement.guid
+                    });
+                }
+                else
+                {
+                    template.icon = menuElement.icon;
+                    template.name = menuElement.name;
+                }
+            }
+            return menuTemplate;
+        }
 
         public bool idleOverride = true;
         public bool materialOverride = true;
@@ -108,6 +132,148 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         public Texture2D icon;
         public List<MenuTemplate> childs = new List<MenuTemplate>();
         public string menuGUID;
+        [SerializeField] int guid = 0;
+
+        public int GetGuid()
+        {
+            if (guid == 0)
+            {
+                guid = Guid.NewGuid().GetHashCode();
+            }
+            return guid;
+        }
+
+        public MenuTemplate FIndElement(int id, Action<MenuTemplate, MenuTemplate> onFind = null)
+        {
+            foreach (var child in childs)
+            {
+                if (child.guid == id)
+                {
+                    onFind?.Invoke(child,this);
+                    return child;
+                }
+                var e = child.FIndElement(id,onFind);
+                if (e != null)
+                {
+                    return e;
+                }
+            }
+
+            return null; 
+        }
+        public static MenuTemplate FIndElement(List<MenuTemplate> root,int id, Action<MenuTemplate, MenuTemplate> onFind = null)
+        {
+            foreach (var child in root)
+            {
+                if (child.guid == id)
+                {
+                    onFind?.Invoke(child,null);
+                    return child;
+                }
+                var e = child.FIndElement(id,onFind);
+                if (e != null)
+                {
+                    return e;
+                }
+            }
+
+            return null;
+        }
+        
+        public MenuTemplate FIndMenuElement(string id, Action<MenuTemplate, MenuTemplate> onFind = null)
+        {
+            foreach (var child in childs)
+            {
+                if (child.menuGUID == id)
+                {
+                    onFind?.Invoke(child,this);
+                    return child;
+                }
+                var e = child.FIndMenuElement(id,onFind);
+                if (e != null)
+                {
+                    return e;
+                }
+            }
+
+            return null; 
+        }
+        public static MenuTemplate FIndMenuElement(List<MenuTemplate> root,string id, Action<MenuTemplate, MenuTemplate> onFind = null)
+        {
+            foreach (var child in root)
+            {
+                if (child.menuGUID == id)
+                {
+                    onFind?.Invoke(child,null);
+                    return child;
+                }
+                var e = child.FIndMenuElement(id,onFind);
+                if (e != null)
+                {
+                    return e;
+                }
+            }
+
+            return null;
+        }
+
+        List<MenuTemplate> CreateMenuTemplate(List<MenuTemplate> menus,List<MenuElement> datas)
+        {
+            // menus.Clear();
+            foreach (var data in datas)
+            {
+                if (data.isToggle)
+                {
+                    
+                }
+            }
+            {
+                var elements = data.Where(e => e.isToggle).ToList();
+                if (elements.Count > 0)
+                {
+                    var m = new MenuTemplate()
+                    {
+                        name = "Items",
+                        icon = elements[0].icon,
+                    };
+                    foreach (var element in elements)
+                    {
+                        m.childs.Add(new MenuTemplate()
+                        {
+                            name = element.name,
+                            icon = element.icon,
+                            menuGUID = element.guid
+                        });
+                    }
+                    menus.Add(m);
+                }
+            }
+            
+            foreach (LayerGroup layer in Enum.GetValues(typeof(LayerGroup)))
+            {
+                var elements = data.Where(e => !e.isToggle && e.layer == layer).ToList();
+                if (elements.Count > 0)
+                {
+                    var m = new MenuTemplate()
+                    {
+                        name = layer.ToString(),
+                        icon = elements[0].icon,
+                    };
+                    foreach (var element in elements)
+                    {
+                        m.childs.Add(new MenuTemplate()
+                        {
+                            name = element.name,
+                            icon = element.icon,
+                            menuGUID = element.guid
+                        });
+                    }
+                    menus.Add(m);
+                }
+            }
+
+            return menus;
+        }
     }
 
     [Serializable]
@@ -174,7 +340,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
 
         public MenuElement()
         {
-            guid = Guid.NewGuid().ToString();
+            guid = System.Guid.NewGuid().ToString();
         }
 
         public string DefaultIcon()
@@ -498,48 +664,6 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
 
     public static class AssetLink
     {
-        /*public static Shader GetShaderByType(this FeedType type)
-        {
-            if (type == FeedType.Feed)
-            {
-                return AssetUtility.LoadAssetAtGuid<Shader>(EnvironmentGUIDs.feedShader);
-            }
-            if (type == FeedType.Crystallize)
-            {
-                return AssetUtility.LoadAssetAtGuid<Shader>(EnvironmentGUIDs.crystallizeShader);
-            }
-            if (type == FeedType.Dissolve)
-            {
-                return AssetUtility.LoadAssetAtGuid<Shader>(EnvironmentGUIDs.disolveShader);
-            }
-            if (type == FeedType.Draw)
-            {
-                return AssetUtility.LoadAssetAtGuid<Shader>(EnvironmentGUIDs.drawShader);
-            }
-            if (type == FeedType.Explosion)
-            {
-                return AssetUtility.LoadAssetAtGuid<Shader>(EnvironmentGUIDs.explosionShader);
-            }
-            if (type == FeedType.Geom)
-            {
-                return AssetUtility.LoadAssetAtGuid<Shader>(EnvironmentGUIDs.geomShader);
-            }
-            if (type == FeedType.Mosaic)
-            {
-                return AssetUtility.LoadAssetAtGuid<Shader>(EnvironmentGUIDs.mosaicShader);
-            }
-            if (type == FeedType.Polygon)
-            {
-                return AssetUtility.LoadAssetAtGuid<Shader>(EnvironmentGUIDs.polygonShader);
-            }
-            if (type == FeedType.Bounce)
-            {
-                return AssetUtility.LoadAssetAtGuid<Shader>(EnvironmentGUIDs.scaleShader);
-            }
-
-            return null;
-        }*/
-        
         public static Material GetMaterialByType(this FeedType type)
         {
             if (type == FeedType.Fade)
@@ -678,5 +802,187 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
     public enum ToggleGroup
     {
         IsToggle,
+    }
+
+    public class MenuTemplateTreeView : TreeView
+    {
+        private MagicalDresserInventorySaveData data;
+        public event Action<MenuElement> OnSelect;
+        public MenuTemplateTreeView(TreeViewState state) : base(state)
+        {
+            showAlternatingRowBackgrounds = true;
+        }
+
+        public MenuTemplateTreeView(TreeViewState state, MultiColumnHeader multiColumnHeader) : base(state, multiColumnHeader)
+        {
+            showAlternatingRowBackgrounds = true;
+        }
+        
+        protected override void RowGUI (RowGUIArgs args)
+        {
+            base.RowGUI(args);
+        }
+        
+        protected override void SelectionChanged (IList<int> selectedIds)
+        {
+            if (selectedIds.Count > 0)
+            {
+                var template = MenuTemplate.FIndElement(data.menuTemplate, selectedIds[0]);
+                var menu = data.menuElements.FirstOrDefault(e => e.guid == template.menuGUID);
+                OnSelect?.Invoke(menu);
+            }
+        }
+
+        public MenuTemplate GetSelectTemplate()
+        {
+            var selectedIds = GetSelection();
+            if (selectedIds.Count > 0)
+            {
+                var template = MenuTemplate.FIndElement(data.menuTemplate, selectedIds[0]);
+                return template;
+            }
+
+            return null;
+        }
+
+        protected override TreeViewItem BuildRoot()
+        {
+            var root = new MenuTemplateTreeViewItem { id = 0, depth = -1, displayName = "Root" };
+            foreach (var menu in data.menuTemplate)
+            {
+                root.AddChild(GetTreeElement(menu));
+            }
+            return root;
+        }
+
+        protected override bool CanStartDrag(TreeView.CanStartDragArgs args)
+        {
+            return true;
+        }
+
+        protected override void SetupDragAndDrop(SetupDragAndDropArgs args)
+        {
+            DragAndDrop.PrepareStartDrag();
+            DragAndDrop.paths = null;
+            DragAndDrop.objectReferences = new UnityEngine.Object[] {};
+            DragAndDrop.SetGenericData("MenuTemplateTreeViewItem", new List<int>(args.draggedItemIDs));
+            DragAndDrop.visualMode = DragAndDropVisualMode.Copy;
+            DragAndDrop.StartDrag("MenuTemplateTreeView");
+        }
+        protected override DragAndDropVisualMode HandleDragAndDrop(DragAndDropArgs args)
+        {
+            DragAndDropVisualMode visualMode = DragAndDropVisualMode.None;
+
+            var draggedIDs = DragAndDrop.GetGenericData("MenuTemplateTreeViewItem") as List<int>;
+            if (draggedIDs != null && draggedIDs.Count > 0)
+            {
+                visualMode = DragAndDropVisualMode.Move;
+                if (args.performDrop)
+                {
+                    foreach (var draggedID in draggedIDs)
+                    {
+                        var parent = MenuTemplate.FIndElement(data.menuTemplate, args.parentItem.id);
+                        // メニューの子にメニューを入れない
+                        if (String.IsNullOrWhiteSpace(parent.menuGUID))
+                        {
+                            var element = MenuTemplate.FIndElement(data.menuTemplate, draggedID, (e, p) =>
+                            {
+                                if (p == null)
+                                {
+                                    data.menuTemplate.Remove(e);
+                                }
+                                else
+                                {
+                                    p.childs.Remove(e);
+                                }
+                            });
+                            if (element != null)
+                            {
+                                int id = args.insertAtIndex;
+                                if (parent == null)
+                                {
+                                    if (id < 0 || id > data.menuTemplate.Count)
+                                    {
+                                        data.menuTemplate.Add(element);
+                                    }
+                                    else
+                                    {
+                                        data.menuTemplate.Insert(id,element);
+                                    }
+                                }
+                                else
+                                {
+                                    if (id < 0 || id > parent.childs.Count)
+                                    {
+                                        parent.childs.Add(element);
+                                    }
+                                    else
+                                    {
+                                        parent.childs.Insert(id,element);
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    data.ReloadTemplates();
+                    ReloadTemplates();
+                }
+            }
+            return visualMode;
+        }
+        
+        protected override bool CanRename(TreeViewItem item)
+        {
+            return item.displayName.Length <= 10;
+        }
+        
+        protected override void RenameEnded(RenameEndedArgs args)
+        {
+            if (args.acceptedRename)
+            {
+                var template = MenuTemplate.FIndElement(data.menuTemplate, args.itemID);
+                if (template != null)
+                {
+                    template.name = args.newName;
+                    if (!String.IsNullOrWhiteSpace(template.menuGUID))
+                    {
+                        var menu = data.menuElements.FirstOrDefault(e => e.guid == template.menuGUID);
+                        if (menu != null)
+                        {
+                            menu.name = args.newName;
+                        }
+                    }
+                }
+                ReloadTemplates();
+            }
+        }
+
+        public void Setup(MagicalDresserInventorySaveData d)
+        {
+            data = d;
+            ReloadTemplates();
+        }
+
+        public void ReloadTemplates()
+        {
+            data.ReloadTemplates();
+            Reload();
+        }
+
+        MenuTemplateTreeViewItem GetTreeElement(MenuTemplate template,int depth = 0)
+        {
+            var root = new MenuTemplateTreeViewItem { id = template.GetGuid(), depth = depth, displayName = template.name, icon = template.icon};
+            foreach (var menu in template.childs)
+            {
+                root.AddChild(GetTreeElement(menu,depth+1));
+            }
+            return root;
+        }
+
+        class MenuTemplateTreeViewItem : TreeViewItem
+        {
+            
+        }
     }
 }
