@@ -94,8 +94,8 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         {
             var wnd = GetWindow<MagicalDresserInventorySetup>();
             wnd.titleContent = new GUIContent("マジックドレッサーインベントリ(MDInventorySystem)");
-            wnd.minSize = new Vector2(825, 500);
-            wnd.maxSize = new Vector2(825,2000);
+            wnd.minSize = new Vector2(850, 500);
+            wnd.maxSize = new Vector2(850,2000);
 
             if (saveddata == null)
             {
@@ -122,7 +122,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
 
         void LoadReorderableList()
         {
-            menuReorderableList = new ReorderableList(menuElements, typeof(MenuElement))
+            menuReorderableList = new ReorderableList(menuElements, typeof(MenuElement), true, true, false,false)
             {
                 drawHeaderCallback = r =>
                 {
@@ -375,21 +375,22 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
 
                                 scrollLeft = EditorGUILayout.BeginScrollView(scrollLeft, false, false, GUIStyle.none, GUI.skin.verticalScrollbar, GUI.skin.scrollView);
                                 var treeRect = EditorGUILayout.GetControlRect(false, position.height-280);
+                                treeRect.width = 375;
                                 menuTreeView.OnGUI(treeRect);
                                 EditorGUILayout.EndScrollView();
                                 using (new EditorGUILayout.HorizontalScope())
                                 {
-                                    if(GUILayout.Button("Reset"))
+                                    if(GUILayout.Button("Reset",GUILayout.Width(75)))
                                     {
                                         ResetTemplate();
                                     }
-                                    EditorGUILayout.LabelField("",GUILayout.ExpandWidth(true));
-                                    if(GUILayout.Button("New Folder"))
+                                    EditorGUILayout.LabelField("",GUILayout.Width(100));
+                                    if(GUILayout.Button("New Folder",GUILayout.Width(75)))
                                     {
                                         AddFolder();
                                     }
                                     EditorGUILayout.LabelField("  ",GUILayout.Width(10));
-                                    if(GUILayout.Button("-"))
+                                    if(GUILayout.Button("-",GUILayout.Width(30)))
                                     {
                                         var selectFolders = menuTreeView.GetSelectTemplates();
                                         // foreach (var selectFolder in selectFolders)
@@ -426,18 +427,40 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                                         menuTreeView.ReloadTemplates();
                                     }
                                     EditorGUILayout.LabelField("  ",GUILayout.Width(2));
-                                    if(GUILayout.Button("+"))
+                                    if(GUILayout.Button("+",GUILayout.Width(30)))
                                     {
                                         AddMenu();
                                     }
                                 }
                                 EditorGUILayout.Space();
+                                EditorGUILayout.LabelField(" ",GUILayout.ExpandHeight(true));
                             }
                             else
                             {
-                                scrollLeft = EditorGUILayout.BeginScrollView(scrollLeft, false, false, GUIStyle.none, GUI.skin.verticalScrollbar, GUI.skin.scrollView);
+                                scrollLeft = EditorGUILayout.BeginScrollView(scrollLeft, false, false, GUIStyle.none, GUI.skin.verticalScrollbar, GUI.skin.scrollView,GUILayout.Width(375),GUILayout.ExpandHeight(false));
                                 menuReorderableList.DoLayoutList();
                                 EditorGUILayout.EndScrollView();
+                                using (new EditorGUILayout.HorizontalScope())
+                                {
+                                    EditorGUILayout.LabelField("  ",GUILayout.Width(275));
+                                    using (new EditorGUI.DisabledScope(0 > menuReorderableList.index ||
+                                                                       menuReorderableList.index >= menuElements.Count))
+                                    {
+                                        if(GUILayout.Button("-",GUILayout.Width(30)))
+                                        {
+                                            if(0 <= menuReorderableList.index && menuReorderableList.index < menuElements.Count)
+                                            {
+                                                menuElements.RemoveAt(menuReorderableList.index);
+                                            }
+                                        }
+                                    }
+                                    EditorGUILayout.LabelField("  ",GUILayout.Width(5));
+                                    if(GUILayout.Button("+",GUILayout.Width(30)))
+                                    {
+                                        AddMenu();
+                                    }
+                                }
+                                EditorGUILayout.Space();
                             }
                             if (check.changed)
                             {
