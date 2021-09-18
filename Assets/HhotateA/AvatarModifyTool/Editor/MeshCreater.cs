@@ -220,6 +220,9 @@ namespace HhotateA.AvatarModifyTools.Core
             {
                 Mesh b = Mesh.Instantiate(rend.sharedMesh);
                 // rend.BakeMesh(b,true); //unity2020にしてほしい
+                rend.transform.localPosition = Vector3.zero;
+                rend.transform.localScale = Vector3.one;
+                rend.transform.localRotation = Quaternion.identity;
                 rend.BakeMesh(b);
                 TransformMesh(b,0,rend.transform);
             }
