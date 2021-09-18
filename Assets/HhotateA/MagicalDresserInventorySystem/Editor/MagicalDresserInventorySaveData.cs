@@ -34,25 +34,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
 
         public List<MenuTemplate> ReloadTemplates()
         {
-            foreach (var menuElement in menuElements)
-            {
-                var template = MenuTemplate.FIndMenuElement(menuTemplate, menuElement.guid);
-                if (template == null)
-                {
-                    menuTemplate.Add(new MenuTemplate()
-                    {
-                        icon = menuElement.icon,
-                        name = menuElement.name,
-                        menuGUID = menuElement.guid
-                    });
-                }
-                else
-                {
-                    template.icon = menuElement.icon;
-                    template.name = menuElement.name;
-                }
-            }
-            return menuTemplate;
+            return MenuTemplate.ReloadTemplates(menuTemplate, menuElements);
         }
 
         public bool idleOverride = true;
@@ -132,6 +114,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         public Texture2D icon;
         public List<MenuTemplate> childs = new List<MenuTemplate>();
         public string menuGUID;
+        public bool autoCreate = true;
         [SerializeField] int guid = 0;
 
         public int GetGuid()
@@ -145,6 +128,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
 
         public MenuTemplate FIndElement(int id, Action<MenuTemplate, MenuTemplate> onFind = null)
         {
+            childs = childs.Distinct().ToList();
             foreach (var child in childs)
             {
                 if (child.guid == id)
@@ -180,8 +164,9 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             return null;
         }
         
-        public MenuTemplate FIndMenuElement(string id, Action<MenuTemplate, MenuTemplate> onFind = null)
+        public MenuTemplate FindMenuElement(string id, Action<MenuTemplate, MenuTemplate> onFind = null)
         {
+            childs = childs.Distinct().ToList();
             foreach (var child in childs)
             {
                 if (child.menuGUID == id)
@@ -189,7 +174,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                     onFind?.Invoke(child,this);
                     return child;
                 }
-                var e = child.FIndMenuElement(id,onFind);
+                var e = child.FindMenuElement(id,onFind);
                 if (e != null)
                 {
                     return e;
@@ -198,7 +183,8 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
 
             return null; 
         }
-        public static MenuTemplate FIndMenuElement(List<MenuTemplate> root,string id, Action<MenuTemplate, MenuTemplate> onFind = null)
+        
+        public static MenuTemplate FindMenuElement(List<MenuTemplate> root,string id, Action<MenuTemplate, MenuTemplate> onFind = null)
         {
             foreach (var child in root)
             {
@@ -207,7 +193,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                     onFind?.Invoke(child,null);
                     return child;
                 }
-                var e = child.FIndMenuElement(id,onFind);
+                var e = child.FindMenuElement(id,onFind);
                 if (e != null)
                 {
                     return e;
@@ -217,61 +203,173 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             return null;
         }
 
-        List<MenuTemplate> CreateMenuTemplate(List<MenuTemplate> menus,List<MenuElement> datas)
+        public void DeleateOverlapElement(MenuTemplate origin)
         {
-            // menus.Clear();
-            foreach (var data in datas)
+            childs = childs.Distinct().ToList();
+            for (int i = 0; i < childs.Count; i ++ )
             {
-                if (data.isToggle)
+                if(String.IsNullOrWhiteSpace(childs[i].menuGUID)) continue;
+                if (childs[i].menuGUID == origin.menuGUID && childs[i] != origin)
                 {
-                    
+                    childs.Remove(childs[i]);
+                    i--;
+                    continue;
+                }
+                else
+                {
+                    childs[i].DeleateOverlapElement(origin);
                 }
             }
+        }
+
+        public void DeleateNullMenuElement(List<MenuElement> datas)
+        {
+            childs = childs.Distinct().ToList();
+            for (int i = 0; i < childs.Count; i ++ )
             {
-                var elements = data.Where(e => e.isToggle).ToList();
-                if (elements.Count > 0)
+                if (String.IsNullOrWhiteSpace(childs[i].menuGUID))
                 {
-                    var m = new MenuTemplate()
+                    childs[i].DeleateNullMenuElement(datas);
+                }
+                else
+                {
+                    var menu = datas.FirstOrDefault(e => e.guid == childs[i].menuGUID);
+                    if (menu == null)
                     {
-                        name = "Items",
-                        icon = elements[0].icon,
-                    };
-                    foreach (var element in elements)
-                    {
-                        m.childs.Add(new MenuTemplate()
-                        {
-                            name = element.name,
-                            icon = element.icon,
-                            menuGUID = element.guid
-                        });
+                        childs.Remove(childs[i]);
+                        i--;
+                        continue;
                     }
-                    menus.Add(m);
+                    else
+                    {
+                        childs[i].icon = menu.icon;
+                        childs[i].name = menu.name;
+                        childs[i].DeleateNullMenuElement(datas);
+                    }
+                    // メニューは子を持たないので初期化
+                    childs[i].childs = new List<MenuTemplate>();
+                }
+            }
+        }
+        
+        public void DeleateAutoCreate()
+        { 
+            childs = childs.Distinct().ToList();
+            for (int i = 0; i < childs.Count; i ++ )
+            {
+                if (!String.IsNullOrWhiteSpace(childs[i].menuGUID) && childs[i].autoCreate)
+                {
+                    childs.Remove(childs[i]);
+                    i--;
+                    continue;
+                }
+                else
+                if (childs[i].childs.Count == 0 && childs[i].autoCreate)
+                {
+                    childs.Remove(childs[i]);
+                    i--;
+                    continue;
+                }
+                else
+                {
+                    childs[i].DeleateAutoCreate();
+                }
+            }
+        }
+
+        public void RecursionAutoCreateFalse()
+        {
+            autoCreate = false;
+            foreach (var child in childs)
+            {
+                child.RecursionAutoCreateFalse();
+            }
+        }
+
+        public static List<MenuTemplate> ReloadTemplates(List<MenuTemplate> menus,List<MenuElement> datas)
+        {
+            // メニュー参照切れ項目の削除
+            foreach (var menu in menus)
+            {
+                menu.DeleateNullMenuElement(datas);
+            }
+            
+            foreach (var data in datas)
+            {
+                var current = MenuTemplate.FindMenuElement(menus, data.guid);
+                if (current == null)
+                {
+                    current = new MenuTemplate()
+                    {
+                        name = data.name,
+                        icon = data.icon,
+                        menuGUID = data.guid,
+                        autoCreate = true,
+                    };
+                }
+                else
+                {
+                    MenuTemplate.FindMenuElement(menus, data.guid, (e, p) =>
+                    {
+                        if (e.autoCreate)
+                        {
+                            p.childs.Remove(e);
+                        }
+                    });
+                }
+                
+                if (current.autoCreate)
+                {
+                    var root = data.isToggle ? 
+                        menus.FirstOrDefault(e => e.name == "Items" && e.autoCreate) :
+                        menus.FirstOrDefault(e => e.name == data.layer.ToString() && e.autoCreate);
+                    if (root == null)
+                    {
+                        if (data.isToggle)
+                        {
+                            root = new MenuTemplate()
+                            {
+                                name = "Items",
+                                icon = data.icon,
+                                autoCreate = true,
+                            }; 
+                        }
+                        else
+                        {
+                            root = new MenuTemplate()
+                            {
+                                name = data.layer.ToString(),
+                                icon = data.icon,
+                                autoCreate = true,
+                            };
+                        }
+                        menus.Add(root);
+                    }
+                    root.childs.Add(current);
                 }
             }
             
-            foreach (LayerGroup layer in Enum.GetValues(typeof(LayerGroup)))
+            // root直下の処理
+            for (int i = 0; i < menus.Count; i ++ )
             {
-                var elements = data.Where(e => !e.isToggle && e.layer == layer).ToList();
-                if (elements.Count > 0)
+                if (String.IsNullOrWhiteSpace(menus[i].menuGUID) && menus[i].childs.Count == 0 && menus[i].autoCreate)
                 {
-                    var m = new MenuTemplate()
+                    menus.Remove(menus[i]);
+                    i--;
+                    continue;
+                }
+
+                if (!String.IsNullOrWhiteSpace(menus[i].menuGUID))
+                {
+                    var menu = datas.FirstOrDefault(e => e.guid == menus[i].menuGUID);
+                    if (menu == null)
                     {
-                        name = layer.ToString(),
-                        icon = elements[0].icon,
-                    };
-                    foreach (var element in elements)
-                    {
-                        m.childs.Add(new MenuTemplate()
-                        {
-                            name = element.name,
-                            icon = element.icon,
-                            menuGUID = element.guid
-                        });
+                        menus.Remove(menus[i]);
+                        i--;
+                        continue;
                     }
-                    menus.Add(m);
                 }
             }
-
             return menus;
         }
     }
@@ -820,7 +918,37 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         
         protected override void RowGUI (RowGUIArgs args)
         {
-            base.RowGUI(args);
+            var isFolder = args.item == null ? true : args.item?.id == 0 ?
+                true : String.IsNullOrWhiteSpace(MenuTemplate.FIndElement(data.menuTemplate, args.item.id)?.menuGUID ?? "");
+            
+            Rect rect = args.rowRect;
+            rect.x += GetContentIndent(args.item);
+            
+            GUIStyle textStyle = new GUIStyle(GUI.skin.label);
+            // textStyle.alignment = TextAnchor.MiddleCenter;
+            // textStyle.fontSize = fontSize;
+            // if ((args.item as MenuTemplateTreeViewItem).isFolder)
+            if(isFolder)
+            {
+                textStyle.fontStyle = FontStyle.Bold;
+                /*textStyle.active = new GUIStyleState()
+                {
+                    textColor = Color.gray
+                };*/
+            }
+            else
+            {
+                textStyle.fontStyle = FontStyle.Italic;
+                /*textStyle.active = new GUIStyleState()
+                {
+                    textColor = Color.red
+                };*/
+            }
+            
+            EditorGUI.LabelField(rect,args.item.displayName,textStyle);
+            //toggleRect.width                = 16f;
+            //GUI.DrawTexture(toggleRect, texture);
+            //base.RowGUI(args);
         }
         
         protected override void SelectionChanged (IList<int> selectedIds)
@@ -832,32 +960,50 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                 OnSelect?.Invoke(menu);
             }
         }
-
-        public MenuTemplate GetSelectTemplate()
+        
+        public List<MenuTemplate> GetSelectTemplates()
         {
+            var templates = new List<MenuTemplate>();
             var selectedIds = GetSelection();
             if (selectedIds.Count > 0)
             {
                 var template = MenuTemplate.FIndElement(data.menuTemplate, selectedIds[0]);
-                return template;
+                if (template != null)
+                {
+                    templates.Add(template);
+                }
             }
 
-            return null;
+            return templates;
         }
 
         protected override TreeViewItem BuildRoot()
         {
-            var root = new MenuTemplateTreeViewItem { id = 0, depth = -1, displayName = "Root" };
-            foreach (var menu in data.menuTemplate)
+            var root = MenuTemplateTreeViewItem.CreateFolder(0,-1,"Root");
+            if (data.menuTemplate.Count == 0)
             {
-                root.AddChild(GetTreeElement(menu));
+                root.AddChild(MenuTemplateTreeViewItem.CreateMenu(1,0,"Null"));
+            }
+            else
+            {
+                foreach (var menu in data.menuTemplate)
+                {
+                    root.AddChild(GetTreeElement(menu));
+                }
             }
             return root;
         }
 
         protected override bool CanStartDrag(TreeView.CanStartDragArgs args)
         {
-            return true;
+            if (data.menuTemplate.Count == 0)
+            {
+                return false;
+            }
+            else
+            {
+                return true;
+            }
         }
 
         protected override void SetupDragAndDrop(SetupDragAndDropArgs args)
@@ -881,51 +1027,56 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                 {
                     foreach (var draggedID in draggedIDs)
                     {
-                        var parent = MenuTemplate.FIndElement(data.menuTemplate, args.parentItem.id);
+                        var parent = args.parentItem == null ? null : args.parentItem?.id == 0 ?
+                                null :
+                                MenuTemplate.FIndElement(data.menuTemplate, args.parentItem.id);
                         // メニューの子にメニューを入れない
-                        if (String.IsNullOrWhiteSpace(parent.menuGUID))
+                        if (parent != null)
+                            if (!String.IsNullOrWhiteSpace(parent.menuGUID))
+                                continue;
+                        
+                        var element = MenuTemplate.FIndElement(data.menuTemplate, draggedID, (e, p) =>
                         {
-                            var element = MenuTemplate.FIndElement(data.menuTemplate, draggedID, (e, p) =>
+                            e.RecursionAutoCreateFalse();
+                            if (p == null)
                             {
-                                if (p == null)
+                                data.menuTemplate.Remove(e);
+                            }
+                            else
+                            {
+                                p.childs.Remove(e);
+                            }
+                            //args.parentItem.children.Remove(args.parentItem.children.FirstOrDefault(c => c.id == draggedID));
+                        });
+                        
+                        if (element != null)
+                        {
+                            int id = args.insertAtIndex;
+                            if (parent == null)
+                            {
+                                if (id < 0 || id > data.menuTemplate.Count)
                                 {
-                                    data.menuTemplate.Remove(e);
+                                    data.menuTemplate.Add(element);
                                 }
                                 else
                                 {
-                                    p.childs.Remove(e);
+                                    data.menuTemplate.Insert(id,element);
                                 }
-                            });
-                            if (element != null)
+                            }
+                            else
                             {
-                                int id = args.insertAtIndex;
-                                if (parent == null)
+                                if (id < 0 || id > parent.childs.Count)
                                 {
-                                    if (id < 0 || id > data.menuTemplate.Count)
-                                    {
-                                        data.menuTemplate.Add(element);
-                                    }
-                                    else
-                                    {
-                                        data.menuTemplate.Insert(id,element);
-                                    }
+                                    parent.childs.Add(element);
                                 }
                                 else
                                 {
-                                    if (id < 0 || id > parent.childs.Count)
-                                    {
-                                        parent.childs.Add(element);
-                                    }
-                                    else
-                                    {
-                                        parent.childs.Insert(id,element);
-                                    }
+                                    parent.childs.Insert(id,element);
                                 }
                             }
                         }
                     }
 
-                    data.ReloadTemplates();
                     ReloadTemplates();
                 }
             }
@@ -967,22 +1118,95 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         public void ReloadTemplates()
         {
             data.ReloadTemplates();
+            ReloadItemIcons(rootItem);
             Reload();
+        }
+
+        public void ReloadItemIcons(TreeViewItem parent)
+        {
+            if(parent==null) return;
+            if(parent.children==null) return;
+            foreach (var item in parent.children)
+            {
+                if (item.id != 1)
+                {
+                    var template = MenuTemplate.FIndElement(data.menuTemplate, item.id);
+                    if (template == null)
+                    {
+                        // parent.children.Remove(item);
+                    }
+                    else
+                    {
+                        if (String.IsNullOrWhiteSpace(template.menuGUID))
+                        {
+                            item.displayName = template.name;
+                            item.icon = template.icon;
+                            ReloadItemIcons(item);
+                        }
+                        else
+                        {
+                            var menu = data.menuElements.FirstOrDefault(e => e.guid == template.menuGUID);
+                            if (menu == null)
+                            {
+                                // parent.children.Remove(item);
+                            }
+                            else
+                            {
+                                item.displayName = menu.name;
+                                item.icon = menu.icon;
+                            }
+                        }
+                    }
+                }
+                
+            }
         }
 
         MenuTemplateTreeViewItem GetTreeElement(MenuTemplate template,int depth = 0)
         {
-            var root = new MenuTemplateTreeViewItem { id = template.GetGuid(), depth = depth, displayName = template.name, icon = template.icon};
-            foreach (var menu in template.childs)
+            if (template.childs.Count == 0)
             {
-                root.AddChild(GetTreeElement(menu,depth+1));
+                var root = MenuTemplateTreeViewItem.CreateMenu(template.GetGuid(),depth,template.name,template.icon);
+                return root;
             }
-            return root;
+            else
+            {
+                var root = MenuTemplateTreeViewItem.CreateFolder(template.GetGuid(),depth,template.name,template.icon);
+                foreach (var menu in template.childs)
+                {
+                    root.AddChild(GetTreeElement(menu,depth+1));
+                }
+                return root;
+            }
         }
 
         class MenuTemplateTreeViewItem : TreeViewItem
         {
-            
+            public bool isFolder = true;
+
+            public static MenuTemplateTreeViewItem CreateFolder(int id, int depth, string name, Texture2D icon = null)
+            {
+                return new MenuTemplateTreeViewItem()
+                {
+                    id = id,
+                    depth = depth,
+                    displayName = name,
+                    icon = icon,
+                    isFolder = true
+                };
+            }
+            public static MenuTemplateTreeViewItem CreateMenu(int id, int depth, string name, Texture2D icon = null)
+            {
+                return new MenuTemplateTreeViewItem()
+                {
+                    id = id,
+                    depth = depth,
+                    displayName = name,
+                    icon = icon,
+                    isFolder = false
+                };
+            }
+
         }
     }
 }

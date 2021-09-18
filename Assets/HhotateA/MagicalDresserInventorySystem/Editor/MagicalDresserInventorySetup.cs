@@ -37,7 +37,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         private SerializedProperty prop;
         ReorderableList menuReorderableList;
         
-        MenuTemplateTreeView menuTemplateReorderableList;
+        MenuTemplateTreeView menuTreeView;
 
         private bool displayItemMode = true;
         private bool displaySyncTransition = false;
@@ -137,9 +137,9 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                     scrollRight = Vector2.zero;
                 }
             };
-            menuTemplateReorderableList = new MenuTemplateTreeView(new TreeViewState ());
-            menuTemplateReorderableList.Setup(data);
-            menuTemplateReorderableList.OnSelect += (m) =>
+            menuTreeView = new MenuTemplateTreeView(new TreeViewState ());
+            menuTreeView.Setup(data);
+            menuTreeView.OnSelect += (m) =>
             {
                 menuReorderableList.index = data.menuElements.FindIndex(e=>e==m);
                 SetObjectActiveForScene(m);
@@ -149,7 +149,13 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
 
         void DrawMenuElement(Rect r, int i)
         {
+            if (0 > i || menuElements.Count <= i)
+            {
+                EditorGUI.LabelField(r,"Null" + i);
+                return;
+            }
             var d = menuElements[i];
+            if(d == null) return;
             {
                 var rh = r;
                 rh.width = rh.height;
@@ -359,18 +365,73 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                                     }
                                     else
                                     {
-                                        var selectFolder = menuTemplateReorderableList.GetSelectTemplate();
-                                        if (selectFolder != null)
+                                        var selectFolders = menuTreeView.GetSelectTemplates();
+                                        if (selectFolders.Count > 0)
                                         {
-                                            DrawFolderElement(menuelementRect, selectFolder);
+                                            DrawFolderElement(menuelementRect, selectFolders[0]);
                                         }
                                     }
                                 }
 
                                 scrollLeft = EditorGUILayout.BeginScrollView(scrollLeft, false, false, GUIStyle.none, GUI.skin.verticalScrollbar, GUI.skin.scrollView);
-                                var treeRect = EditorGUILayout.GetControlRect(false, position.height-300);
-                                menuTemplateReorderableList.OnGUI(treeRect);
+                                var treeRect = EditorGUILayout.GetControlRect(false, position.height-280);
+                                menuTreeView.OnGUI(treeRect);
                                 EditorGUILayout.EndScrollView();
+                                using (new EditorGUILayout.HorizontalScope())
+                                {
+                                    if(GUILayout.Button("Reset"))
+                                    {
+                                        ResetTemplate();
+                                    }
+                                    EditorGUILayout.LabelField("",GUILayout.ExpandWidth(true));
+                                    if(GUILayout.Button("New Folder"))
+                                    {
+                                        AddFolder();
+                                    }
+                                    EditorGUILayout.LabelField("  ",GUILayout.Width(10));
+                                    if(GUILayout.Button("-"))
+                                    {
+                                        var selectFolders = menuTreeView.GetSelectTemplates();
+                                        // foreach (var selectFolder in selectFolders)
+                                        {
+                                            var selectFolder = selectFolders[0];
+                                            if (String.IsNullOrWhiteSpace(selectFolder.menuGUID))
+                                            {
+                                                MenuTemplate.FIndElement(data.menuTemplate, selectFolder.GetGuid(),
+                                                    (e, p) =>
+                                                    {
+                                                        if (p == null)
+                                                        {
+                                                            if (data.menuTemplate.Contains(e))
+                                                            {
+                                                                data.menuTemplate.Remove(e);
+                                                            }
+                                                        }
+                                                        else
+                                                        {
+                                                            p.childs.Remove(e);
+                                                        }
+                                                    });
+                                            }
+                                            else
+                                            {
+                                                var menu = menuElements.FirstOrDefault(e =>
+                                                    e.guid == selectFolder.menuGUID);
+                                                if (menu != null)
+                                                {
+                                                    menuElements.Remove(menu);
+                                                }
+                                            }
+                                        }
+                                        menuTreeView.ReloadTemplates();
+                                    }
+                                    EditorGUILayout.LabelField("  ",GUILayout.Width(2));
+                                    if(GUILayout.Button("+"))
+                                    {
+                                        AddMenu();
+                                    }
+                                }
+                                EditorGUILayout.Space();
                             }
                             else
                             {
@@ -385,7 +446,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                                     SetObjectActiveForScene(menuElements[menuReorderableList.index]);
                                 }
 
-                                menuTemplateReorderableList.ReloadTemplates();
+                                menuTreeView.ReloadTemplates();
                             }
                         }
                     }
@@ -1550,8 +1611,8 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             MenuCreater m = new MenuCreater(fileName);
             if (data.useMenuTemplate)
             {
-                // 現状はテンプレートを自動生成
-                data.menuTemplate = CreateMenuTemplate();
+                // テンプレートの整合性チェック
+                data.ReloadTemplates();
                 foreach (var menu in data.menuTemplate)
                 {
                     if (String.IsNullOrWhiteSpace(menu.menuGUID))
@@ -2493,6 +2554,21 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                 name = "Menu" + menuElements.Count,
                 icon = AssetUtility.LoadAssetAtGuid<Texture2D>(EnvironmentGUIDs.itemIcon)
             });
+        }
+        
+        void AddFolder()
+        {
+            data.menuTemplate.Add(new MenuTemplate()
+            {
+                name = "Folder",
+                icon = AssetUtility.LoadAssetAtGuid<Texture2D>(EnvironmentGUIDs.itemboxIcon),
+                autoCreate = false
+            });
+        }
+        
+        void ResetTemplate()
+        {
+            data.menuTemplate = new List<MenuTemplate>();
         }
 
         List<string> FindConflict()
