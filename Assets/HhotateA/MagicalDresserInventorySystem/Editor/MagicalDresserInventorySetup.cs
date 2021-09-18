@@ -294,6 +294,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             EditorGUILayout.Space();
             AvatartField("",()=>
             {
+                RevertObjectActiveForScene();
                 data.ApplyRoot(avatar.gameObject);
                 data.SaveGUID(avatar.gameObject);
                 LoadReorderableList();
@@ -531,32 +532,45 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                                     {
                                         using (var check = new EditorGUI.ChangeCheckScope())
                                         {
+                                            foreach (var item in menuElements[index].UnSafeActiveItems())
+                                            {
+                                                ItemElementDisplay(item, false, true, false, false, false, menuElements[index],
+                                                    (o) =>
+                                                    {
+                                                        data.RepairReference(item.path, o, avatar.gameObject);
+                                                    }, () =>
+                                                    {
+                                                        menuElements[index].activeItems.Remove(item);
+                                                    });
+                                            }
+                                            
                                             foreach (var item in menuElements[index].SafeActiveItems())
                                             {
-                                                ItemElementDisplay(item, true, true, true, true, true, menuElements[index]);
-
-                                                if (!item.obj)
-                                                {
-                                                    menuElements[index].activeItems.Remove(item);
-                                                    return;
-                                                }
+                                                ItemElementDisplay(item, true, true, true, true, true, menuElements[index],
+                                                    (o) =>
+                                                    {
+                                                        // item.obj = o;
+                                                    }, () =>
+                                                    {
+                                                        menuElements[index].activeItems.Remove(item);
+                                                    });
                                             }
 
                                             if (!menuElements[index].isToggle)
                                             {
                                                 foreach (var item in ComputeLayerAnotherItems(menuElements[index]))
                                                 {
-                                                    using (var add = new EditorGUI.ChangeCheckScope())
-                                                    {
-                                                        ItemElementDisplay(item, true, false, true, true, true, menuElements[index]);
-
-                                                        if (add.changed)
+                                                    ItemElementDisplay(item, true, false, true, true, true, menuElements[index],
+                                                        (o) =>
+                                                        {
+                                                            // item.obj = o;
+                                                        }, () =>
+                                                        {
+                                                            menuElements[index].activeItems.Remove(item);
+                                                        }, () =>
                                                         {
                                                             menuElements[index].activeItems.Add(item);
-                                                            SetObjectActiveForScene(menuElements[index]);
-                                                            return;
-                                                        }
-                                                    }
+                                                        });
                                                 }
                                             }
 
@@ -571,28 +585,45 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                                     {
                                         using (var check = new EditorGUI.ChangeCheckScope())
                                         {
+                                            foreach (var item in menuElements[index].UnSafeInactiveItems())
+                                            {
+                                                ItemElementDisplay(item, false, true, false, false, false, menuElements[index],
+                                                    (o) =>
+                                                    {
+                                                        data.RepairReference(item.path, o, avatar.gameObject);
+                                                    }, () =>
+                                                    {
+                                                        menuElements[index].inactiveItems.Remove(item);
+                                                    });
+                                            }
+                                            
                                             foreach (var item in menuElements[index].SafeInactiveItems())
                                             {
-                                                ItemElementDisplay(item, true, true, true, true, true, menuElements[index]);
-
-                                                if (!item.obj)
-                                                {
-                                                    menuElements[index].inactiveItems.Remove(item);
-                                                    return;
-                                                }
+                                                ItemElementDisplay(item, true, true, true, true, true, menuElements[index],
+                                                    (o) =>
+                                                    {
+                                                        // item.obj = o;
+                                                    }, () =>
+                                                    {
+                                                        menuElements[index].inactiveItems.Remove(item);
+                                                    });
                                             }
 
                                             foreach (var item in ComputeLayerInactiveItems(menuElements[index]))
                                             {
                                                 using (var add = new EditorGUI.ChangeCheckScope())
                                                 {
-                                                    ItemElementDisplay(item, false, false, true, true, false, menuElements[index]);
-
-                                                    if (add.changed)
-                                                    {
-                                                        menuElements[index].inactiveItems.Add(item);
-                                                        return;
-                                                    }
+                                                    ItemElementDisplay(item, false, false, true, true, false, menuElements[index],
+                                                        (o) =>
+                                                        {
+                                                            // item.obj = o;
+                                                        }, () =>
+                                                        {
+                                                            menuElements[index].inactiveItems.Remove(item);
+                                                        }, () =>
+                                                        {
+                                                            menuElements[index].inactiveItems.Add(item);
+                                                        });
                                                 }
                                             }
                                             
@@ -977,7 +1008,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         }
 
         void ItemElementDisplay(ItemElement item,bool activeEdit = true,bool objEdit = true,bool timeEdit = true,bool typeEdit = true, bool optionEdit = true,
-            MenuElement parentmenu = null,Action onChange = null)
+            MenuElement parentmenu = null,Action<GameObject> onSetObject = null,Action onRemoveObject = null,Action onChange = null)
         {
             bool overrideMode = false;
             if (parentmenu != null)
@@ -1013,14 +1044,36 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                     {
                         var o = (GameObject) EditorGUILayout.ObjectField("", item.obj,
                             typeof(GameObject), true, GUILayout.Width(110));
-                        if (o == null)
+                        if (item.obj == null)
                         {
-                            // 消されたときのみ上書き
-                            item.obj = null;
+                            if (o != null)
+                            {
+                                // item.obj = o;
+                                onSetObject?.Invoke(o);
+                            }
+                            if (GUILayout.Button("×", GUILayout.Width(40)))
+                            {
+                                // item.obj = null;
+                                onRemoveObject?.Invoke();
+                            }
+                            EditorGUILayout.LabelField(" ",GUILayout.Width(10));
+                            EditorGUILayout.LabelField("Missing :",GUILayout.Width(50));
+                            EditorGUILayout.TextField(item.path,GUILayout.Width(140));
+                            return;
                         }
-                        if (GUILayout.Button(objEdit ? "×" : "Sync", GUILayout.Width(40)))
+                        else
                         {
-                            item.obj = null;
+                            if (o == null)
+                            {
+                                // 消されたときのみ上書き
+                                // item.obj = null;
+                                onRemoveObject?.Invoke();
+                            }
+                            if (GUILayout.Button(objEdit ? "×" : "Sync", GUILayout.Width(40)))
+                            {
+                                // item.obj = null;
+                                onRemoveObject?.Invoke();
+                            }
                         }
                     }
 
