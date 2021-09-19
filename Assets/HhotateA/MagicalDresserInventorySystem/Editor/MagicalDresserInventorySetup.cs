@@ -399,7 +399,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                                             var selectFolder = selectFolders[0];
                                             if (String.IsNullOrWhiteSpace(selectFolder.menuGUID))
                                             {
-                                                MenuTemplate.FIndElement(data.menuTemplate, selectFolder.GetGuid(),
+                                                MenuTemplate.FIndTemplateElement(data.menuTemplate, selectFolder.GetGuid(),
                                                     (e, p) =>
                                                     {
                                                         if (p == null)

@@ -151,7 +151,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             return guid;
         }
 
-        public MenuTemplate FIndElement(int id, Action<MenuTemplate, MenuTemplate> onFind = null)
+        public MenuTemplate FIndTemplateElement(int id, Action<MenuTemplate, MenuTemplate> onFind = null)
         {
             childs = childs.Distinct().ToList();
             foreach (var child in childs)
@@ -161,7 +161,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                     onFind?.Invoke(child,this);
                     return child;
                 }
-                var e = child.FIndElement(id,onFind);
+                var e = child.FIndTemplateElement(id,onFind);
                 if (e != null)
                 {
                     return e;
@@ -170,7 +170,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
 
             return null; 
         }
-        public static MenuTemplate FIndElement(List<MenuTemplate> root,int id, Action<MenuTemplate, MenuTemplate> onFind = null)
+        public static MenuTemplate FIndTemplateElement(List<MenuTemplate> root,int id, Action<MenuTemplate, MenuTemplate> onFind = null)
         {
             foreach (var child in root)
             {
@@ -179,7 +179,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                     onFind?.Invoke(child,null);
                     return child;
                 }
-                var e = child.FIndElement(id,onFind);
+                var e = child.FIndTemplateElement(id,onFind);
                 if (e != null)
                 {
                     return e;
@@ -226,6 +226,33 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             }
 
             return null;
+        }
+
+        public void FindElement(Predicate<MenuTemplate> predicate,
+            Action<MenuTemplate, MenuTemplate> onFind = null)
+        {
+            childs = childs.Distinct().ToList();
+            foreach (var child in childs)
+            {
+                if (predicate.Invoke(child))
+                {
+                    onFind?.Invoke(child,this);
+                }
+            }
+        }
+        
+        public static void FindElement(List<MenuTemplate> root,
+            Predicate<MenuTemplate> predicate,
+            Action<MenuTemplate, MenuTemplate> onFind = null)
+        {
+            foreach (var child in root)
+            {
+                if (predicate.Invoke(child))
+                {
+                    onFind?.Invoke(child,null);
+                    child.FindElement(predicate,onFind);
+                }
+            }
         }
 
         public void DeleateOverlapElement(MenuTemplate origin)
@@ -321,7 +348,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             
             foreach (var data in datas)
             {
-                var current = MenuTemplate.FindMenuElement(menus, data.guid);
+                var current = FindMenuElement(menus, data.guid);
                 if (current == null)
                 {
                     current = new MenuTemplate()
@@ -334,7 +361,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                 }
                 else
                 {
-                    MenuTemplate.FindMenuElement(menus, data.guid, (e, p) =>
+                    FindMenuElement(menus, data.guid, (e, p) =>
                     {
                         if (e.autoCreate)
                         {
@@ -348,6 +375,26 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                     var root = data.isToggle ? 
                         menus.FirstOrDefault(e => e.name == "Items" && e.autoCreate) :
                         menus.FirstOrDefault(e => e.name == data.layer.ToString() && e.autoCreate);
+                    // 親オブジェクトの検知
+                    MenuTemplate.FindElement(menus,e =>
+                    {
+                        var menu = datas.FirstOrDefault(m => m.guid == e.menuGUID);
+                        if (menu == null) return false;
+                        if (data.isToggle)
+                        {
+                            return e.autoCreate && menu.isToggle;
+                        }
+                        else
+                        {
+                            return e.autoCreate && !menu.isToggle && menu.layer == data.layer;
+                        }
+                    }, (e, p) =>
+                    {
+                        if (p != null)
+                        {
+                            root = p;
+                        }
+                    });
                     if (root == null)
                     {
                         if (data.isToggle)
@@ -950,7 +997,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         protected override void RowGUI (RowGUIArgs args)
         {
             var isFolder = args.item == null ? true : args.item?.id == 0 ?
-                true : String.IsNullOrWhiteSpace(MenuTemplate.FIndElement(data.menuTemplate, args.item.id)?.menuGUID ?? "");
+                true : String.IsNullOrWhiteSpace(MenuTemplate.FIndTemplateElement(data.menuTemplate, args.item.id)?.menuGUID ?? "");
             
             Rect rect = args.rowRect;
             rect.x += GetContentIndent(args.item);
@@ -986,7 +1033,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         {
             if (selectedIds.Count > 0)
             {
-                var template = MenuTemplate.FIndElement(data.menuTemplate, selectedIds[0]);
+                var template = MenuTemplate.FIndTemplateElement(data.menuTemplate, selectedIds[0]);
                 var menu = data.menuElements.FirstOrDefault(e => e.guid == template.menuGUID);
                 OnSelect?.Invoke(menu);
             }
@@ -998,7 +1045,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             var selectedIds = GetSelection();
             if (selectedIds.Count > 0)
             {
-                var template = MenuTemplate.FIndElement(data.menuTemplate, selectedIds[0]);
+                var template = MenuTemplate.FIndTemplateElement(data.menuTemplate, selectedIds[0]);
                 if (template != null)
                 {
                     templates.Add(template);
@@ -1060,13 +1107,13 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                     {
                         var parent = args.parentItem == null ? null : args.parentItem?.id == 0 ?
                                 null :
-                                MenuTemplate.FIndElement(data.menuTemplate, args.parentItem.id);
+                                MenuTemplate.FIndTemplateElement(data.menuTemplate, args.parentItem.id);
                         // メニューの子にメニューを入れない
                         if (parent != null)
                             if (!String.IsNullOrWhiteSpace(parent.menuGUID))
                                 continue;
                         
-                        var element = MenuTemplate.FIndElement(data.menuTemplate, draggedID, (e, p) =>
+                        var element = MenuTemplate.FIndTemplateElement(data.menuTemplate, draggedID, (e, p) =>
                         {
                             e.RecursionAutoCreateFalse();
                             if (p == null)
@@ -1116,6 +1163,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         
         protected override bool CanRename(TreeViewItem item)
         {
+            return true;
             return item.displayName.Length <= 10;
         }
         
@@ -1123,7 +1171,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         {
             if (args.acceptedRename)
             {
-                var template = MenuTemplate.FIndElement(data.menuTemplate, args.itemID);
+                var template = MenuTemplate.FIndTemplateElement(data.menuTemplate, args.itemID);
                 if (template != null)
                 {
                     template.name = args.newName;
@@ -1135,6 +1183,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                             menu.name = args.newName;
                         }
                     }
+                    template.RecursionAutoCreateFalse();
                 }
                 ReloadTemplates();
             }
@@ -1161,7 +1210,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             {
                 if (item.id != 1)
                 {
-                    var template = MenuTemplate.FIndElement(data.menuTemplate, item.id);
+                    var template = MenuTemplate.FIndTemplateElement(data.menuTemplate, item.id);
                     if (template == null)
                     {
                         // parent.children.Remove(item);
