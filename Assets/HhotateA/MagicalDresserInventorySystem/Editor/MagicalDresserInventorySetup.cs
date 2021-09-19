@@ -1517,6 +1517,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                 
                 if (data.layerSettingses[(int) layer].isRandom)
                 {
+                    // ランダム設定の反映
                     c.AddDefaultState("Initialize",null);
                     c.AddState("Default",null);
                     c.AddTransition("Initialize","Default");
@@ -1573,17 +1574,26 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                     }
                     c.AddState(i.ToString() + "_Active", activeAnim.CreateAsset(path,true));
                     c.AddState(i.ToString() + "_Idle",  data.idleOverride ? activeAnim.Create() : idleAnim);
-                    c.AddState(i.ToString() + "_Initialize",  activeAnim.Create());
-                    
-                    c.AddTransition("Default",i.ToString() + "_Initialize",param,i);
-                    if (menuElement.isTaboo)
+
+                    if (menuElement.isTaboo ||
+                        (data.layerSettingses[(int) layer].isRandom && menuElement.activeSyncElements.Count != 0))
                     {
-                        c.ParameterDriver(i.ToString() + "_Initialize",param,0);
-                        c.AddTransition(i.ToString() + "_Initialize",0.ToString() + "_Active");
+                        c.AddState(i.ToString() + "_Initialize",  activeAnim.Create());
+                        c.AddTransition("Default",i.ToString() + "_Initialize",param,i);
+                        if (menuElement.isTaboo)
+                        {
+                            // タブー設定に当たったらデフォルトに送る
+                            c.ParameterDriver(i.ToString() + "_Initialize",param,0);
+                            c.AddTransition(i.ToString() + "_Initialize",0.ToString() + "_Active");
+                        }
+                        else
+                        {
+                            c.AddTransition(i.ToString() + "_Initialize",i.ToString() + "_Active");
+                        }
                     }
                     else
                     {
-                        c.AddTransition(i.ToString() + "_Initialize",i.ToString() + "_Active");
+                        c.AddTransition("Default",i.ToString() + "_Active",param,i);
                     }
                     c.AddTransition(i.ToString() + "_Active",i.ToString() + "_Idle");
                     
@@ -1675,6 +1685,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                         }
                     }
 
+                    // ランダムで代入時も同様に処理
                     if (data.layerSettingses[(int) menuElement.layer].isRandom)
                     {
                         if (menuElement.isToggle)
