@@ -209,7 +209,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                     EditorGUI.LabelField(rh, d.isTaboo ? "is Taboo" : "Is Random");
                 }
 
-                if (data.layerSettingses[(int) d.layer].isRandom)
+                //if (data.layerSettingses[(int) d.layer].isRandom)
                 {
                     rh.x += rh.width+5;
                     rh.width = 20;
@@ -1573,8 +1573,20 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                     }
                     c.AddState(i.ToString() + "_Active", activeAnim.CreateAsset(path,true));
                     c.AddState(i.ToString() + "_Idle",  data.idleOverride ? activeAnim.Create() : idleAnim);
-                    c.AddTransition("Default",i.ToString() + "_Active",param,i);
+                    c.AddState(i.ToString() + "_Initialize",  activeAnim.Create());
+                    
+                    c.AddTransition("Default",i.ToString() + "_Initialize",param,i);
+                    if (menuElement.isTaboo)
+                    {
+                        c.ParameterDriver(i.ToString() + "_Initialize",param,0);
+                        c.AddTransition(i.ToString() + "_Initialize",0.ToString() + "_Active");
+                    }
+                    else
+                    {
+                        c.AddTransition(i.ToString() + "_Initialize",i.ToString() + "_Active");
+                    }
                     c.AddTransition(i.ToString() + "_Active",i.ToString() + "_Idle");
+                    
                     //m.AddToggle(menuElement.name,menuElement.icon,param,i);
                     menuElement.param = param;
                     menuElement.value = i;
@@ -1634,10 +1646,10 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                     if (!syncElement.syncOn && !syncElement.syncOff) continue;
                     var syncParam = menuElements.FirstOrDefault(e => e.guid == syncElement.guid);
                     if (syncParam == null) continue;
-                    
+
+                    c.SetEditLayer(c.GetEditLayer(menuElement.param));
                     if (syncElement.delay < 0)
                     {
-                        c.SetEditLayer(c.GetEditLayer(menuElement.param));
                         if (menuElement.isToggle)
                         {
                             c.ParameterDriver( "Active" , syncParam.param, syncElement.syncOn ? syncParam.value : 0f);
@@ -1649,7 +1661,6 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                     }
                     else
                     {
-                        c.SetEditLayer(c.GetEditLayer(menuElement.param));
                         if (menuElement.isToggle)
                         {
                             c.ParameterDriver( "Activate" , syncParam.param, syncElement.syncOn ? syncParam.value : 0f);
@@ -1661,6 +1672,18 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                             {
                                 c.ParameterDriver( state, syncParam.param, syncElement.syncOn ? syncParam.value : 0f);
                             }
+                        }
+                    }
+
+                    if (data.layerSettingses[(int) menuElement.layer].isRandom)
+                    {
+                        if (menuElement.isToggle)
+                        {
+                            c.ParameterDriver( menuElement.value.ToString() + "_Initialize", syncParam.param, syncElement.syncOn ? syncParam.value : 0f);
+                        }
+                        else
+                        {
+                            c.ParameterDriver( menuElement.value.ToString() + "_Initialize", syncParam.param, syncElement.syncOn ? syncParam.value : 0f);
                         }
                     }
                 }
