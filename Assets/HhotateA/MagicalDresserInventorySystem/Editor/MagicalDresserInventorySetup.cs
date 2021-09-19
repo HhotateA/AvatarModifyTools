@@ -391,41 +391,45 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                                         AddFolder();
                                     }
                                     EditorGUILayout.LabelField("  ",GUILayout.Width(10));
-                                    if(GUILayout.Button("-",GUILayout.Width(30)))
+
+                                    using (new EditorGUI.DisabledScope(menuTreeView.GetSelectTemplates().Count == 0))
                                     {
-                                        var selectFolders = menuTreeView.GetSelectTemplates();
-                                        // foreach (var selectFolder in selectFolders)
+                                        if(GUILayout.Button("-",GUILayout.Width(30)))
                                         {
-                                            var selectFolder = selectFolders[0];
-                                            if (String.IsNullOrWhiteSpace(selectFolder.menuGUID))
+                                            var selectFolders = menuTreeView.GetSelectTemplates();
+                                            // foreach (var selectFolder in selectFolders)
                                             {
-                                                MenuTemplate.FIndTemplateElement(data.menuTemplate, selectFolder.GetGuid(),
-                                                    (e, p) =>
-                                                    {
-                                                        if (p == null)
-                                                        {
-                                                            if (data.menuTemplate.Contains(e))
-                                                            {
-                                                                data.menuTemplate.Remove(e);
-                                                            }
-                                                        }
-                                                        else
-                                                        {
-                                                            p.childs.Remove(e);
-                                                        }
-                                                    });
-                                            }
-                                            else
-                                            {
-                                                var menu = menuElements.FirstOrDefault(e =>
-                                                    e.guid == selectFolder.menuGUID);
-                                                if (menu != null)
+                                                var selectFolder = selectFolders[0];
+                                                if (String.IsNullOrWhiteSpace(selectFolder.menuGUID))
                                                 {
-                                                    menuElements.Remove(menu);
+                                                    MenuTemplate.FIndTemplateElement(data.menuTemplate, selectFolder.GetGuid(),
+                                                        (e, p) =>
+                                                        {
+                                                            if (p == null)
+                                                            {
+                                                                if (data.menuTemplate.Contains(e))
+                                                                {
+                                                                    data.menuTemplate.Remove(e);
+                                                                }
+                                                            }
+                                                            else
+                                                            {
+                                                                p.childs.Remove(e);
+                                                            }
+                                                        });
+                                                }
+                                                else
+                                                {
+                                                    var menu = menuElements.FirstOrDefault(e =>
+                                                        e.guid == selectFolder.menuGUID);
+                                                    if (menu != null)
+                                                    {
+                                                        menuElements.Remove(menu);
+                                                    }
                                                 }
                                             }
+                                            menuTreeView.ReloadTemplates();
                                         }
-                                        menuTreeView.ReloadTemplates();
                                     }
                                     EditorGUILayout.LabelField("  ",GUILayout.Width(2));
                                     if(GUILayout.Button("+",GUILayout.Width(30)))
@@ -445,7 +449,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                                 {
                                     EditorGUILayout.LabelField("  ",GUILayout.Width(275));
                                     using (new EditorGUI.DisabledScope(0 > menuReorderableList.index ||
-                                                                       menuReorderableList.index >= menuElements.Count))
+                                                                       menuReorderableList.index < menuElements.Count))
                                     {
                                         if(GUILayout.Button("-",GUILayout.Width(30)))
                                         {
@@ -1518,7 +1522,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                     c.AddTransition("Initialize","Default");
                     c.ParameterDriver("Initialize",param,
                         layerMenuElements[0].isTaboo ? 1 : 0,
-                        layerMenuElements.Count(e=>!e.isTaboo) + (layerMenuElements[0].isTaboo ? 1 : 0) );
+                        layerMenuElements.Count(e=>!e.isTaboo) - 1 + (layerMenuElements[0].isTaboo ? 1 : 0) );
                 }
                 else
                 {
