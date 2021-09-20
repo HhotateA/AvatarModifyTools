@@ -16,6 +16,7 @@ using UnityEditor;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEditor.Callbacks;
+using UnityEditor.IMGUI.Controls;
 using Object = System.Object;
 #if VRC_SDK_VRCSDK3
 using VRC.SDK3.Avatars.Components;
@@ -35,6 +36,8 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         private List<MenuElement> menuElements => data.menuElements;
         private SerializedProperty prop;
         ReorderableList menuReorderableList;
+        
+        MenuTemplateTreeView menuTreeView;
 
         private bool displayItemMode = true;
         private bool displaySyncTransition = false;
@@ -91,8 +94,8 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         {
             var wnd = GetWindow<MagicalDresserInventorySetup>();
             wnd.titleContent = new GUIContent("マジックドレッサーインベントリ(MDInventorySystem)");
-            wnd.minSize = new Vector2(825, 500);
-            wnd.maxSize = new Vector2(825,2000);
+            wnd.minSize = new Vector2(850, 500);
+            wnd.maxSize = new Vector2(850,2000);
 
             if (saveddata == null)
             {
@@ -119,120 +122,14 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
 
         void LoadReorderableList()
         {
-            menuReorderableList = new ReorderableList(menuElements, typeof(MenuElement))
+            menuReorderableList = new ReorderableList(menuElements, typeof(MenuElement), true, true, false,false)
             {
                 drawHeaderCallback = r =>
                 {
                     EditorGUI.LabelField(r,"Menu Elements");
                 },
                 elementHeight = 60+6,
-                drawElementCallback = (r, i, a, f) =>
-                {
-                    var d = menuElements[i];
-                    {
-                        var rh = r;
-                        rh.width = rh.height;
-                        d.icon = (Texture2D) EditorGUI.ObjectField (rh,d.icon, typeof(Texture2D), false);
-                        r.width -= rh.width;
-                        r.x += rh.width+10;
-                    }
-                    r.height -= 6;
-                    r.height /= 3;
-                    r.width *= 0.95f;
-                    
-                    d.name = EditorGUI.TextField(r,"", d.name);
-
-                    r.y += 2;
-                    r.y += r.height;
-                    
-                    if (d.isToggle)
-                    {
-                        var rh = r;
-                        rh.width = 20;
-                        d.SetLayer( EditorGUI.Toggle(rh, "", d.isToggle));
-                        rh.x += rh.width;
-                        rh.width = 140;
-                        using (new EditorGUI.DisabledScope(true))
-                        {
-                            EditorGUI.EnumPopup(rh, (ToggleGroup)0);
-                        }
-                        rh.x += rh.width+10;
-                        rh.width = 20;
-                        d.isRandom = EditorGUI.Toggle(rh, "", d.isRandom);
-                        rh.x += rh.width;
-                        rh.width = 100;
-                        EditorGUI.LabelField(rh, "Is Random");
-                    }
-                    else
-                    {
-                        var rh = r;
-                        rh.width = 20;
-                        d.SetLayer( EditorGUI.Toggle(rh, "", d.isToggle));
-                        rh.x += rh.width;
-                        rh.width = 140;
-                        d.SetLayer( (LayerGroup) EditorGUI.EnumPopup(rh, d.layer));
-
-                        rh.x += rh.width+10;
-                        rh.width = 20;
-                        data.layerSettingses[(int) d.layer].isRandom = EditorGUI.Toggle(rh, "", data.layerSettingses[(int) d.layer].isRandom);
-                        rh.x += rh.width;
-                        rh.width = 100;
-                        EditorGUI.LabelField(rh, "Is Random");
-                    }
-
-                    r.y += 2;
-                    r.y += r.height;
-                    
-                    if (d.isToggle)
-                    {
-                        var rh = r;
-                        rh.width = 20;
-                        d.isSaved = EditorGUI.Toggle(rh, "", d.isSaved);
-                        rh.x += rh.width;
-                        rh.width = 100;
-                        EditorGUI.LabelField(rh, "Is Saved");
-                        rh.x += rh.width + 50;
-                        rh.width = 20;
-                        d.isDefault = EditorGUI.Toggle(rh, "", d.isDefault);
-                        rh.x += rh.width;
-                        rh.width = 100;
-                        EditorGUI.LabelField(rh, "Is Default");
-                    }
-                    else
-                    {
-                        var rh = r;
-                        rh.width = 20;
-                        data.layerSettingses[(int)d.layer].isSaved = 
-                            EditorGUI.Toggle(rh, "", data.layerSettingses[(int)d.layer].isSaved);
-                        rh.x += rh.width;
-                        rh.width = 100;
-                        EditorGUI.LabelField(rh, "Is Saved");
-                        rh.x += rh.width + 50;
-                        rh.width = 20;
-                        if (data.layerSettingses[(int) d.layer].GetDefaultElement(menuElements) == d)
-                        {
-                            rh.width = 20;
-                            if (!EditorGUI.Toggle(rh, "",true))
-                            {
-                                data.layerSettingses[(int) d.layer].SetDefaultElement(null);
-                            }
-                            rh.x += rh.width;
-                            rh.width = 100;
-                            EditorGUI.LabelField(rh, "Is Default");
-                        }
-                        else
-                        {
-                            rh.width = 20;
-                            if (EditorGUI.Toggle(rh, "",false))
-                            {
-                                data.layerSettingses[(int) d.layer].SetDefaultElement(d);
-                            }
-                            rh.x += rh.width;
-                            rh.width = 100;
-                            EditorGUI.LabelField(rh, "Is Default");
-                        }
-                    }
-                },
+                drawElementCallback = (r, i, a, f) => DrawMenuElement(r,i),
                 onAddCallback = l => AddMenu(),
                 onSelectCallback = l =>
                 {
@@ -240,8 +137,154 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                     scrollRight = Vector2.zero;
                 }
             };
+            menuTreeView = new MenuTemplateTreeView(new TreeViewState ());
+            menuTreeView.Setup(data);
+            menuTreeView.OnSelect += (m) =>
+            {
+                menuReorderableList.index = data.menuElements.FindIndex(e=>e==m);
+                SetObjectActiveForScene(m);
+                scrollRight = Vector2.zero;
+            };
         }
 
+        void DrawMenuElement(Rect r, int i)
+        {
+            if (0 > i || menuElements.Count <= i)
+            {
+                EditorGUI.LabelField(r,"Null" + i);
+                return;
+            }
+            var d = menuElements[i];
+            if(d == null) return;
+            {
+                var rh = r;
+                rh.width = rh.height;
+                d.icon = (Texture2D) EditorGUI.ObjectField (rh,d.icon, typeof(Texture2D), false);
+                r.width -= rh.width;
+                r.x += rh.width+10;
+            }
+            r.height -= 6;
+            r.height /= 3;
+            r.width *= 0.95f;
+            
+            d.name = EditorGUI.TextField(r,"", d.name);
+
+            r.y += 2;
+            r.y += r.height;
+            
+            if (d.isToggle)
+            {
+                var rh = r;
+                rh.width = 20;
+                d.SetLayer( EditorGUI.Toggle(rh, "", d.isToggle));
+                rh.x += rh.width;
+                rh.width = 120;
+                using (new EditorGUI.DisabledScope(true))
+                {
+                    EditorGUI.EnumPopup(rh, (ToggleGroup)0);
+                }
+                rh.x += rh.width+10;
+                rh.width = 20;
+                d.isRandom = EditorGUI.Toggle(rh, "", d.isRandom);
+                rh.x += rh.width;
+                rh.width = 100;
+                EditorGUI.LabelField(rh, "Is Random");
+            }
+            else
+            {
+                var rh = r;
+                rh.width = 20;
+                d.SetLayer( EditorGUI.Toggle(rh, "", d.isToggle));
+                rh.x += rh.width;
+                rh.width = 120;
+                d.SetLayer( (LayerGroup) EditorGUI.EnumPopup(rh, d.layer));
+
+                rh.x += rh.width+10;
+                rh.width = 20;
+                data.layerSettingses[(int) d.layer].isRandom = EditorGUI.Toggle(rh, "", data.layerSettingses[(int) d.layer].isRandom);
+                rh.x += rh.width;
+                rh.width = 60;
+                using (new EditorGUI.DisabledScope(d.isTaboo))
+                {
+                    EditorGUI.LabelField(rh, d.isTaboo ? "is Taboo" : "Is Random");
+                }
+
+                //if (data.layerSettingses[(int) d.layer].isRandom)
+                {
+                    rh.x += rh.width+5;
+                    rh.width = 20;
+                    d.isTaboo = EditorGUI.Toggle(rh, "", d.isTaboo);
+                }
+            }
+
+            r.y += 2;
+            r.y += r.height;
+            
+            if (d.isToggle)
+            {
+                var rh = r;
+                rh.width = 20;
+                d.isSaved = EditorGUI.Toggle(rh, "", d.isSaved);
+                rh.x += rh.width;
+                rh.width = 100;
+                EditorGUI.LabelField(rh, "Is Saved");
+                rh.x += rh.width + 30;
+                rh.width = 20;
+                d.isDefault = EditorGUI.Toggle(rh, "", d.isDefault);
+                rh.x += rh.width;
+                rh.width = 100;
+                EditorGUI.LabelField(rh, "Is Default");
+            }
+            else
+            {
+                var rh = r;
+                rh.width = 20;
+                data.layerSettingses[(int)d.layer].isSaved = 
+                    EditorGUI.Toggle(rh, "", data.layerSettingses[(int)d.layer].isSaved);
+                rh.x += rh.width;
+                rh.width = 100;
+                EditorGUI.LabelField(rh, "Is Saved");
+                rh.x += rh.width + 30;
+                rh.width = 20;
+                if (data.layerSettingses[(int) d.layer].GetDefaultElement(menuElements) == d)
+                {
+                    rh.width = 20;
+                    if (!EditorGUI.Toggle(rh, "",true))
+                    {
+                        data.layerSettingses[(int) d.layer].SetDefaultElement(null);
+                    }
+                    rh.x += rh.width;
+                    rh.width = 100;
+                    EditorGUI.LabelField(rh, "Is Default");
+                }
+                else
+                {
+                    rh.width = 20;
+                    if (EditorGUI.Toggle(rh, "",false))
+                    {
+                        data.layerSettingses[(int) d.layer].SetDefaultElement(d);
+                    }
+                    rh.x += rh.width;
+                    rh.width = 100;
+                    EditorGUI.LabelField(rh, "Is Default");
+                }
+            }
+        }
+
+        void DrawFolderElement(Rect r, MenuTemplate d)
+        {
+            var rh = r;
+            rh.width = rh.height;
+            d.icon = (Texture2D) EditorGUI.ObjectField (rh,d.icon, typeof(Texture2D), false);
+            r.width -= rh.width;
+            r.x += rh.width+10;
+            r.height -= 6;
+            r.height /= 3;
+            r.width *= 0.95f;
+            
+            d.name = EditorGUI.TextField(r,"", d.name);
+        }
+        
         private void OnGUI()
         {
             TitleStyle("マジックドレッサーインベントリ");
@@ -251,6 +294,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             EditorGUILayout.Space();
             AvatartField("",()=>
             {
+                RevertObjectActiveForScene();
                 data.ApplyRoot(avatar.gameObject);
                 data.SaveGUID(avatar.gameObject);
                 LoadReorderableList();
@@ -265,7 +309,10 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                 {
                     data.icon = (Texture2D) EditorGUILayout.ObjectField(data.icon, typeof(Texture2D), false,
                         GUILayout.Width(60), GUILayout.Height(60));
-                    data.saveName = EditorGUILayout.TextField(data.saveName, GUILayout.Height(20));
+                    using (new EditorGUILayout.VerticalScope())
+                    {
+                        data.saveName = EditorGUILayout.TextField(data.saveName, GUILayout.Height(20));
+                    }
                 }
 
                 return;
@@ -274,11 +321,27 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             var index = menuReorderableList.index;
             using (new EditorGUILayout.VerticalScope())
             {
-                using (new EditorGUILayout.HorizontalScope())
+                using (new EditorGUILayout.HorizontalScope(GUI.skin.box))
                 {
                     data.icon = (Texture2D) EditorGUILayout.ObjectField(data.icon, typeof(Texture2D), false,
                         GUILayout.Width(60), GUILayout.Height(60));
-                    data.saveName = EditorGUILayout.TextField(data.saveName, GUILayout.Height(20));
+                    using (new EditorGUILayout.VerticalScope())
+                    {
+                        data.saveName = EditorGUILayout.TextField(data.saveName, GUILayout.Height(20));
+                        using (new EditorGUILayout.HorizontalScope())
+                        {
+                            using (new EditorGUILayout.VerticalScope())
+                            {
+                                data.materialOverride = EditorGUILayout.ToggleLeft("Override Default Value Animation", data.materialOverride);
+                                data.idleOverride = EditorGUILayout.ToggleLeft("Override Animation On Idle State", data.idleOverride);
+                            }
+                            using (new EditorGUILayout.VerticalScope())
+                            {
+                                data.createAnimWhenNotChangedActive = EditorGUILayout.ToggleLeft("Create Anim when Not Changed Active", data.createAnimWhenNotChangedActive);
+                                data.useMenuTemplate = EditorGUILayout.ToggleLeft("Use Menu Template", data.useMenuTemplate);
+                            }
+                        }
+                    }
                 }
 
                 EditorGUILayout.Space();
@@ -286,23 +349,135 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                 using (new EditorGUILayout.HorizontalScope())
                 {
                     EditorGUILayout.Space(10);
-                    
-                    scrollLeft = EditorGUILayout.BeginScrollView(scrollLeft, false, false, GUIStyle.none, GUI.skin.verticalScrollbar, GUI.skin.scrollView);
+
                     using (new EditorGUILayout.VerticalScope(GUILayout.Width(350)))
                     {
                         using (var check = new EditorGUI.ChangeCheckScope())
                         {
-                            menuReorderableList.DoLayoutList();
+                            if (data.useMenuTemplate)
+                            {
+                                using (new EditorGUILayout.VerticalScope(GUI.skin.box,GUILayout.Width(330)))
+                                {
+                                    var menuelementRect = EditorGUILayout.GetControlRect(false, 60);
+
+                                    if (menuReorderableList.index >= 0)
+                                    {
+                                        DrawMenuElement(menuelementRect, menuReorderableList.index);
+                                    }
+                                    else
+                                    {
+                                        var selectFolders = menuTreeView.GetSelectTemplates();
+                                        if (selectFolders.Count > 0)
+                                        {
+                                            DrawFolderElement(menuelementRect, selectFolders[0]);
+                                        }
+                                    }
+                                }
+
+                                scrollLeft = EditorGUILayout.BeginScrollView(scrollLeft, false, false, GUIStyle.none, GUI.skin.verticalScrollbar, GUI.skin.scrollView);
+                                var treeRect = EditorGUILayout.GetControlRect(false, position.height-280);
+                                treeRect.width = 375;
+                                menuTreeView.OnGUI(treeRect);
+                                EditorGUILayout.EndScrollView();
+                                using (new EditorGUILayout.HorizontalScope())
+                                {
+                                    if(GUILayout.Button("Reset",GUILayout.Width(75)))
+                                    {
+                                        ResetTemplate();
+                                    }
+                                    EditorGUILayout.LabelField("",GUILayout.Width(100));
+                                    if(GUILayout.Button("New Folder",GUILayout.Width(75)))
+                                    {
+                                        AddFolder();
+                                    }
+                                    EditorGUILayout.LabelField("  ",GUILayout.Width(10));
+
+                                    using (new EditorGUI.DisabledScope(menuTreeView.GetSelectTemplates().Count == 0))
+                                    {
+                                        if(GUILayout.Button("-",GUILayout.Width(30)))
+                                        {
+                                            var selectFolders = menuTreeView.GetSelectTemplates();
+                                            // foreach (var selectFolder in selectFolders)
+                                            {
+                                                var selectFolder = selectFolders[0];
+                                                if (String.IsNullOrWhiteSpace(selectFolder.menuGUID))
+                                                {
+                                                    MenuTemplate.FIndTemplateElement(data.menuTemplate, selectFolder.GetGuid(),
+                                                        (e, p) =>
+                                                        {
+                                                            if (p == null)
+                                                            {
+                                                                if (data.menuTemplate.Contains(e))
+                                                                {
+                                                                    data.menuTemplate.Remove(e);
+                                                                }
+                                                            }
+                                                            else
+                                                            {
+                                                                p.childs.Remove(e);
+                                                            }
+                                                        });
+                                                }
+                                                else
+                                                {
+                                                    var menu = menuElements.FirstOrDefault(e =>
+                                                        e.guid == selectFolder.menuGUID);
+                                                    if (menu != null)
+                                                    {
+                                                        menuElements.Remove(menu);
+                                                    }
+                                                }
+                                            }
+                                            menuTreeView.ReloadTemplates();
+                                        }
+                                    }
+                                    EditorGUILayout.LabelField("  ",GUILayout.Width(2));
+                                    if(GUILayout.Button("+",GUILayout.Width(30)))
+                                    {
+                                        AddMenu();
+                                    }
+                                }
+                                EditorGUILayout.Space();
+                                EditorGUILayout.LabelField(" ",GUILayout.ExpandHeight(true));
+                            }
+                            else
+                            {
+                                scrollLeft = EditorGUILayout.BeginScrollView(scrollLeft, false, false, GUIStyle.none, GUI.skin.verticalScrollbar, GUI.skin.scrollView,GUILayout.Width(375),GUILayout.ExpandHeight(false));
+                                menuReorderableList.DoLayoutList();
+                                EditorGUILayout.EndScrollView();
+                                using (new EditorGUILayout.HorizontalScope())
+                                {
+                                    EditorGUILayout.LabelField("  ",GUILayout.Width(275));
+                                    using (new EditorGUI.DisabledScope(0 > menuReorderableList.index ||
+                                                                       menuReorderableList.index < menuElements.Count))
+                                    {
+                                        if(GUILayout.Button("-",GUILayout.Width(30)))
+                                        {
+                                            if(0 <= menuReorderableList.index && menuReorderableList.index < menuElements.Count)
+                                            {
+                                                menuElements.RemoveAt(menuReorderableList.index);
+                                            }
+                                        }
+                                    }
+                                    EditorGUILayout.LabelField("  ",GUILayout.Width(5));
+                                    if(GUILayout.Button("+",GUILayout.Width(30)))
+                                    {
+                                        AddMenu();
+                                    }
+                                }
+                                EditorGUILayout.Space();
+                            }
                             if (check.changed)
                             {
                                 if (0 <= index && index < menuElements.Count)
                                 {
                                     SetObjectActiveForScene(menuElements[menuReorderableList.index]);
                                 }
+
+                                menuTreeView.ReloadTemplates();
                             }
                         }
                     }
-                    EditorGUILayout.EndScrollView();
                     
                     EditorGUILayout.Space(10);
 
@@ -361,32 +536,45 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                                     {
                                         using (var check = new EditorGUI.ChangeCheckScope())
                                         {
+                                            foreach (var item in menuElements[index].UnSafeActiveItems())
+                                            {
+                                                ItemElementDisplay(item, false, true, false, false, false, menuElements[index],
+                                                    (o) =>
+                                                    {
+                                                        data.RepairReference(item.path, o, avatar.gameObject);
+                                                    }, () =>
+                                                    {
+                                                        menuElements[index].activeItems.Remove(item);
+                                                    });
+                                            }
+                                            
                                             foreach (var item in menuElements[index].SafeActiveItems())
                                             {
-                                                ItemElementDisplay(item, true, true, true, true, true, menuElements[index]);
-
-                                                if (!item.obj)
-                                                {
-                                                    menuElements[index].activeItems.Remove(item);
-                                                    return;
-                                                }
+                                                ItemElementDisplay(item, true, true, true, true, true, menuElements[index],
+                                                    (o) =>
+                                                    {
+                                                        // item.obj = o;
+                                                    }, () =>
+                                                    {
+                                                        menuElements[index].activeItems.Remove(item);
+                                                    });
                                             }
 
                                             if (!menuElements[index].isToggle)
                                             {
                                                 foreach (var item in ComputeLayerAnotherItems(menuElements[index]))
                                                 {
-                                                    using (var add = new EditorGUI.ChangeCheckScope())
-                                                    {
-                                                        ItemElementDisplay(item, true, false, true, true, true, menuElements[index]);
-
-                                                        if (add.changed)
+                                                    ItemElementDisplay(item, true, false, true, true, true, menuElements[index],
+                                                        (o) =>
+                                                        {
+                                                            // item.obj = o;
+                                                        }, () =>
+                                                        {
+                                                            menuElements[index].activeItems.Remove(item);
+                                                        }, () =>
                                                         {
                                                             menuElements[index].activeItems.Add(item);
-                                                            SetObjectActiveForScene(menuElements[index]);
-                                                            return;
-                                                        }
-                                                    }
+                                                        });
                                                 }
                                             }
 
@@ -401,28 +589,45 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                                     {
                                         using (var check = new EditorGUI.ChangeCheckScope())
                                         {
+                                            foreach (var item in menuElements[index].UnSafeInactiveItems())
+                                            {
+                                                ItemElementDisplay(item, false, true, false, false, false, menuElements[index],
+                                                    (o) =>
+                                                    {
+                                                        data.RepairReference(item.path, o, avatar.gameObject);
+                                                    }, () =>
+                                                    {
+                                                        menuElements[index].inactiveItems.Remove(item);
+                                                    });
+                                            }
+                                            
                                             foreach (var item in menuElements[index].SafeInactiveItems())
                                             {
-                                                ItemElementDisplay(item, true, true, true, true, true, menuElements[index]);
-
-                                                if (!item.obj)
-                                                {
-                                                    menuElements[index].inactiveItems.Remove(item);
-                                                    return;
-                                                }
+                                                ItemElementDisplay(item, true, true, true, true, true, menuElements[index],
+                                                    (o) =>
+                                                    {
+                                                        // item.obj = o;
+                                                    }, () =>
+                                                    {
+                                                        menuElements[index].inactiveItems.Remove(item);
+                                                    });
                                             }
 
                                             foreach (var item in ComputeLayerInactiveItems(menuElements[index]))
                                             {
                                                 using (var add = new EditorGUI.ChangeCheckScope())
                                                 {
-                                                    ItemElementDisplay(item, false, false, true, true, false, menuElements[index]);
-
-                                                    if (add.changed)
-                                                    {
-                                                        menuElements[index].inactiveItems.Add(item);
-                                                        return;
-                                                    }
+                                                    ItemElementDisplay(item, false, false, true, true, false, menuElements[index],
+                                                        (o) =>
+                                                        {
+                                                            // item.obj = o;
+                                                        }, () =>
+                                                        {
+                                                            menuElements[index].inactiveItems.Remove(item);
+                                                        }, () =>
+                                                        {
+                                                            menuElements[index].inactiveItems.Add(item);
+                                                        });
                                                 }
                                             }
                                             
@@ -582,22 +787,6 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                         }
 
                         EditorGUILayout.Space();
-                        using (new EditorGUILayout.HorizontalScope())
-                        {
-                            EditorGUILayout.LabelField("Override Animation On Idle State", GUILayout.Width(250));
-                            data.idleOverride = EditorGUILayout.Toggle("", data.idleOverride);
-                        }
-                        using (new EditorGUILayout.HorizontalScope())
-                        {
-                            EditorGUILayout.LabelField("Override Default Value Animation", GUILayout.Width(250));
-                            data.materialOverride = EditorGUILayout.Toggle("", data.materialOverride);
-                        }
-                        using (new EditorGUILayout.HorizontalScope())
-                        {
-                            EditorGUILayout.LabelField("Create Anim when Not Changed Active", GUILayout.Width(250));
-                            data.createAnimWhenNotChangedActive = EditorGUILayout.Toggle("", data.createAnimWhenNotChangedActive);
-                        }
-                        EditorGUILayout.Space();
                         EditorGUILayout.Space();
 
                         using (new EditorGUI.DisabledScope(avatar == null))
@@ -658,7 +847,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                                 OnCancel();
                                 return;
                             }
-                            data.saveName = System.IO.Path.GetFileNameWithoutExtension(path);
+                            data.saveName = Path.GetFileNameWithoutExtension(path);
                             try
                             {
                                 // data = Instantiate(data);
@@ -823,7 +1012,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         }
 
         void ItemElementDisplay(ItemElement item,bool activeEdit = true,bool objEdit = true,bool timeEdit = true,bool typeEdit = true, bool optionEdit = true,
-            MenuElement parentmenu = null,Action onChange = null)
+            MenuElement parentmenu = null,Action<GameObject> onSetObject = null,Action onRemoveObject = null,Action onChange = null)
         {
             bool overrideMode = false;
             if (parentmenu != null)
@@ -837,7 +1026,6 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                     overrideMode = true;
                 }
             }
-            
 
             using (new EditorGUILayout.HorizontalScope())
             {
@@ -860,14 +1048,36 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                     {
                         var o = (GameObject) EditorGUILayout.ObjectField("", item.obj,
                             typeof(GameObject), true, GUILayout.Width(110));
-                        if (o == null)
+                        if (item.obj == null)
                         {
-                            // 消されたときのみ上書き
-                            item.obj = null;
+                            if (o != null)
+                            {
+                                // item.obj = o;
+                                onSetObject?.Invoke(o);
+                            }
+                            if (GUILayout.Button("×", GUILayout.Width(40)))
+                            {
+                                // item.obj = null;
+                                onRemoveObject?.Invoke();
+                            }
+                            EditorGUILayout.LabelField(" ",GUILayout.Width(10));
+                            EditorGUILayout.LabelField("Missing :",GUILayout.Width(50));
+                            EditorGUILayout.TextField(item.path,GUILayout.Width(140));
+                            return;
                         }
-                        if (GUILayout.Button(objEdit ? "×" : "Sync", GUILayout.Width(40)))
+                        else
                         {
-                            item.obj = null;
+                            if (o == null)
+                            {
+                                // 消されたときのみ上書き
+                                // item.obj = null;
+                                onRemoveObject?.Invoke();
+                            }
+                            if (GUILayout.Button(objEdit ? "×" : "Sync", GUILayout.Width(40)))
+                            {
+                                // item.obj = null;
+                                onRemoveObject?.Invoke();
+                            }
                         }
                     }
 
@@ -1178,12 +1388,12 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
 
         void Setup(string path)
         {
-            string fileName = System.IO.Path.GetFileNameWithoutExtension(path);
-            string fileDir = System.IO.Path.GetDirectoryName (path);
+            string fileName = Path.GetFileNameWithoutExtension(path);
+            string fileDir = Path.GetDirectoryName (path);
 #if VRC_SDK_VRCSDK3
             var p = new ParametersCreater(fileName);
             var c = new AnimatorControllerCreator(fileName,false);
-            var m = new MenuCreater(fileName);
+            // var m = new MenuCreater(fileName);
             
             var idleAnim = new AnimationClipCreator("Idle", avatar.gameObject).CreateAsset(path, true);
 
@@ -1197,7 +1407,17 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                     p.AddParam(param,menuElement.isDefault,menuElement.isSaved);
                     c.CreateLayer(param);
                     c.AddParameter(param,menuElement.isDefault);
-                    c.AddDefaultState("Default",null);
+                    if (menuElement.isRandom)
+                    {
+                        c.AddDefaultState("Initialize",null);
+                        c.AddState("Default",null);
+                        c.AddTransition("Initialize","Default");
+                        c.ParameterDriver("Initialize",param,0,1,0.5f);
+                    }
+                    else
+                    {
+                        c.AddDefaultState("Default",null);
+                    }
                     var activeAnim = new AnimationClipCreator(menuElement.name+"_Active",avatar.gameObject);
                     var activateAnim = new AnimationClipCreator(menuElement.name+"_Activate",avatar.gameObject);
                     var inactiveAnim = new AnimationClipCreator(menuElement.name+"_Inactive",avatar.gameObject);
@@ -1261,10 +1481,6 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                     c.AddTransition("Inactive","InactiveIdle");
                     c.AddTransition("InactiveIdle","Activate",param,true);
                     //m.AddToggle(menuElement.name,menuElement.icon,param);
-                    if (menuElement.isRandom)
-                    {
-                        c.ParameterDriver("Default",param,0,1,0.5f);
-                    }
                     menuElement.param = param;
                     menuElement.value = 1;
                 }
@@ -1277,7 +1493,8 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                 var param = data.saveName + "_" + layer.ToString();
                 p.AddParam(param,0,data.layerSettingses[(int) layer].isSaved);
                 c.CreateLayer(param);
-                c.AddDefaultState("Default",null);
+                
+                layerMenuElements = layerMenuElements.OrderBy(e => e.isTaboo ? 100 : 0).ToList();
                 
                 var d = data.layerSettingses[(int) layer].GetDefaultElement(data.menuElements);
                 if (d==null)
@@ -1287,6 +1504,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                         name = "Default",
                         activeItems = ComputeDefaultItems(layer),
                         isToggle = false,
+                        isTaboo = true,
                         layer = layer,
                     };
                     layerMenuElements.Insert(0,menu);
@@ -1295,6 +1513,21 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                 {
                     layerMenuElements.Remove(d);
                     layerMenuElements.Insert(0,d);
+                }
+                
+                if (data.layerSettingses[(int) layer].isRandom)
+                {
+                    // ランダム設定の反映
+                    c.AddDefaultState("Initialize",null);
+                    c.AddState("Default",null);
+                    c.AddTransition("Initialize","Default");
+                    c.ParameterDriver("Initialize",param,
+                        layerMenuElements[0].isTaboo ? 1 : 0,
+                        layerMenuElements.Count(e=>!e.isTaboo) - 1 + (layerMenuElements[0].isTaboo ? 1 : 0) );
+                }
+                else
+                {
+                    c.AddDefaultState("Default",null);
                 }
                 
                 for (int i = 0; i < layerMenuElements.Count; i++)
@@ -1341,8 +1574,29 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                     }
                     c.AddState(i.ToString() + "_Active", activeAnim.CreateAsset(path,true));
                     c.AddState(i.ToString() + "_Idle",  data.idleOverride ? activeAnim.Create() : idleAnim);
-                    c.AddTransition("Default",i.ToString() + "_Active",param,i);
+
+                    if (menuElement.isTaboo ||
+                        (data.layerSettingses[(int) layer].isRandom && menuElement.activeSyncElements.Count != 0))
+                    {
+                        c.AddState(i.ToString() + "_Initialize",  activeAnim.Create());
+                        c.AddTransition("Default",i.ToString() + "_Initialize",param,i);
+                        if (menuElement.isTaboo)
+                        {
+                            // タブー設定に当たったらデフォルトに送る
+                            c.ParameterDriver(i.ToString() + "_Initialize",param,0);
+                            c.AddTransition(i.ToString() + "_Initialize",0.ToString() + "_Active");
+                        }
+                        else
+                        {
+                            c.AddTransition(i.ToString() + "_Initialize",i.ToString() + "_Active");
+                        }
+                    }
+                    else
+                    {
+                        c.AddTransition("Default",i.ToString() + "_Active",param,i);
+                    }
                     c.AddTransition(i.ToString() + "_Active",i.ToString() + "_Idle");
+                    
                     //m.AddToggle(menuElement.name,menuElement.icon,param,i);
                     menuElement.param = param;
                     menuElement.value = i;
@@ -1392,22 +1646,6 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                         c.AddTransition(j.ToString() + "to" + i.ToString() + "_Transition",i.ToString() + "_Active");
                     }
                 }
-                if (data.layerSettingses[(int) layer].isRandom)
-                {
-                    c.ParameterDriver("Default",param,0,layerMenuElements.Count);
-                }
-            }
-
-            foreach (var menuElement in menuElements)
-            {
-                if (menuElement.isToggle)
-                {
-                    m.AddToggle(menuElement.name,menuElement.icon,menuElement.param);
-                }
-                else
-                {
-                    m.AddToggle(menuElement.name,menuElement.icon,menuElement.param,menuElement.value);
-                }
             }
 
             // パラメーターシンク
@@ -1418,10 +1656,10 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                     if (!syncElement.syncOn && !syncElement.syncOff) continue;
                     var syncParam = menuElements.FirstOrDefault(e => e.guid == syncElement.guid);
                     if (syncParam == null) continue;
-                    
+
+                    c.SetEditLayer(c.GetEditLayer(menuElement.param));
                     if (syncElement.delay < 0)
                     {
-                        c.SetEditLayer(c.GetEditLayer(menuElement.param));
                         if (menuElement.isToggle)
                         {
                             c.ParameterDriver( "Active" , syncParam.param, syncElement.syncOn ? syncParam.value : 0f);
@@ -1433,7 +1671,6 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                     }
                     else
                     {
-                        c.SetEditLayer(c.GetEditLayer(menuElement.param));
                         if (menuElement.isToggle)
                         {
                             c.ParameterDriver( "Activate" , syncParam.param, syncElement.syncOn ? syncParam.value : 0f);
@@ -1445,6 +1682,19 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                             {
                                 c.ParameterDriver( state, syncParam.param, syncElement.syncOn ? syncParam.value : 0f);
                             }
+                        }
+                    }
+
+                    // ランダムで代入時も同様に処理
+                    if (data.layerSettingses[(int) menuElement.layer].isRandom)
+                    {
+                        if (menuElement.isToggle)
+                        {
+                            c.ParameterDriver( menuElement.value.ToString() + "_Initialize", syncParam.param, syncElement.syncOn ? syncParam.value : 0f);
+                        }
+                        else
+                        {
+                            c.ParameterDriver( menuElement.value.ToString() + "_Initialize", syncParam.param, syncElement.syncOn ? syncParam.value : 0f);
                         }
                     }
                 }
@@ -1470,9 +1720,53 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                     }
                 }
             }
-            
-            var pm = new MenuCreater("ParentMenu");
+
+            MenuCreater pm = new MenuCreater("ParentMenu");
+            MenuCreater m = new MenuCreater(fileName);
+            if (data.useMenuTemplate)
+            {
+                // テンプレートの整合性チェック
+                data.ReloadTemplates();
+                foreach (var menu in data.menuTemplate)
+                {
+                    if (String.IsNullOrWhiteSpace(menu.menuGUID))
+                    {
+                        var a = CreateTemplateMenu(menu, path);
+                        m.AddSubMenu(a.CreateAsset(path, true),menu.name,menu.icon);
+                    }
+                    else
+                    {
+                        var a = data.menuElements.FirstOrDefault(e => e.guid == menu.menuGUID);
+                        if (a != null)
+                        {
+                            if (a.isToggle)
+                            {
+                                m.AddToggle(menu.name,menu.icon,a.param);
+                            }
+                            else
+                            {
+                                m.AddToggle(menu.name,menu.icon,a.param,a.value);
+                            }
+                        }
+                    }
+                }
+            }
+            else
+            {
+                foreach (var menuElement in menuElements)
+                {
+                    if (menuElement.isToggle)
+                    {
+                        m.AddToggle(menuElement.name,menuElement.icon,menuElement.param);
+                    }
+                    else
+                    {
+                        m.AddToggle(menuElement.name,menuElement.icon,menuElement.param,menuElement.value);
+                    }
+                }
+            }
             pm.AddSubMenu(m.CreateAsset(path, true),data.saveName,data.icon);
+            
 
             //p.LoadParams(c,true);
             var mod = new AvatarModifyTool(avatar,fileDir);
@@ -1487,6 +1781,35 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             ApplySettings(mod).ModifyAvatar(assets,EnvironmentGUIDs.prefix);
 #endif
             SaveMaterials(path,true);
+        }
+        
+        MenuCreater CreateTemplateMenu(MenuTemplate menu,string path)
+        {
+            var m = new MenuCreater(menu.name);
+            foreach (var element in menu.childs)
+            {
+                if (String.IsNullOrWhiteSpace(element.menuGUID))
+                {
+                    var a = CreateTemplateMenu(element, path);
+                    m.AddSubMenu(a.CreateAsset(path, true),element.name,element.icon);
+                }
+                else
+                {
+                    var a = data.menuElements.FirstOrDefault(e => e.guid == element.menuGUID);
+                    if (a != null)
+                    {
+                        if (a.isToggle)
+                        {
+                            m.AddToggle(element.name,element.icon,a.param);
+                        }
+                        else
+                        {
+                            m.AddToggle(element.name,element.icon,a.param,a.value);
+                        }
+                    }
+                }
+            }
+            return m;
         }
 
         void SaveElementTransition(ItemElement element,
@@ -1886,6 +2209,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         void SetObjectActiveForScene(MenuElement menu,bool active = true, bool material = true, bool blendShape = true)
         {
             RevertObjectActiveForScene(active,material,blendShape);
+            if (menu == null) return;
 
             var activeItems = menu.SafeActiveItems();
             activeItems.AddRange(ComputeLayerAnotherItems(menu));
@@ -2344,6 +2668,21 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                 name = "Menu" + menuElements.Count,
                 icon = AssetUtility.LoadAssetAtGuid<Texture2D>(EnvironmentGUIDs.itemIcon)
             });
+        }
+        
+        void AddFolder()
+        {
+            data.menuTemplate.Add(new MenuTemplate()
+            {
+                name = "Folder",
+                icon = AssetUtility.LoadAssetAtGuid<Texture2D>(EnvironmentGUIDs.itemboxIcon),
+                autoCreate = false
+            });
+        }
+        
+        void ResetTemplate()
+        {
+            data.menuTemplate = new List<MenuTemplate>();
         }
 
         List<string> FindConflict()

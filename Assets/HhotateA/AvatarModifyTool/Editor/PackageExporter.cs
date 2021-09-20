@@ -13,7 +13,7 @@ namespace HhotateA.AvatarModifyTools.Core
         [MenuItem("Window/HhotateA/PackageExporter",false,100)]
         static void Export()
         {
-            var path = EditorUtility.SaveFilePanel("Export", "Assets", "version","unitypackage");
+            var path = EditorUtility.SaveFilePanel("Export", "Assets", "_v"+EnvironmentVariable.version,"unitypackage");
             if (String.IsNullOrWhiteSpace(path)) return;
             string dir = Path.GetDirectoryName(path);
             string version = System.IO.Path.GetFileNameWithoutExtension(path);
