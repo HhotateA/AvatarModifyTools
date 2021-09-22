@@ -708,10 +708,12 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
     [Serializable]
     public class RendererOption
     {
+        public bool rendActive = true;
         public string path;
         public Renderer rend;
-        public bool extendMaterialOption = false;
-        public bool extendBlendShapeOption = false;
+        public bool extendOption { get; set; }
+        // public bool extendMaterialOption = false;
+        // public bool extendBlendShapeOption = false;
         public List<MaterialOption> changeMaterialsOptions = new List<MaterialOption>();
         public List<BlendShapeOption> changeBlendShapeOptions = new List<BlendShapeOption>();
 
