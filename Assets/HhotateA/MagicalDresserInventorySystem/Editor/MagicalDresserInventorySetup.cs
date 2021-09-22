@@ -1029,7 +1029,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             using (new EditorGUILayout.HorizontalScope())
             {
                 //EditorGUILayout.LabelField("",GUILayout.Width(5));
-                var r = GUILayoutUtility.GetRect(new GUIContent(""),GUIStyle.none,GUILayout.Width(25));
+                var r = GUILayoutUtility.GetRect(new GUIContent(""), GUI.skin.toggle,GUILayout.Width(25));
                 
                 using (new EditorGUI.DisabledScope(!optionEdit))
                 {
