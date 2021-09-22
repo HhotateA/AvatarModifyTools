@@ -16,6 +16,7 @@ using UnityEditor;
 using UnityEngine.Serialization;
 using System.Reflection;
 using UnityEditor.IMGUI.Controls;
+using UnityEngine.Internal;
 
 namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
 {
@@ -708,10 +709,21 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
     [Serializable]
     public class RendererOption
     {
-        public bool disableRend = false;
+        [SerializeField] bool rendDisable = false;
+        public bool RendEnable
+        {
+            get
+            {
+                return !rendDisable;
+            }
+            set
+            {
+                rendDisable = !value;
+            }
+        }
         public string path;
         public Renderer rend;
-        public bool extendOption { get; set; }
+        public bool ExtendOption { get; set; }
         // public bool extendMaterialOption = false;
         // public bool extendBlendShapeOption = false;
         public List<MaterialOption> changeMaterialsOptions = new List<MaterialOption>();
@@ -720,7 +732,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         public RendererOption(Renderer r, GameObject root)
         {
             rend = r;
-            disableRend = !r.enabled;
+            RendEnable = r.enabled;
             GetRelativePath(root);
             if (r)
             {
