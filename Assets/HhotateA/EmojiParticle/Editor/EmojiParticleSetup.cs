@@ -288,7 +288,7 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
     
             // 結合テクスチャの作成
             var textures = data.emojis.Select(icon=>icon.ToTexture2D()).ToArray();
-            var combinatedTexture = TextureCombinater.CombinateSaveTexture(textures,Path.Combine(fileDir,data.saveName+"_tex"+".png"),tilling,1);
+            var combinatedTexture = TextureCombinater.CombinateSaveTexture(textures,Path.Combine(fileDir,data.saveName+"_tex"+".png"),tilling,4);
             combinatedTexture.name = data.saveName+"_tex";
             // マテリアルの作成
             var combinatedMaterial = SaveParticleMaterial(combinatedTexture);

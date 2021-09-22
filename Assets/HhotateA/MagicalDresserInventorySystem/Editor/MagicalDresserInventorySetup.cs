@@ -360,6 +360,30 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                         {
                             if (data.useMenuTemplate)
                             {
+                                using (new EditorGUILayout.VerticalScope(GUI.skin.box,GUILayout.Width(330)))
+                                {
+                                    var menuelementRect = EditorGUILayout.GetControlRect(false, 60);
+
+                                    if (menuReorderableList.index >= 0)
+                                    {
+                                        DrawMenuElement(menuelementRect, menuReorderableList.index);
+                                    }
+                                    else
+                                    {
+                                        var selectFolders = menuTreeView.GetSelectTemplates();
+                                        if (selectFolders.Count > 0)
+                                        {
+                                            DrawFolderElement(menuelementRect, selectFolders[0]);
+                                        }
+                                    }
+                                }
+                                
+                                scrollLeftTree = EditorGUILayout.BeginScrollView(scrollLeftTree, false, false, GUIStyle.none, GUI.skin.verticalScrollbar, GUI.skin.scrollView);
+                                var treeRect = EditorGUILayout.GetControlRect(false, openMenuList ? (position.height-300)/2 : position.height-300);
+                                treeRect.width = 375;
+                                menuTreeView.OnGUI(treeRect);
+                                EditorGUILayout.EndScrollView();
+                                
                                 using (new EditorGUILayout.HorizontalScope())
                                 {
                                     if(GUILayout.Button("Reset",GUILayout.Width(75)))
@@ -373,39 +397,48 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                                     }
                                     EditorGUILayout.LabelField("  ",GUILayout.Width(10));
 
-                                    using (new EditorGUI.DisabledScope(menuTreeView.GetSelectTemplates().Count == 0))
+                                    using (new EditorGUI.DisabledScope(menuTreeView.GetSelectTemplates().Count == 0 && 
+                                                                       !(0 <= menuReorderableList.index && menuReorderableList.index < menuElements.Count)))
                                     {
                                         if(GUILayout.Button("-",GUILayout.Width(30)))
                                         {
-                                            var selectFolders = menuTreeView.GetSelectTemplates();
-                                            // foreach (var selectFolder in selectFolders)
+                                            if (0 <= menuReorderableList.index &&
+                                                  menuReorderableList.index < menuElements.Count)
                                             {
-                                                var selectFolder = selectFolders[0];
-                                                if (String.IsNullOrWhiteSpace(selectFolder.menuGUID))
+                                                menuElements.RemoveAt(menuReorderableList.index);
+                                            }
+                                            else
+                                            {
+                                                var selectFolders = menuTreeView.GetSelectTemplates();
+                                                // foreach (var selectFolder in selectFolders)
                                                 {
-                                                    MenuTemplate.FIndTemplateElement(data.menuTemplate, selectFolder.GetGuid(),
-                                                        (e, p) =>
-                                                        {
-                                                            if (p == null)
-                                                            {
-                                                                if (data.menuTemplate.Contains(e))
-                                                                {
-                                                                    data.menuTemplate.Remove(e);
-                                                                }
-                                                            }
-                                                            else
-                                                            {
-                                                                p.childs.Remove(e);
-                                                            }
-                                                        });
-                                                }
-                                                else
-                                                {
-                                                    var menu = menuElements.FirstOrDefault(e =>
-                                                        e.guid == selectFolder.menuGUID);
-                                                    if (menu != null)
+                                                    var selectFolder = selectFolders[0];
+                                                    if (String.IsNullOrWhiteSpace(selectFolder.menuGUID))
                                                     {
-                                                        menuElements.Remove(menu);
+                                                        MenuTemplate.FIndTemplateElement(data.menuTemplate, selectFolder.GetGuid(),
+                                                            (e, p) =>
+                                                            {
+                                                                if (p == null)
+                                                                {
+                                                                    if (data.menuTemplate.Contains(e))
+                                                                    {
+                                                                        data.menuTemplate.Remove(e);
+                                                                    }
+                                                                }
+                                                                else
+                                                                {
+                                                                    p.childs.Remove(e);
+                                                                }
+                                                            });
+                                                    }
+                                                    else
+                                                    {
+                                                        var menu = menuElements.FirstOrDefault(e =>
+                                                            e.guid == selectFolder.menuGUID);
+                                                        if (menu != null)
+                                                        {
+                                                            menuElements.Remove(menu);
+                                                        }
                                                     }
                                                 }
                                             }
@@ -419,12 +452,6 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                                     }
                                 }
                                 
-                                scrollLeftTree = EditorGUILayout.BeginScrollView(scrollLeftTree, false, false, GUIStyle.none, GUI.skin.verticalScrollbar, GUI.skin.scrollView);
-                                var treeRect = EditorGUILayout.GetControlRect(false, position.height-280);
-                                treeRect.width = 375;
-                                menuTreeView.OnGUI(treeRect);
-                                EditorGUILayout.EndScrollView();
-                                
                                 openMenuList = EditorGUILayout.ToggleLeft("Extend Menu List",openMenuList);
                                 
                                 if (openMenuList)
@@ -435,23 +462,6 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                                 }
                                 else
                                 {
-                                    using (new EditorGUILayout.VerticalScope(GUI.skin.box,GUILayout.Width(330)))
-                                    {
-                                        var menuelementRect = EditorGUILayout.GetControlRect(false, 60);
-
-                                        if (menuReorderableList.index >= 0)
-                                        {
-                                            DrawMenuElement(menuelementRect, menuReorderableList.index);
-                                        }
-                                        else
-                                        {
-                                            var selectFolders = menuTreeView.GetSelectTemplates();
-                                            if (selectFolders.Count > 0)
-                                            {
-                                                DrawFolderElement(menuelementRect, selectFolders[0]);
-                                            }
-                                        }
-                                    }
                                 }
                                 EditorGUILayout.Space();
                                 EditorGUILayout.LabelField(" ",GUILayout.ExpandHeight(true));
