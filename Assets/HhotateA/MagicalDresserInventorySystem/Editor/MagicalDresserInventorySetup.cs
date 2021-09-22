@@ -60,8 +60,11 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             public SkinnedMeshRenderer rend;
             public int index;
         }
+
+        private bool openMenuList = true;
         
         Vector2 scrollLeft = Vector2.zero;
+        Vector2 scrollLeftTree = Vector2.zero;
         Vector2 scrollRight = Vector2.zero;
         
         Material GetAnimationMaterial(Material origin,Material animMat)
@@ -357,29 +360,6 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                         {
                             if (data.useMenuTemplate)
                             {
-                                using (new EditorGUILayout.VerticalScope(GUI.skin.box,GUILayout.Width(330)))
-                                {
-                                    var menuelementRect = EditorGUILayout.GetControlRect(false, 60);
-
-                                    if (menuReorderableList.index >= 0)
-                                    {
-                                        DrawMenuElement(menuelementRect, menuReorderableList.index);
-                                    }
-                                    else
-                                    {
-                                        var selectFolders = menuTreeView.GetSelectTemplates();
-                                        if (selectFolders.Count > 0)
-                                        {
-                                            DrawFolderElement(menuelementRect, selectFolders[0]);
-                                        }
-                                    }
-                                }
-
-                                scrollLeft = EditorGUILayout.BeginScrollView(scrollLeft, false, false, GUIStyle.none, GUI.skin.verticalScrollbar, GUI.skin.scrollView);
-                                var treeRect = EditorGUILayout.GetControlRect(false, position.height-280);
-                                treeRect.width = 375;
-                                menuTreeView.OnGUI(treeRect);
-                                EditorGUILayout.EndScrollView();
                                 using (new EditorGUILayout.HorizontalScope())
                                 {
                                     if(GUILayout.Button("Reset",GUILayout.Width(75)))
@@ -436,6 +416,41 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                                     if(GUILayout.Button("+",GUILayout.Width(30)))
                                     {
                                         AddMenu();
+                                    }
+                                }
+                                
+                                scrollLeftTree = EditorGUILayout.BeginScrollView(scrollLeftTree, false, false, GUIStyle.none, GUI.skin.verticalScrollbar, GUI.skin.scrollView);
+                                var treeRect = EditorGUILayout.GetControlRect(false, position.height-280);
+                                treeRect.width = 375;
+                                menuTreeView.OnGUI(treeRect);
+                                EditorGUILayout.EndScrollView();
+                                
+                                openMenuList = EditorGUILayout.ToggleLeft("Extend Menu List",openMenuList);
+                                
+                                if (openMenuList)
+                                {
+                                    scrollLeft = EditorGUILayout.BeginScrollView(scrollLeft, false, false, GUIStyle.none, GUI.skin.verticalScrollbar, GUI.skin.scrollView,GUILayout.Width(375),GUILayout.ExpandHeight(false));
+                                    menuReorderableList.DoLayoutList();
+                                    EditorGUILayout.EndScrollView();
+                                }
+                                else
+                                {
+                                    using (new EditorGUILayout.VerticalScope(GUI.skin.box,GUILayout.Width(330)))
+                                    {
+                                        var menuelementRect = EditorGUILayout.GetControlRect(false, 60);
+
+                                        if (menuReorderableList.index >= 0)
+                                        {
+                                            DrawMenuElement(menuelementRect, menuReorderableList.index);
+                                        }
+                                        else
+                                        {
+                                            var selectFolders = menuTreeView.GetSelectTemplates();
+                                            if (selectFolders.Count > 0)
+                                            {
+                                                DrawFolderElement(menuelementRect, selectFolders[0]);
+                                            }
+                                        }
                                     }
                                 }
                                 EditorGUILayout.Space();
