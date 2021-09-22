@@ -448,8 +448,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                                 using (new EditorGUILayout.HorizontalScope())
                                 {
                                     EditorGUILayout.LabelField("  ",GUILayout.Width(275));
-                                    using (new EditorGUI.DisabledScope(0 > menuReorderableList.index ||
-                                                                       menuReorderableList.index < menuElements.Count))
+                                    using (new EditorGUI.DisabledScope(!(0 <= menuReorderableList.index && menuReorderableList.index < menuElements.Count)))
                                     {
                                         if(GUILayout.Button("-",GUILayout.Width(30)))
                                         {
