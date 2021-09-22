@@ -1193,7 +1193,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                 EditorGUILayout.LabelField("", GUILayout.Width(25));
                 if (item.active)
                 {
-                    rendOption.rendActive = EditorGUILayout.Toggle("", rendOption.rendActive, GUILayout.Width(30));
+                    rendOption.disableRend = !EditorGUILayout.Toggle("", !rendOption.disableRend, GUILayout.Width(30));
                 }
                 else
                 {
@@ -1540,6 +1540,16 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                         // option処理
                         foreach (var rendOption in item.rendOptions)
                         {
+                            if (rendOption.disableRend)
+                            {
+                                activeAnim.AddKeyframe(0f, rendOption.rend, "m_Enabled", 1);
+                                activeAnim.AddKeyframe(1f/60f, rendOption.rend, "m_Enabled", 1);
+                            }
+                            else
+                            {
+                                activeAnim.AddKeyframe(0f, rendOption.rend, "m_Enabled", 0);
+                                activeAnim.AddKeyframe(1f/60f, rendOption.rend, "m_Enabled", 0);
+                            }
                             for (int j = 0; j < rendOption.changeMaterialsOptions.Count; j++)
                             {
                                 if (rendOption.changeMaterialsOptions[j].change)
@@ -1847,15 +1857,15 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                 // option処理
                 foreach (var rendOption in element.rendOptions)
                 {
-                    if (rendOption.rendActive)
+                    if (rendOption.disableRend)
                     {
-                        ActiveAnimation(setAnim, rendOption.rend.gameObject,true,0f);
-                        ActiveAnimation(setAnim, rendOption.rend.gameObject,true,1f/60f);
+                        setAnim.AddKeyframe(0f, rendOption.rend, "m_Enabled", 0);
+                        setAnim.AddKeyframe(1f/60f, rendOption.rend, "m_Enabled", 0);
                     }
                     else
                     {
-                        ActiveAnimation(setAnim, rendOption.rend.gameObject,false,0f);
-                        ActiveAnimation(setAnim, rendOption.rend.gameObject,false,1f/60f);
+                        setAnim.AddKeyframe(0f, rendOption.rend, "m_Enabled", 1);
+                        setAnim.AddKeyframe(1f/60f, rendOption.rend, "m_Enabled", 1);
                     }
                     for (int i = 0; i < rendOption.changeMaterialsOptions.Count; i++)
                     {

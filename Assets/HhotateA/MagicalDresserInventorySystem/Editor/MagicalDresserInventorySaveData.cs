@@ -708,7 +708,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
     [Serializable]
     public class RendererOption
     {
-        public bool rendActive = true;
+        public bool disableRend = false;
         public string path;
         public Renderer rend;
         public bool extendOption { get; set; }
@@ -720,6 +720,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         public RendererOption(Renderer r, GameObject root)
         {
             rend = r;
+            disableRend = !r.enabled;
             GetRelativePath(root);
             if (r)
             {
