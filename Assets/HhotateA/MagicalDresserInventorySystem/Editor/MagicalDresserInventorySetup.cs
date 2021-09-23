@@ -853,18 +853,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                                         }
                                     }
 
-                                    if (writeDefault)
-                                    {
-                                        var writeDefaultLayers = FindWriteDefault();
-                                        if (writeDefaultLayers.Count > 0)
-                                        {
-                                            status.Warning("Complete Setup (Detect WriteDefault Layers)");
-                                            foreach (var c in writeDefaultLayers)
-                                            {
-                                                Debug.LogWarning("Detect WriteDefault Layer : " + c);
-                                            }
-                                        }
-                                    }
+                                    DetectAnimatorError();
                                 }
                                 catch (Exception e)
                                 {
@@ -1579,8 +1568,18 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                         // option処理
                         foreach (var rendOption in item.rendOptions)
                         {
-                            activeAnim.AddKeyframe(0f, rendOption.rend, "m_Enabled", rendOption.RendEnable ? 0 : 1);
-                            activeAnim.AddKeyframe(1f/60f, rendOption.rend, "m_Enabled", rendOption.RendEnable ? 0 : 1);
+                            if (rendOption.rend is SkinnedMeshRenderer)
+                            {
+                                activeAnim.AddKeyframe(0f, rendOption.rend as SkinnedMeshRenderer, "m_Enabled", rendOption.RendEnable ? 1 : 0);
+                                activeAnim.AddKeyframe(1f/60f, rendOption.rend as SkinnedMeshRenderer, "m_Enabled", rendOption.RendEnable ? 1 : 0);
+                            }
+                            else
+                            if(rendOption.rend is MeshRenderer)
+                            {
+                                activeAnim.AddKeyframe(0f, rendOption.rend as MeshRenderer, "m_Enabled", rendOption.RendEnable ? 1 : 0);
+                                activeAnim.AddKeyframe(1f/60f, rendOption.rend as MeshRenderer, "m_Enabled", rendOption.RendEnable ? 1 : 0);
+                            }
+                            
                             
                             for (int j = 0; j < rendOption.changeMaterialsOptions.Count; j++)
                             {
@@ -2772,18 +2771,6 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
 #endif
         }
         
-        List<string> FindWriteDefault()
-        {
-#if VRC_SDK_VRCSDK3
-            AvatarModifyTool mod = new AvatarModifyTool(avatar);
-            ApplySettings(mod);
-
-            var writeDefaultLayers = mod.HasWriteDefaultLayers();
-            return writeDefaultLayers;
-#else
-            return new List<string>();
-#endif
-        }
         private void OnDestroy()
         {
             RevertObjectActiveForScene();

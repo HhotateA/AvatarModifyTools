@@ -159,13 +159,13 @@ namespace HhotateA.AvatarModifyTools.GrabableItem
                             SimpleSetup(path);
                         }
                         OnFinishSetup();
+                        DetectAnimatorError();
                     }
                     catch (Exception e)
                     {
                         OnError(e);
                         throw;
                     }
-                    OnFinishSetup();
                 }
             }
             status.Display();

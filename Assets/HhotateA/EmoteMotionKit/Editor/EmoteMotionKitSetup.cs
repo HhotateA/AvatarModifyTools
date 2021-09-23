@@ -200,6 +200,7 @@ namespace HhotateA.AvatarModifyTools.EmoteMotionKit
                     AssetDatabase.CreateAsset(data, path);
                     Setup(path);
                     OnFinishSetup();
+                    DetectAnimatorError();
                 }
                 catch (Exception e)
                 {

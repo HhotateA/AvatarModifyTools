@@ -214,6 +214,7 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
 
                         AssetDatabase.SaveAssets();
                         OnFinishSetup();
+                        DetectAnimatorError();
                     }
                     catch (Exception e)
                     {

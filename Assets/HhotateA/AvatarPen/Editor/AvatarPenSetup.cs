@@ -63,6 +63,7 @@ namespace HhotateA.AvatarModifyTools.AvatarPen
                             var mod = new AvatarModifyTool(avatar);
                             ApplySettings(mod).ModifyAvatar(asset,EnvironmentGUIDs.prefix);
                             OnFinishSetup();
+                            DetectAnimatorError();
                         }
                         catch (Exception e)
                         {
