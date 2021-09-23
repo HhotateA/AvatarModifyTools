@@ -852,6 +852,19 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                                             Debug.LogWarning("Detect Conflict Layer : " + c);
                                         }
                                     }
+
+                                    if (writeDefault)
+                                    {
+                                        var writeDefaultLayers = FindWriteDefault();
+                                        if (writeDefaultLayers.Count > 0)
+                                        {
+                                            status.Warning("Complete Setup (Detect WriteDefault Layers)");
+                                            foreach (var c in writeDefaultLayers)
+                                            {
+                                                Debug.LogWarning("Detect WriteDefault Layer : " + c);
+                                            }
+                                        }
+                                    }
                                 }
                                 catch (Exception e)
                                 {
@@ -1876,8 +1889,8 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                 // option処理
                 foreach (var rendOption in element.rendOptions)
                 {
-                    setAnim.AddKeyframe(0f, rendOption.rend, "m_Enabled", rendOption.RendEnable ? 0 : 1);
-                    setAnim.AddKeyframe(1f/60f, rendOption.rend, "m_Enabled", rendOption.RendEnable ? 0 : 1);
+                    setAnim.AddKeyframe(0f, rendOption.rend, "m_Enabled", rendOption.RendEnable ? 1 : 0);
+                    setAnim.AddKeyframe(1f/60f, rendOption.rend, "m_Enabled", rendOption.RendEnable ? 1 : 0);
                     
                     for (int i = 0; i < rendOption.changeMaterialsOptions.Count; i++)
                     {
@@ -2754,6 +2767,19 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
 
             conflictLayers = conflictLayers.Distinct().ToList();
             return conflictLayers;
+#else
+            return new List<string>();
+#endif
+        }
+        
+        List<string> FindWriteDefault()
+        {
+#if VRC_SDK_VRCSDK3
+            AvatarModifyTool mod = new AvatarModifyTool(avatar);
+            ApplySettings(mod);
+
+            var writeDefaultLayers = mod.HasWriteDefaultLayers();
+            return writeDefaultLayers;
 #else
             return new List<string>();
 #endif
