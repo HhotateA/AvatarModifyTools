@@ -732,7 +732,7 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
 
                     using (new EditorGUILayout.HorizontalScope())
                     {
-                        using (new EditorGUI.DisabledScope(editMeshCreater == null && !isSaveAll))
+                        using (new EditorGUI.DisabledScope(editMeshCreater == null && !isSaveAll && !isCombineMesh))
                         {
                             if (GUILayout.Button("Export"))
                             {

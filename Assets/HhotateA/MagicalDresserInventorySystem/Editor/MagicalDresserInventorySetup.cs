@@ -1820,6 +1820,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             SaveMaterials(path,true);
         }
         
+#if VRC_SDK_VRCSDK3
         MenuCreater CreateTemplateMenu(MenuTemplate menu,string path)
         {
             var m = new MenuCreater(menu.name);
@@ -1848,6 +1849,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             }
             return m;
         }
+#endif
 
         void SaveElementTransition(ItemElement element,
             AnimationClipCreator transitionAnim, bool invert = false,
