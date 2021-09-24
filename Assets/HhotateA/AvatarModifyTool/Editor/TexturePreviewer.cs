@@ -16,12 +16,16 @@ namespace HhotateA.AvatarModifyTools.Core
     public class TexturePreviewer
     {
         private TextureCreator textureCreater;
+        private CustomRenderTexture targetTexture;
+        private Material targetMaterial;
         private CustomRenderTexture previewTexture;
         private Material previewMaterial;
         private float previewScale = 1f;
         Vector2 previewPosition = new Vector2(0.5f,0.5f);
         private Rect rect;
 
+        private RenderTexture overlayTexture;
+        
         public TexturePreviewer(TextureCreator tc)
         {
             textureCreater = tc;
@@ -34,7 +38,32 @@ namespace HhotateA.AvatarModifyTools.Core
             previewTexture.initializationMaterial = previewMaterial;
             previewTexture.material = previewMaterial;
             previewTexture.Create();
+            
+            targetTexture = new CustomRenderTexture(textureCreater.GetTexture().width,textureCreater.GetTexture().height);
+            targetMaterial = new Material(AssetUtility.LoadAssetAtGuid<Shader>(EnvironmentVariable.texturePreviewShader));
+            targetMaterial.SetTexture("_MainTex",textureCreater.GetTexture());
+            targetTexture.initializationSource = CustomRenderTextureInitializationSource.Material;
+            targetTexture.initializationMode = CustomRenderTextureUpdateMode.OnDemand;
+            targetTexture.updateMode = CustomRenderTextureUpdateMode.OnDemand;
+            targetTexture.initializationMaterial = targetMaterial;
+            targetTexture.material = targetMaterial;
+            targetTexture.Create();
+            
             rect = new Rect();
+        }
+        
+        ComputeShader GetComputeShader()
+        {
+            return AssetUtility.LoadAssetAtGuid<ComputeShader>(EnvironmentVariable.computeShader);
+        }
+        
+        public Texture GetTexture()
+        {
+            Vector4 scale = new Vector4(0f ,0f ,1f ,1f );
+            targetMaterial.SetVector("_Scale",scale);
+            targetMaterial.SetTexture("_Overlay",overlayTexture);
+            targetTexture.Initialize();
+            return targetTexture;
         }
 
         public void Display(int width, int height, bool moveLimit = true, int rotationDrag = 2, int positionDrag = 1)
@@ -87,19 +116,6 @@ namespace HhotateA.AvatarModifyTools.Core
         public void MouseOverlay(Texture tex,float scale = 1f,float rotate = 0f)
         {
             var e = Event.current;
-            if (rect.Contains(e.mousePosition))
-            {
-                var p = new Vector3(e.mousePosition.x - rect.x, rect.height - e.mousePosition.y + rect.y,1f);
-                var uv = new Vector2(p.x/rect.width,p.y/rect.height);
-                previewMaterial.SetTexture("_Overlay",tex);
-                previewMaterial.SetVector("_OverlayUV",new Vector4(uv.x-0.5f,uv.y-0.5f,1f,1f));
-                previewMaterial.SetFloat("_OverlayScale",scale);
-                previewMaterial.SetFloat("_OverlayRotate",rotate);
-            }
-            else
-            {
-                previewMaterial.SetTexture("_Overlay",null);
-            }
         }
         
         public Vector2 Touch(Action<Vector2,Vector2> onDrag = null)
@@ -160,7 +176,7 @@ namespace HhotateA.AvatarModifyTools.Core
             }
             
             previewMaterial.SetVector("_Scale",scale);
-            
+            previewMaterial.SetTexture("_Overlay",overlayTexture);
             previewTexture.Initialize();
 
             return previewTexture;
@@ -169,6 +185,124 @@ namespace HhotateA.AvatarModifyTools.Core
         public void Release()
         {
             previewTexture.Release();
+        }
+
+        public void PreviewPoint(Vector2 uv, Color brushColor, float brushWidth, float brushStrength)
+        {
+            PreviewClear();
+            if (0f < uv.x && uv.x < 1f &&
+                0f < uv.y && uv.y < 1f)
+            {
+                var compute = GetComputeShader();
+                int kernel = compute.FindKernel("ClearColor");
+                compute.SetVector("_Color",Vector4.zero);
+                compute.SetTexture(kernel,"_ResultTex",overlayTexture);
+                compute.Dispatch(kernel, overlayTexture.width,overlayTexture.height,1);
+                
+                kernel = compute.FindKernel("DrawPoint");
+                compute.SetTexture(kernel,"_ResultTex",overlayTexture);
+                compute.SetVector("_Color", brushColor);
+                compute.SetInt("_Width",overlayTexture.width);
+                compute.SetInt("_Height",overlayTexture.height);
+                compute.SetVector("_Point",uv);
+                compute.SetFloat("_BrushWidth",brushWidth);
+                compute.SetFloat("_BrushStrength",brushStrength);
+                compute.SetFloat("_BrushPower",1f);
+                compute.Dispatch(kernel, overlayTexture.width,overlayTexture.height,1);
+            }
+        }
+        
+        public void PreviewStamp(Texture stamp, Vector2 uv, Vector2 scale, Color col, float rot = 0f)
+        {
+            PreviewClear();
+            if (0f < uv.x && uv.x < 1f &&
+                0f < uv.y && uv.y < 1f)
+            {
+                var compute = GetComputeShader();
+                int kernel = compute.FindKernel("ClearColor");
+                compute.SetVector("_Color",Vector4.zero);
+                compute.SetTexture(kernel,"_ResultTex",overlayTexture);
+                compute.Dispatch(kernel, overlayTexture.width,overlayTexture.height,1);
+                
+                kernel = compute.FindKernel("DrawStamp");
+                compute.SetInt("_Width",overlayTexture.width);
+                compute.SetInt("_Height",overlayTexture.height);
+                compute.SetTexture(kernel, "_ResultTex", overlayTexture);
+                compute.SetInt("_StampWidth", stamp.width);
+                compute.SetInt("_StampHeight", stamp.height);
+                compute.SetVector("_Color", col);
+                compute.SetTexture(kernel, "_Stamp", stamp);
+                compute.SetVector("_StampUV", uv);
+                compute.SetVector("_StampScale", scale);
+                compute.SetFloat("_StampRotation", rot);
+                compute.Dispatch(kernel, overlayTexture.width, overlayTexture.height, 1);
+            }
+        }
+        
+        public void PreviewLine(Vector2 from,Vector2 to,Color brushColor,float brushWidth,float brushStrength)
+        {
+            PreviewClear();
+            if (0f < from.x && from.x < 1f &&
+                0f < from.y && from.y < 1f &&
+                0f < to.x && to.x < 1f &&
+                0f < to.y && to.y < 1f)
+            {
+                var compute = GetComputeShader();
+                int kernel = compute.FindKernel("ClearColor");
+                compute.SetVector("_Color",Vector4.zero);
+                compute.SetTexture(kernel,"_ResultTex",overlayTexture);
+                compute.Dispatch(kernel, overlayTexture.width,overlayTexture.height,1);
+                
+                kernel = compute.FindKernel("DrawLine");
+                compute.SetInt("_Width",overlayTexture.width);
+                compute.SetInt("_Height",overlayTexture.height);
+                compute.SetVector("_Color",brushColor);
+                compute.SetVector("_FromPoint",from);
+                compute.SetVector("_ToPoint",to);
+                compute.SetFloat("_BrushWidth",brushWidth);
+                compute.SetFloat("_BrushStrength",brushStrength);
+                compute.SetFloat("_BrushPower",1f);
+                compute.SetTexture(kernel,"_ResultTex",overlayTexture);
+                compute.Dispatch(kernel, overlayTexture.width, overlayTexture.height, 1);
+            }
+        }
+        
+        public void PreviewBox(Vector2 from,Vector2 to,Color brushColor,float brushWidth,float brushStrength)
+        {
+            PreviewClear();
+            if (0f < from.x && from.x < 1f &&
+                0f < from.y && from.y < 1f &&
+                0f < to.x && to.x < 1f &&
+                0f < to.y && to.y < 1f)
+            {
+                var compute = GetComputeShader();
+                int kernel = compute.FindKernel("ClearColor");
+                compute.SetVector("_Color",Vector4.zero);
+                compute.SetTexture(kernel,"_ResultTex",overlayTexture);
+                compute.Dispatch(kernel, overlayTexture.width,overlayTexture.height,1);
+                
+                kernel = compute.FindKernel("DrawBox");
+                compute.SetInt("_Width",overlayTexture.width);
+                compute.SetInt("_Height",overlayTexture.height);
+                compute.SetVector("_Color",brushColor);
+                compute.SetVector("_FromPoint",from);
+                compute.SetVector("_ToPoint",to);
+                compute.SetFloat("_BrushWidth",brushWidth);
+                compute.SetFloat("_BrushStrength",brushStrength);
+                compute.SetFloat("_BrushPower",1f);
+                compute.SetTexture(kernel,"_ResultTex",overlayTexture);
+                compute.Dispatch(kernel, overlayTexture.width, overlayTexture.height, 1);
+            }
+        }
+
+        public void PreviewClear()
+        {
+            if (overlayTexture == null)
+            {
+                overlayTexture = new RenderTexture( previewTexture.width, previewTexture.height,0,RenderTextureFormat.ARGBFloat, RenderTextureReadWrite.Default);
+                overlayTexture.enableRandomWrite = true;
+                overlayTexture.Create();
+            }
         }
     }
 }

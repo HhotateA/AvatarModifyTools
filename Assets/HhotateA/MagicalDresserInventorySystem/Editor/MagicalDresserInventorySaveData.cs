@@ -15,6 +15,8 @@ using HhotateA.AvatarModifyTools.Core;
 using UnityEditor;
 using UnityEngine.Serialization;
 using System.Reflection;
+using UnityEditor.IMGUI.Controls;
+using UnityEngine.Internal;
 
 namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
 {
@@ -27,6 +29,14 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         public List<MenuElement> menuElements = new List<MenuElement>();
         public LayerSettings[] layerSettingses;
         public AvatarModifyData assets;
+
+        public bool useMenuTemplate;
+        public List<MenuTemplate> menuTemplate = new List<MenuTemplate>();
+
+        public List<MenuTemplate> ReloadTemplates()
+        {
+            return MenuTemplate.ReloadTemplates(menuTemplate, menuElements);
+        }
 
         public bool idleOverride = true;
         public bool materialOverride = true;
@@ -96,6 +106,345 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                 menuElement.inactiveItems = menuElement.inactiveItems.Where(e => !String.IsNullOrWhiteSpace(e.path)).ToList();
             }
         }
+        
+        public void RepairReference(string path,GameObject obj,GameObject root)
+        {
+            foreach (var menuElement in menuElements)
+            {
+                foreach (var item in menuElement.activeItems)
+                {
+                    if (item.path == path)
+                    {
+                        item.obj = obj;
+                        item.ReloadRendOption();
+                        if(root != null) item.GetRelativePath(root);
+                    }
+                }
+                foreach (var item in menuElement.inactiveItems)
+                {
+                    if (item.path == path)
+                    {
+                        item.obj = obj;
+                        item.ReloadRendOption();
+                        if(root != null) item.GetRelativePath(root);
+                    }
+                }
+            }
+        }
+    }
+
+    [Serializable]
+    public class MenuTemplate
+    {
+        public string name;
+        public Texture2D icon;
+        public List<MenuTemplate> childs = new List<MenuTemplate>();
+        public string menuGUID;
+        public bool autoCreate = true;
+        [SerializeField] int guid = 0;
+
+        public int GetGuid()
+        {
+            if (guid == 0)
+            {
+                guid = Guid.NewGuid().GetHashCode();
+            }
+            return guid;
+        }
+
+        public MenuTemplate FIndTemplateElement(int id, Action<MenuTemplate, MenuTemplate> onFind = null)
+        {
+            childs = childs.Distinct().ToList();
+            foreach (var child in childs)
+            {
+                if (child.guid == id)
+                {
+                    onFind?.Invoke(child,this);
+                    return child;
+                }
+                var e = child.FIndTemplateElement(id,onFind);
+                if (e != null)
+                {
+                    return e;
+                }
+            }
+
+            return null; 
+        }
+        public static MenuTemplate FIndTemplateElement(List<MenuTemplate> root,int id, Action<MenuTemplate, MenuTemplate> onFind = null)
+        {
+            foreach (var child in root)
+            {
+                if (child.guid == id)
+                {
+                    onFind?.Invoke(child,null);
+                    return child;
+                }
+                var e = child.FIndTemplateElement(id,onFind);
+                if (e != null)
+                {
+                    return e;
+                }
+            }
+
+            return null;
+        }
+        
+        public MenuTemplate FindMenuElement(string id, Action<MenuTemplate, MenuTemplate> onFind = null)
+        {
+            childs = childs.Distinct().ToList();
+            foreach (var child in childs)
+            {
+                if (child.menuGUID == id)
+                {
+                    onFind?.Invoke(child,this);
+                    return child;
+                }
+                var e = child.FindMenuElement(id,onFind);
+                if (e != null)
+                {
+                    return e;
+                }
+            }
+
+            return null; 
+        }
+        
+        public static MenuTemplate FindMenuElement(List<MenuTemplate> root,string id, Action<MenuTemplate, MenuTemplate> onFind = null)
+        {
+            foreach (var child in root)
+            {
+                if (child.menuGUID == id)
+                {
+                    onFind?.Invoke(child,null);
+                    return child;
+                }
+                var e = child.FindMenuElement(id,onFind);
+                if (e != null)
+                {
+                    return e;
+                }
+            }
+
+            return null;
+        }
+
+        public void FindElement(Predicate<MenuTemplate> predicate,
+            Action<MenuTemplate, MenuTemplate> onFind = null)
+        {
+            childs = childs.Distinct().ToList();
+            foreach (var child in childs)
+            {
+                if (predicate.Invoke(child))
+                {
+                    onFind?.Invoke(child,this);
+                }
+            }
+        }
+        
+        public static void FindElement(List<MenuTemplate> root,
+            Predicate<MenuTemplate> predicate,
+            Action<MenuTemplate, MenuTemplate> onFind = null)
+        {
+            foreach (var child in root)
+            {
+                if (predicate.Invoke(child))
+                {
+                    onFind?.Invoke(child,null);
+                    child.FindElement(predicate,onFind);
+                }
+            }
+        }
+
+        public void DeleateOverlapElement(MenuTemplate origin)
+        {
+            childs = childs.Distinct().ToList();
+            for (int i = 0; i < childs.Count; i ++ )
+            {
+                if(String.IsNullOrWhiteSpace(childs[i].menuGUID)) continue;
+                if (childs[i].menuGUID == origin.menuGUID && childs[i] != origin)
+                {
+                    childs.Remove(childs[i]);
+                    i--;
+                    continue;
+                }
+                else
+                {
+                    childs[i].DeleateOverlapElement(origin);
+                }
+            }
+        }
+
+        public void DeleateNullMenuElement(List<MenuElement> datas)
+        {
+            childs = childs.Distinct().ToList();
+            for (int i = 0; i < childs.Count; i ++ )
+            {
+                if (String.IsNullOrWhiteSpace(childs[i].menuGUID))
+                {
+                    childs[i].DeleateNullMenuElement(datas);
+                }
+                else
+                {
+                    var menu = datas.FirstOrDefault(e => e.guid == childs[i].menuGUID);
+                    if (menu == null)
+                    {
+                        childs.Remove(childs[i]);
+                        i--;
+                        continue;
+                    }
+                    else
+                    {
+                        childs[i].icon = menu.icon;
+                        childs[i].name = menu.name;
+                        childs[i].DeleateNullMenuElement(datas);
+                    }
+                    // メニューは子を持たないので初期化
+                    childs[i].childs = new List<MenuTemplate>();
+                }
+            }
+        }
+        
+        public void DeleateAutoCreate()
+        { 
+            childs = childs.Distinct().ToList();
+            for (int i = 0; i < childs.Count; i ++ )
+            {
+                if (!String.IsNullOrWhiteSpace(childs[i].menuGUID) && childs[i].autoCreate)
+                {
+                    childs.Remove(childs[i]);
+                    i--;
+                    continue;
+                }
+                else
+                if (childs[i].childs.Count == 0 && childs[i].autoCreate)
+                {
+                    childs.Remove(childs[i]);
+                    i--;
+                    continue;
+                }
+                else
+                {
+                    childs[i].DeleateAutoCreate();
+                }
+            }
+        }
+
+        public void RecursionAutoCreateFalse()
+        {
+            autoCreate = false;
+            foreach (var child in childs)
+            {
+                child.RecursionAutoCreateFalse();
+            }
+        }
+
+        public static List<MenuTemplate> ReloadTemplates(List<MenuTemplate> menus,List<MenuElement> datas)
+        {
+            // メニュー参照切れ項目の削除
+            foreach (var menu in menus)
+            {
+                menu.DeleateNullMenuElement(datas);
+            }
+            
+            foreach (var data in datas)
+            {
+                var current = FindMenuElement(menus, data.guid);
+                if (current == null)
+                {
+                    current = new MenuTemplate()
+                    {
+                        name = data.name,
+                        icon = data.icon,
+                        menuGUID = data.guid,
+                        autoCreate = true,
+                    };
+                }
+                else
+                {
+                    FindMenuElement(menus, data.guid, (e, p) =>
+                    {
+                        if (e.autoCreate)
+                        {
+                            p.childs.Remove(e);
+                        }
+                    });
+                }
+                
+                if (current.autoCreate)
+                {
+                    var root = data.isToggle ? 
+                        menus.FirstOrDefault(e => e.name == "Items" && e.autoCreate) :
+                        menus.FirstOrDefault(e => e.name == data.layer.ToString() && e.autoCreate);
+                    // 親オブジェクトの検知
+                    MenuTemplate.FindElement(menus,e =>
+                    {
+                        var menu = datas.FirstOrDefault(m => m.guid == e.menuGUID);
+                        if (menu == null) return false;
+                        if (data.isToggle)
+                        {
+                            return e.autoCreate && menu.isToggle;
+                        }
+                        else
+                        {
+                            return e.autoCreate && !menu.isToggle && menu.layer == data.layer;
+                        }
+                    }, (e, p) =>
+                    {
+                        if (p != null)
+                        {
+                            root = p;
+                        }
+                    });
+                    if (root == null)
+                    {
+                        if (data.isToggle)
+                        {
+                            root = new MenuTemplate()
+                            {
+                                name = "Items",
+                                icon = data.icon,
+                                autoCreate = true,
+                            }; 
+                        }
+                        else
+                        {
+                            root = new MenuTemplate()
+                            {
+                                name = data.layer.ToString(),
+                                icon = data.icon,
+                                autoCreate = true,
+                            };
+                        }
+                        menus.Add(root);
+                    }
+                    root.childs.Add(current);
+                }
+            }
+            
+            // root直下の処理
+            for (int i = 0; i < menus.Count; i ++ )
+            {
+                if (String.IsNullOrWhiteSpace(menus[i].menuGUID) && menus[i].childs.Count == 0 && menus[i].autoCreate)
+                {
+                    menus.Remove(menus[i]);
+                    i--;
+                    continue;
+                }
+
+                if (!String.IsNullOrWhiteSpace(menus[i].menuGUID))
+                {
+                    var menu = datas.FirstOrDefault(e => e.guid == menus[i].menuGUID);
+                    if (menu == null)
+                    {
+                        menus.Remove(menus[i]);
+                        i--;
+                        continue;
+                    }
+                }
+            }
+            return menus;
+        }
     }
 
     [Serializable]
@@ -131,21 +480,31 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         public string name;
         public Texture2D icon;
         public List<ItemElement> activeItems = new List<ItemElement>();
-
         public List<ItemElement> SafeActiveItems()
         {
             return activeItems.Where(e => e.obj != null).ToList();
         }
+        public List<ItemElement> UnSafeActiveItems()
+        {
+            return activeItems.Where(e => e.obj == null).ToList();
+        }
+        
         public List<ItemElement> inactiveItems = new List<ItemElement>();
         public List<ItemElement> SafeInactiveItems()
         {
             return inactiveItems.Where(e => e.obj != null).ToList();
         }
+        public List<ItemElement> UnSafeInactiveItems()
+        {
+            return inactiveItems.Where(e => e.obj == null).ToList();
+        }
+        
         public bool isToggle = true;
         public LayerGroup layer = LayerGroup.Layer_A;
         public bool isSaved = true;
         public bool isDefault = false;
         public bool isRandom = false;
+        public bool isTaboo = false;
         public string param = "";
         public int value = 0;
         public string guid;
@@ -161,7 +520,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
 
         public MenuElement()
         {
-            guid = Guid.NewGuid().ToString();
+            guid = System.Guid.NewGuid().ToString();
         }
 
         public string DefaultIcon()
@@ -299,54 +658,81 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             if (String.IsNullOrWhiteSpace(path))
             {
                 obj = null;
+                ReloadRendOption();
                 return;
             }
+            
             root = root.Find(path);
-
+            if (root == null)
+            {
+                obj = null;
+                ReloadRendOption();
+                return;
+            }
+            
             obj = root.gameObject;
             
-            /*foreach (var rendOption in rendOptions)
+            ReloadRendOption();
+        }
+
+        public void ReloadRendOption()
+        {
+            if (obj == null)
             {
-                rendOption.GetRelativeGameobject(obj.transform);
-            }*/
-            var currentRendOptions = rendOptions;
-            var newRendOptions = obj.GetComponentsInChildren<Renderer>().Select(r => new RendererOption(r, obj)).ToList();
-            for (int i = 0; i < newRendOptions.Count; i++)
+            }
+            else
             {
-                var currentRendOption = currentRendOptions.FirstOrDefault(r => r.path == newRendOptions[i].path);
-                if (currentRendOption!=null)
+                var currentRendOptions = rendOptions;
+                var newRendOptions = obj.GetComponentsInChildren<Renderer>().Select(r => new RendererOption(r, obj)).ToList();
+                for (int i = 0; i < newRendOptions.Count; i++)
                 {
-                    // 設定飛んでそうだったら，破棄
-                    currentRendOption.GetRelativeGameobject(obj.transform);
-                    if (currentRendOption.rend == newRendOptions[i].rend &&
-                        currentRendOption.changeMaterialsOptions.Count ==
-                        newRendOptions[i].changeMaterialsOptions.Count &&
-                        currentRendOption.changeBlendShapeOptions.Count ==
-                        newRendOptions[i].changeBlendShapeOptions.Count)
+                    var currentRendOption = currentRendOptions.FirstOrDefault(r => r.path == newRendOptions[i].path);
+                    if (currentRendOption!=null)
                     {
-                        newRendOptions[i] = currentRendOption;
+                        // 設定飛んでそうだったら，破棄
+                        currentRendOption.GetRelativeGameobject(obj.transform);
+                        if (currentRendOption.rend == newRendOptions[i].rend &&
+                            currentRendOption.changeMaterialsOptions.Count ==
+                            newRendOptions[i].changeMaterialsOptions.Count &&
+                            currentRendOption.changeBlendShapeOptions.Count ==
+                            newRendOptions[i].changeBlendShapeOptions.Count)
+                        {
+                            newRendOptions[i] = currentRendOption;
+                        }
                     }
                 }
+                rendOptions = newRendOptions;
             }
-            rendOptions = newRendOptions;
         }
     }
 
     [Serializable]
     public class RendererOption
     {
+        [SerializeField] bool rendDisable = false;
+        public bool RendEnable
+        {
+            get
+            {
+                return !rendDisable;
+            }
+            set
+            {
+                rendDisable = !value;
+            }
+        }
         public string path;
         public Renderer rend;
-        public bool extendMaterialOption = false;
-        public bool extendBlendShapeOption = false;
+        public bool ExtendOption { get; set; }
+        // public bool extendMaterialOption = false;
+        // public bool extendBlendShapeOption = false;
         public List<MaterialOption> changeMaterialsOptions = new List<MaterialOption>();
         public List<BlendShapeOption> changeBlendShapeOptions = new List<BlendShapeOption>();
-        [FormerlySerializedAs("changeMaterialsOption")] [SerializeField] private List<Material> compatibility_changeMaterialsOption = null;
-        [FormerlySerializedAs("changeBlendShapeOption")] [SerializeField] private List<float> compatibility_changeBlendShapeOption = null;
 
         public RendererOption(Renderer r, GameObject root)
         {
             rend = r;
+            RendEnable = r.enabled;
             GetRelativePath(root);
             if (r)
             {
@@ -404,36 +790,20 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         
         public void GetRelativeGameobject(Transform root)
         {
-            if (!String.IsNullOrWhiteSpace(path))
+            if (String.IsNullOrWhiteSpace(path))
             {
-                root = root.Find(path);
+                root = null;
+                return;
             }
-
+            
+            root = root.Find(path);
+            if (root == null)
+            {
+                rend = null;
+                return;
+            }
+            
             rend = root.gameObject.GetComponent<Renderer>();
-            ReplaceMaterialOption();
-        }
-
-        public void ReplaceMaterialOption()
-        {
-            if (compatibility_changeMaterialsOption!=null)
-            {
-                if (compatibility_changeMaterialsOption.Count > 0)
-                {
-                    changeMaterialsOptions = compatibility_changeMaterialsOption
-                        .Select(m => new MaterialOption(m)).ToList();
-                    compatibility_changeMaterialsOption = new List<Material>();
-                }
-            }
-
-            if (compatibility_changeBlendShapeOption != null)
-            {
-                if (compatibility_changeBlendShapeOption.Count > 0)
-                {
-                    changeBlendShapeOptions = compatibility_changeBlendShapeOption
-                        .Select(m => new BlendShapeOption(m)).ToList();
-                    compatibility_changeBlendShapeOption = new List<float>();
-                }
-            }
         }
     }
 
@@ -485,48 +855,6 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
 
     public static class AssetLink
     {
-        /*public static Shader GetShaderByType(this FeedType type)
-        {
-            if (type == FeedType.Feed)
-            {
-                return AssetUtility.LoadAssetAtGuid<Shader>(EnvironmentGUIDs.feedShader);
-            }
-            if (type == FeedType.Crystallize)
-            {
-                return AssetUtility.LoadAssetAtGuid<Shader>(EnvironmentGUIDs.crystallizeShader);
-            }
-            if (type == FeedType.Dissolve)
-            {
-                return AssetUtility.LoadAssetAtGuid<Shader>(EnvironmentGUIDs.disolveShader);
-            }
-            if (type == FeedType.Draw)
-            {
-                return AssetUtility.LoadAssetAtGuid<Shader>(EnvironmentGUIDs.drawShader);
-            }
-            if (type == FeedType.Explosion)
-            {
-                return AssetUtility.LoadAssetAtGuid<Shader>(EnvironmentGUIDs.explosionShader);
-            }
-            if (type == FeedType.Geom)
-            {
-                return AssetUtility.LoadAssetAtGuid<Shader>(EnvironmentGUIDs.geomShader);
-            }
-            if (type == FeedType.Mosaic)
-            {
-                return AssetUtility.LoadAssetAtGuid<Shader>(EnvironmentGUIDs.mosaicShader);
-            }
-            if (type == FeedType.Polygon)
-            {
-                return AssetUtility.LoadAssetAtGuid<Shader>(EnvironmentGUIDs.polygonShader);
-            }
-            if (type == FeedType.Bounce)
-            {
-                return AssetUtility.LoadAssetAtGuid<Shader>(EnvironmentGUIDs.scaleShader);
-            }
-
-            return null;
-        }*/
-        
         public static Material GetMaterialByType(this FeedType type)
         {
             if (type == FeedType.Fade)
@@ -665,5 +993,315 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
     public enum ToggleGroup
     {
         IsToggle,
+    }
+
+    public class MenuTemplateTreeView : TreeView
+    {
+        private MagicalDresserInventorySaveData data;
+        public event Action<MenuElement> OnSelect;
+        public MenuTemplateTreeView(TreeViewState state) : base(state)
+        {
+            showAlternatingRowBackgrounds = true;
+        }
+
+        public MenuTemplateTreeView(TreeViewState state, MultiColumnHeader multiColumnHeader) : base(state, multiColumnHeader)
+        {
+            showAlternatingRowBackgrounds = true;
+        }
+        
+        protected override void RowGUI (RowGUIArgs args)
+        {
+            var isFolder = args.item == null ? true : args.item?.id == 0 ?
+                true : String.IsNullOrWhiteSpace(MenuTemplate.FIndTemplateElement(data.menuTemplate, args.item.id)?.menuGUID ?? "");
+            
+            Rect rect = args.rowRect;
+            rect.x += GetContentIndent(args.item);
+            
+            GUIStyle textStyle = new GUIStyle(GUI.skin.label);
+            // textStyle.alignment = TextAnchor.MiddleCenter;
+            // textStyle.fontSize = fontSize;
+            // if ((args.item as MenuTemplateTreeViewItem).isFolder)
+            if(isFolder)
+            {
+                textStyle.fontStyle = FontStyle.Bold;
+                /*textStyle.active = new GUIStyleState()
+                {
+                    textColor = Color.gray
+                };*/
+            }
+            else
+            {
+                textStyle.fontStyle = FontStyle.Italic;
+                /*textStyle.active = new GUIStyleState()
+                {
+                    textColor = Color.red
+                };*/
+            }
+            
+            EditorGUI.LabelField(rect,args.item.displayName,textStyle);
+            //toggleRect.width                = 16f;
+            //GUI.DrawTexture(toggleRect, texture);
+            //base.RowGUI(args);
+        }
+        
+        protected override void SelectionChanged (IList<int> selectedIds)
+        {
+            if (selectedIds.Count > 0)
+            {
+                var template = MenuTemplate.FIndTemplateElement(data.menuTemplate, selectedIds[0]);
+                var menu = data.menuElements.FirstOrDefault(e => e.guid == template.menuGUID);
+                OnSelect?.Invoke(menu);
+            }
+        }
+        
+        public List<MenuTemplate> GetSelectTemplates()
+        {
+            var templates = new List<MenuTemplate>();
+            var selectedIds = GetSelection();
+            if (selectedIds.Count > 0)
+            {
+                var template = MenuTemplate.FIndTemplateElement(data.menuTemplate, selectedIds[0]);
+                if (template != null)
+                {
+                    templates.Add(template);
+                }
+            }
+
+            return templates;
+        }
+
+        protected override TreeViewItem BuildRoot()
+        {
+            var root = MenuTemplateTreeViewItem.CreateFolder(0,-1,"Root");
+            if (data.menuTemplate.Count == 0)
+            {
+                root.AddChild(MenuTemplateTreeViewItem.CreateMenu(1,0,"Null"));
+            }
+            else
+            {
+                foreach (var menu in data.menuTemplate)
+                {
+                    root.AddChild(GetTreeElement(menu));
+                }
+            }
+            return root;
+        }
+
+        protected override bool CanStartDrag(TreeView.CanStartDragArgs args)
+        {
+            if (data.menuTemplate.Count == 0)
+            {
+                return false;
+            }
+            else
+            {
+                return true;
+            }
+        }
+
+        protected override void SetupDragAndDrop(SetupDragAndDropArgs args)
+        {
+            DragAndDrop.PrepareStartDrag();
+            DragAndDrop.paths = null;
+            DragAndDrop.objectReferences = new UnityEngine.Object[] {};
+            DragAndDrop.SetGenericData("MenuTemplateTreeViewItem", new List<int>(args.draggedItemIDs));
+            DragAndDrop.visualMode = DragAndDropVisualMode.Copy;
+            DragAndDrop.StartDrag("MenuTemplateTreeView");
+        }
+        protected override DragAndDropVisualMode HandleDragAndDrop(DragAndDropArgs args)
+        {
+            DragAndDropVisualMode visualMode = DragAndDropVisualMode.None;
+
+            var draggedIDs = DragAndDrop.GetGenericData("MenuTemplateTreeViewItem") as List<int>;
+            if (draggedIDs != null && draggedIDs.Count > 0)
+            {
+                visualMode = DragAndDropVisualMode.Move;
+                if (args.performDrop)
+                {
+                    foreach (var draggedID in draggedIDs)
+                    {
+                        var parent = args.parentItem == null ? null : args.parentItem?.id == 0 ?
+                                null :
+                                MenuTemplate.FIndTemplateElement(data.menuTemplate, args.parentItem.id);
+                        // メニューの子にメニューを入れない
+                        if (parent != null)
+                            if (!String.IsNullOrWhiteSpace(parent.menuGUID))
+                                continue;
+                        
+                        var element = MenuTemplate.FIndTemplateElement(data.menuTemplate, draggedID, (e, p) =>
+                        {
+                            e.RecursionAutoCreateFalse();
+                            if (p == null)
+                            {
+                                data.menuTemplate.Remove(e);
+                            }
+                            else
+                            {
+                                p.childs.Remove(e);
+                            }
+                            //args.parentItem.children.Remove(args.parentItem.children.FirstOrDefault(c => c.id == draggedID));
+                        });
+                        
+                        if (element != null)
+                        {
+                            int id = args.insertAtIndex;
+                            if (parent == null)
+                            {
+                                if (id < 0 || id > data.menuTemplate.Count)
+                                {
+                                    data.menuTemplate.Add(element);
+                                }
+                                else
+                                {
+                                    data.menuTemplate.Insert(id,element);
+                                }
+                            }
+                            else
+                            {
+                                if (id < 0 || id > parent.childs.Count)
+                                {
+                                    parent.childs.Add(element);
+                                }
+                                else
+                                {
+                                    parent.childs.Insert(id,element);
+                                }
+                            }
+                        }
+                    }
+
+                    ReloadTemplates();
+                }
+            }
+            return visualMode;
+        }
+        
+        protected override bool CanRename(TreeViewItem item)
+        {
+            return true;
+            return item.displayName.Length <= 10;
+        }
+        
+        protected override void RenameEnded(RenameEndedArgs args)
+        {
+            if (args.acceptedRename)
+            {
+                var template = MenuTemplate.FIndTemplateElement(data.menuTemplate, args.itemID);
+                if (template != null)
+                {
+                    template.name = args.newName;
+                    if (!String.IsNullOrWhiteSpace(template.menuGUID))
+                    {
+                        var menu = data.menuElements.FirstOrDefault(e => e.guid == template.menuGUID);
+                        if (menu != null)
+                        {
+                            menu.name = args.newName;
+                        }
+                    }
+                    template.RecursionAutoCreateFalse();
+                }
+                ReloadTemplates();
+            }
+        }
+
+        public void Setup(MagicalDresserInventorySaveData d)
+        {
+            data = d;
+            ReloadTemplates();
+        }
+
+        public void ReloadTemplates()
+        {
+            data.ReloadTemplates();
+            ReloadItemIcons(rootItem);
+            Reload();
+        }
+
+        public void ReloadItemIcons(TreeViewItem parent)
+        {
+            if(parent==null) return;
+            if(parent.children==null) return;
+            foreach (var item in parent.children)
+            {
+                if (item.id != 1)
+                {
+                    var template = MenuTemplate.FIndTemplateElement(data.menuTemplate, item.id);
+                    if (template == null)
+                    {
+                        // parent.children.Remove(item);
+                    }
+                    else
+                    {
+                        if (String.IsNullOrWhiteSpace(template.menuGUID))
+                        {
+                            item.displayName = template.name;
+                            item.icon = template.icon;
+                            ReloadItemIcons(item);
+                        }
+                        else
+                        {
+                            var menu = data.menuElements.FirstOrDefault(e => e.guid == template.menuGUID);
+                            if (menu == null)
+                            {
+                                // parent.children.Remove(item);
+                            }
+                            else
+                            {
+                                item.displayName = menu.name;
+                                item.icon = menu.icon;
+                            }
+                        }
+                    }
+                }
+                
+            }
+        }
+
+        MenuTemplateTreeViewItem GetTreeElement(MenuTemplate template,int depth = 0)
+        {
+            if (template.childs.Count == 0)
+            {
+                var root = MenuTemplateTreeViewItem.CreateMenu(template.GetGuid(),depth,template.name,template.icon);
+                return root;
+            }
+            else
+            {
+                var root = MenuTemplateTreeViewItem.CreateFolder(template.GetGuid(),depth,template.name,template.icon);
+                foreach (var menu in template.childs)
+                {
+                    root.AddChild(GetTreeElement(menu,depth+1));
+                }
+                return root;
+            }
+        }
+
+        class MenuTemplateTreeViewItem : TreeViewItem
+        {
+            public bool isFolder = true;
+
+            public static MenuTemplateTreeViewItem CreateFolder(int id, int depth, string name, Texture2D icon = null)
+            {
+                return new MenuTemplateTreeViewItem()
+                {
+                    id = id,
+                    depth = depth,
+                    displayName = name,
+                    icon = icon,
+                    isFolder = true
+                };
+            }
+            public static MenuTemplateTreeViewItem CreateMenu(int id, int depth, string name, Texture2D icon = null)
+            {
+                return new MenuTemplateTreeViewItem()
+                {
+                    id = id,
+                    depth = depth,
+                    displayName = name,
+                    icon = icon,
+                    isFolder = false
+                };
+            }
+
+        }
     }
 }

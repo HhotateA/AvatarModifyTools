@@ -411,6 +411,7 @@ namespace HhotateA.AvatarModifyTools.TailMover
                     {
                         SaveTailAnim(path);
                         OnFinishSetup();
+                        DetectAnimatorError();
                     }
                     catch (Exception e)
                     {
@@ -441,6 +442,7 @@ namespace HhotateA.AvatarModifyTools.TailMover
                         {
                             SaveTailIdle(path);
                             OnFinishSetup();
+                            DetectAnimatorError();
                         }
                         catch (Exception e)
                         {

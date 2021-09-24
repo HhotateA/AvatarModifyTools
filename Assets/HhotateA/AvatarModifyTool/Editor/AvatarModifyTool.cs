@@ -1480,6 +1480,48 @@ namespace HhotateA.AvatarModifyTools.Core
             return clip;
         }
         
+        public List<string> HasWriteDefaultLayers()
+        {
+            var layers = new List<string>();
+            foreach (var playableLayer in avatar.baseAnimationLayers)
+            {
+                if (playableLayer.animatorController == null) continue;
+                AnimatorController ac = (AnimatorController) playableLayer.animatorController;
+                if (ac)
+                {
+                    foreach (var layer in ac.layers)
+                    {
+                        if (HaWriteDefaultStateMachine(layer.stateMachine))
+                        {
+                            layers.Add(layer.name);
+                        }
+                    }
+                }
+            }
+
+            return layers;
+        }
+        
+        bool HaWriteDefaultStateMachine(AnimatorStateMachine machine)
+        {
+            foreach (var s in machine.states)
+            {
+                if (s.state.motion)
+                {
+                    return s.state.writeDefaultValues;
+                }
+            }
+            foreach (var m in machine.stateMachines)
+            {
+                if (HaWriteDefaultStateMachine(m.stateMachine))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+        
         public List<string> HasActivateKeyframeLayers(GameObject[] obj)
         {
             var path = obj.Select(o=>GetRelativePath(o.transform)).ToArray();

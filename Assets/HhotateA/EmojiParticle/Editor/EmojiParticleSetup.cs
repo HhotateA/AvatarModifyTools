@@ -70,16 +70,74 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
                     r.height -= 4;
                     r.y += 2;
                     var d = data.emojis[i];
-                    var nameRect = r;
+                    var recth = r;
                     var emojiRect = r;
-                    emojiRect.width = emojiRect.height;
+                    emojiRect.width = emojiRect.height + 25;
                     emojiRect.x = r.width - emojiRect.width;
-                    nameRect.height /= 3;
-                    nameRect.y += nameRect.height;
-                    nameRect.width = r.width - emojiRect.width - 30;
-                    nameRect.x += 0;
-                    d.name = EditorGUI.TextField(nameRect,"", d.name);
+                    recth.height /= 3;
+                    recth.width = r.width - emojiRect.width;
+                    
+                    var rectw = recth;
+                    rectw.width -= 50;
+                    d.name = EditorGUI.TextField(rectw,"", d.name);
+                    rectw.x += rectw.width;
+                    rectw.width /= 2;
+
+                    rectw = recth;
+                    rectw.y += rectw.height;
+                    rectw.width = recth.width / 2;
+                    rectw.width /= 6;
+                    rectw.x += rectw.width;
+                    rectw.width *= 2;
+                    EditorGUI.LabelField(rectw,"Count");
+                    rectw.x += rectw.width;
+                    rectw.width =  rectw.width * 2 / 3;
+                    d.count = EditorGUI.IntField(rectw, d.count);
+                    rectw.x += rectw.width;
+                    
+                    rectw.width = recth.width / 2;
+                    rectw.width /= 6;
+                    rectw.x += rectw.width;
+                    rectw.width *= 2;
+                    EditorGUI.LabelField(rectw,"Scale");
+                    rectw.x += rectw.width;
+                    rectw.width =  rectw.width * 2 / 3;
+                    d.scale = EditorGUI.FloatField(rectw, d.scale);
+                    
+                    rectw = recth;
+                    rectw.y += 2 * rectw.height;
+                    rectw.width = recth.width / 2;
+                    rectw.width /= 6;
+                    rectw.x += rectw.width;
+                    rectw.width *= 2;
+                    EditorGUI.LabelField(rectw,"LifeTime");
+                    rectw.x += rectw.width;
+                    rectw.width =  rectw.width * 2 / 3;
+                    d.lifetime = EditorGUI.FloatField(rectw, d.lifetime);
+                    rectw.x += rectw.width;
+                    
+                    rectw.width = recth.width / 2;
+                    rectw.width /= 6;
+                    rectw.x += rectw.width;
+                    rectw.width *= 2;
+                    EditorGUI.LabelField(rectw,"Speed");
+                    rectw.x += rectw.width;
+                    rectw.width =  rectw.width * 2 / 3;
+                    d.speed = EditorGUI.FloatField(rectw, d.speed);
+
+                    emojiRect.width = emojiRect.height;
                     d.emoji = (Texture2D) EditorGUI.ObjectField(emojiRect,"",d.emoji,typeof(Texture2D),true);
+                    emojiRect.x += emojiRect.width;
+                    emojiRect.height /= 3;
+                    EditorGUI.LabelField(emojiRect,"Options");
+                    emojiRect.y += emojiRect.height;
+                    d.effectPrefab = (GameObject) EditorGUI.ObjectField(emojiRect, d.effectPrefab,typeof(GameObject), false);
+                    emojiRect.y += emojiRect.height;
+                    d.effectAudio = (AudioClip) EditorGUI.ObjectField(emojiRect, d.effectAudio,typeof(AudioClip), false);
+
+                    d.count = Mathf.Clamp(d.count, 1, 50);
+                    if (d.scale <= 0f) d.scale = 0.4f;
+                    if (d.lifetime < 1f / 60f) d.lifetime = 2f;
                 },
                 onRemoveCallback = l => data.emojis.RemoveAt(l.index),
                 onAddCallback = l => data.emojis.Add(new IconElement("",null))
@@ -154,10 +212,9 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
                         var mod = new AvatarModifyTool(avatar, AssetDatabase.GetAssetPath(data));
                         ApplySettings(mod).ModifyAvatar(modifyAsset,EnvironmentGUIDs.prefix);
 
-                        // ゴミ処理忘れずに
-                        DestroyImmediate(modifyAsset.items[0].prefab);
                         AssetDatabase.SaveAssets();
                         OnFinishSetup();
+                        DetectAnimatorError();
                     }
                     catch (Exception e)
                     {
@@ -216,7 +273,7 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
         AvatarModifyData Setup(AvatarModifyData assets)
         {
             var settingsPath = AssetDatabase.GetAssetPath(data);
-            string fileDir = System.IO.Path.GetDirectoryName (settingsPath);
+            string fileDir = Path.GetDirectoryName (settingsPath);
 
             string param = data.saveName;
             
@@ -232,7 +289,7 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
     
             // 結合テクスチャの作成
             var textures = data.emojis.Select(icon=>icon.ToTexture2D()).ToArray();
-            var combinatedTexture = TextureCombinater.CombinateSaveTexture(textures,Path.Combine(fileDir,data.saveName+"_tex"+".png"),tilling);
+            var combinatedTexture = TextureCombinater.CombinateSaveTexture(textures,Path.Combine(fileDir,data.saveName+"_tex"+".png"),tilling,4);
             combinatedTexture.name = data.saveName+"_tex";
             // マテリアルの作成
             var combinatedMaterial = SaveParticleMaterial(combinatedTexture);
@@ -256,10 +313,18 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
                 Path.Combine(fileDir,data.saveName+"_icon"+".png"),
                 combinatedTexture,
                 256,256));
-            
+
+            if (overrideSettings)
+            {
+                var oldSettings = avatar.transform.FindInChildren(EnvironmentGUIDs.prefix + data.saveName);
+                if (oldSettings)
+                {
+                    DestroyImmediate(oldSettings.gameObject);
+                }
+            }
             // オリジナルアセットのパーティクルコンポーネント差し替え
-            var prefab = Instantiate(assets.items[0].prefab);
-            prefab.name = EnvironmentGUIDs.prefix + assets.items[0].prefab.name + "_" + data.saveName;
+            var prefab = Instantiate(AssetUtility.LoadAssetAtGuid<GameObject>(EnvironmentGUIDs.particlePrefab));
+            prefab.name = EnvironmentGUIDs.prefix + data.saveName;
             var ps = prefab.GetComponentsInChildren<ParticleSystem>()[0];
             ps.GetComponent<ParticleSystemRenderer>().material = combinatedMaterial;
             var ts = ps.textureSheetAnimation;
@@ -267,28 +332,38 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
             ts.numTilesX = tilling;
             ts.numTilesY = tilling;
             ps.gameObject.SetActive(false);
-            
-            // 追従先差し替え
-            switch (target)
+
+            var human = avatar.GetComponent<Animator>();
+            if (human != null)
             {
-                case Target.Hip: 
-                    assets.items[0].target = HumanBodyBones.Hips;
-                    ps.transform.localPosition = new Vector3(0.0f,0.25f,0.25f);
-                    break;
-                case Target.Head: 
-                    assets.items[0].target = HumanBodyBones.Head;
-                    ps.transform.localPosition = new Vector3(0.0f,0.25f,0.25f);
-                    break;
-                case Target.RightHand: 
-                    assets.items[0].target = HumanBodyBones.RightHand;
-                    ps.transform.localPosition = Vector3.zero;
-                    break;
-                case Target.LeftHand: 
-                    assets.items[0].target = HumanBodyBones.LeftHand;
-                    ps.transform.localPosition = Vector3.zero;
-                    break;
+                // 追従先差し替え
+                switch (target)
+                {
+                    case Target.Hip: 
+                        //assets.items[0].target = HumanBodyBones.Hips;
+                        prefab.transform.SetParent(human.GetBoneTransform(HumanBodyBones.Hips));
+                        ps.transform.localPosition = new Vector3(0.0f,0.25f,0.25f);
+                        break;
+                    case Target.Head: 
+                        //assets.items[0].target = HumanBodyBones.Head;
+                        prefab.transform.SetParent(human.GetBoneTransform(HumanBodyBones.Head));
+                        ps.transform.localPosition = new Vector3(0.0f,0.25f,0.25f);
+                        break;
+                    case Target.RightHand: 
+                        //assets.items[0].target = HumanBodyBones.RightHand;
+                        prefab.transform.SetParent(human.GetBoneTransform(HumanBodyBones.RightHand));
+                        ps.transform.localPosition = Vector3.zero;
+                        break;
+                    case Target.LeftHand: 
+                        //assets.items[0].target = HumanBodyBones.LeftHand;
+                        prefab.transform.SetParent(human.GetBoneTransform(HumanBodyBones.LeftHand));
+                        ps.transform.localPosition = Vector3.zero;
+                        break;
+                }
+                prefab.transform.localPosition = Vector3.zero;
+                prefab.transform.localRotation = Quaternion.identity;
             }
-            
+
             // AnimationClipの作成
             var controller = new AnimatorControllerCreator("Emoji_Controller","EmojiParticle"+data.saveName);
             controller.AddParameter(param,AnimatorControllerParameterType.Int);
@@ -299,33 +374,78 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
             reset.AddKeyframe(1f/60f, ps,"UVModule.startFrame.scalar",0f);
             //reset.CreateAnimation(ps.gameObject,"m_IsActive",0f,0f,1f);
             //reset.CreateAnimation(ps,"UVModule.startFrame.scalar",0f,0f,0f);
-            var r = reset.CreateAsset(settingsPath, true);
-            controller.AddState("Idle",r);
-            controller.AddState("Reset",r);
+            controller.AddState("Idle",null);
+            controller.AddState("Reset",null);
             controller.SetDefaultState("Idle");
             controller.AddTransition("Reset","Idle",true);
             for (int i = 0; i < data.emojis.Count; i++)
             {
                 var anim = new AnimationClipCreator("Emoji_Anim"+i,avatar.gameObject);
                 var v = (float) i / (float) (tilling * tilling);
-                /*
-                anim.CreateAnimation(ps,"UVModule.startFrame.scalar",0f,v,0f);
-                var k = new Dictionary<float, float>();
-                k.Add(0f,0f);
-                k.Add(1f/60f,1f);
-                k.Add(2.1f,1f);
-                anim.CreateAnimation(ps.gameObject, "m_IsActive", 0f, 0f, 0f, k);
-                */
-                anim.AddKeyframe(0f, ps,"UVModule.startFrame.scalar",v,0f);
                 anim.AddKeyframe_Gameobject(ps.gameObject, 0f, false);
+                anim.AddKeyframe(0f, ps,"UVModule.startFrame.scalar",v);
+                anim.AddKeyframe(0f, ps,"InitialModule.startLifetime.scalar",data.emojis[i].lifetime);
+                anim.AddKeyframe(0f, ps,"EmissionModule.m_Bursts.Array.data[0].countCurve.scalar",data.emojis[i].count);
+                anim.AddKeyframe(0f, ps,"InitialModule.startSize.scalar",data.emojis[i].scale);
+                anim.AddKeyframe(0f, ps,"InitialModule.startSpeed.scalar",data.emojis[i].speed);
                 anim.AddKeyframe_Gameobject(ps.gameObject, 1f/60f, true);
-                anim.AddKeyframe_Gameobject(ps.gameObject, 2f, true);
+                anim.AddKeyframe_Gameobject(ps.gameObject, data.emojis[i].lifetime+1f/60f, true);
+                
+                if (data.emojis[i].effectPrefab != null)
+                {
+                    int index = data.emojis.Select(e => e.effectPrefab).Distinct().ToList()
+                        .FindIndex(e => e == data.emojis[i].effectPrefab);
+                    var o = prefab.transform.Find("Effect_"+index)?.gameObject;
+                    if (o == null)
+                    {
+                        o = Instantiate(data.emojis[i].effectPrefab ,prefab.transform);
+                        o.name = "Effect_"+index;
+                        o.transform.localPosition = Vector3.zero;
+                        o.transform.localRotation = Quaternion.identity;
+                        o.SetActive(false);
+                        reset.AddKeyframe_Gameobject(o,0f,false);
+                        reset.AddKeyframe_Gameobject(o,1f/60f,false);
+                    }
+                    anim.AddKeyframe_Gameobject(o,0f,true);
+                    anim.AddKeyframe_Gameobject(o,data.emojis[i].lifetime,true);
+
+                    anim.AddKeyframe_Pos(0f,o.transform,Vector3.zero);
+                    anim.AddKeyframe_Pos(data.emojis[i].lifetime,o.transform,Vector3.forward*data.emojis[i].speed);
+                }
+
+                if (data.emojis[i].effectAudio != null)
+                {
+                    int index = data.emojis.Select(e => e.effectAudio).Distinct().ToList()
+                        .FindIndex(e => e == data.emojis[i].effectAudio);
+                    var o = prefab.transform.Find("SE_"+index)?.gameObject;
+                    if (o == null)
+                    {
+                        o = Instantiate(AssetUtility.LoadAssetAtGuid<GameObject>(EnvironmentGUIDs.particleAudio) ,prefab.transform);
+                        o.name = "SE_"+index;
+                        var audio = o.GetComponent<AudioSource>();
+                        audio.clip = data.emojis[i].effectAudio;
+                        o.transform.localPosition = Vector3.zero;
+                        o.transform.localRotation = Quaternion.identity;
+                        o.SetActive(false);
+                        reset.AddKeyframe_Gameobject(o,0f,false);
+                        reset.AddKeyframe_Gameobject(o,1f/60f,false);
+                    }
+                    anim.AddKeyframe_Gameobject(o,0f,true);
+                    anim.AddKeyframe_Gameobject(o,data.emojis[i].lifetime,true);
+
+                    anim.AddKeyframe_Pos(0f,o.transform,Vector3.zero);
+                    anim.AddKeyframe_Pos(data.emojis[i].lifetime,o.transform,Vector3.forward*data.emojis[i].speed);
+                }
                 var a = anim.CreateAsset(settingsPath, true);
                 controller.AddState("Emoji_"+i,a);
                 // 0はデフォルトなので+1
                 controller.AddTransition("Any", "Emoji_" + i, param, i + 1, true,false);
                 controller.AddTransition("Emoji_" + i,"Reset",true );
             }
+            var r = reset.CreateAsset(settingsPath, true);
+            controller.SetMotion("Idle",r);
+            controller.SetMotion("Reset",r);
+            
             controller.LayerMask(AvatarMaskBodyPart.Body,false,false);
             controller.LayerTransformMask(avatar.gameObject,false);
 
@@ -334,11 +454,6 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
                 newAssets.fx_controller = controller.CreateAsset(settingsPath, true);
                 newAssets.parameter = pc.CreateAsset(settingsPath,true);
                 newAssets.menu = menu.CreateAsset(settingsPath,true);
-                newAssets.items = new Item[1]{new Item()
-                {
-                    target = assets.items[0].target,
-                    prefab = prefab,
-                }};
             }
 
             return newAssets;

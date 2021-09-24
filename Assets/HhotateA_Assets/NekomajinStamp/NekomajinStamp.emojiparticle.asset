@@ -1,0 +1,73 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5017c97e269ec4a45bf2fd62be44a682, type: 3}
+  m_Name: NekomajinStamp.emojiparticle
+  m_EditorClassIdentifier: 
+  saveName: NekomajinStamp
+  emojis:
+  - name: "\u306D\u3053\u307E\u3058\u3093\u30B9\u30BF\u30F3\u30D7"
+    emoji: {fileID: 2800000, guid: aed590b13d313b346acd622f8547a341, type: 3}
+    count: 5
+    lifetime: 1
+    scale: 0.2
+    speed: 1
+    effectPrefab: {fileID: 0}
+    effectAudio: {fileID: 0}
+  - name: "\u307E\u308B"
+    emoji: {fileID: 2800000, guid: 0be5fcbf15bf1954e8b868f86e8dc460, type: 3}
+    count: 1
+    lifetime: 3
+    scale: 0.5
+    speed: 0
+    effectPrefab: {fileID: 0}
+    effectAudio: {fileID: 0}
+  - name: "\u3070\u3064"
+    emoji: {fileID: 2800000, guid: 043e3a45016ddf440a53087a5b418ea4, type: 3}
+    count: 1
+    lifetime: 3
+    scale: 0.5
+    speed: 0
+    effectPrefab: {fileID: 0}
+    effectAudio: {fileID: 0}
+  - name: "\u3042\u305D\u307C"
+    emoji: {fileID: 2800000, guid: a898c1a1de831ed44bc1f9a922aca8ae, type: 3}
+    count: 1
+    lifetime: 2
+    scale: 0.4
+    speed: 0
+    effectPrefab: {fileID: 0}
+    effectAudio: {fileID: 0}
+  - name: "\u3082\u30FC\u3063"
+    emoji: {fileID: 2800000, guid: 285af4e860e537d4fa771f495dfe5307, type: 3}
+    count: 1
+    lifetime: 2
+    scale: 0.4
+    speed: 0
+    effectPrefab: {fileID: 0}
+    effectAudio: {fileID: 0}
+  - name: "\u3059\u3084\u3041"
+    emoji: {fileID: 2800000, guid: ad86141e2b7321f4d8e85e0e5f6d279f, type: 3}
+    count: 1
+    lifetime: 2
+    scale: 0.4
+    speed: 0
+    effectPrefab: {fileID: 0}
+    effectAudio: {fileID: 0}
+  - name: 
+    emoji: {fileID: 2800000, guid: ed64d96ffa0d6bd41a2a796330e25d4d, type: 3}
+    count: 1
+    lifetime: 3
+    scale: 0.4
+    speed: 0
+    effectPrefab: {fileID: 0}
+    effectAudio: {fileID: 0}
+  assets: {fileID: 0}
