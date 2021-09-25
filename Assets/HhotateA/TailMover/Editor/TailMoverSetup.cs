@@ -23,7 +23,7 @@ namespace HhotateA.AvatarModifyTools.TailMover
 {
     public class TailMoverSetup : WindowBase
     {
-        [MenuItem("Window/HhotateA/なでもふセットアップ(TailMoverSetup)",false,3)]
+        [MenuItem("Window/HhotateA/なでもふセットアップ(TailMoverSetup)",false,103)]
         public static void ShowWindow()
         {
             var wnd = GetWindow<TailMoverSetup>();

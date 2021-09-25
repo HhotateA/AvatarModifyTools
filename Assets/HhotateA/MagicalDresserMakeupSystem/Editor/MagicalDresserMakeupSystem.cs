@@ -24,7 +24,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserMakeupSystem
 {
     public class MagicalDresserSetup : WindowBase
     {
-        [MenuItem("Window/HhotateA/マジックドレッサーメイクアップ(MDMakeup)",false,7)]
+        [MenuItem("Window/HhotateA/マジックドレッサーメイクアップ(MDMakeup)",false,107)]
         public static void ShowWindow()
         {
             var wnd = GetWindow<MagicalDresserSetup>();

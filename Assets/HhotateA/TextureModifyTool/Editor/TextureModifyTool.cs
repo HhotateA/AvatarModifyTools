@@ -19,7 +19,7 @@ namespace HhotateA.AvatarModifyTools.TextureModifyTool
 {
     public class TextureModifyTool : EditorWindow
     {
-        [MenuItem("Window/HhotateA/にゃんにゃんアバターペインター(TextureModifyTool)",false,-11)]
+        [MenuItem("Window/HhotateA/にゃんにゃんアバターペインター(TextureModifyTool)",false,202)]
         static void  ShowWindow()
         {
             TextureModifyTool wnd = (TextureModifyTool)EditorWindow.GetWindow(typeof(TextureModifyTool));

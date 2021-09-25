@@ -25,7 +25,7 @@ namespace HhotateA.AvatarModifyTools.Core
         public AnimatorController gesture_controller;
         public AnimatorController action_controller;
         public AnimatorController fx_controller;
-        public Item[] items;
+        public Item[] items = new Item[0];
 #if VRC_SDK_VRCSDK3
         public VRCExpressionParameters parameter;
         public VRCExpressionsMenu menu;

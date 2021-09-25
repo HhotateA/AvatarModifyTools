@@ -26,7 +26,7 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
 {
     public class EmojiParticleSetup : WindowBase
     {
-        [MenuItem("Window/HhotateA/絵文字パーティクルセットアップ(EmojiParticleSetup)",false,2)]
+        [MenuItem("Window/HhotateA/絵文字パーティクルセットアップ(EmojiParticleSetup)",false,102)]
 
         public static void ShowWindow()
         {
@@ -238,7 +238,7 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
                     data = Instantiate(data);
                     LoadReorderableList();
                     AssetDatabase.CreateAsset(data, FileUtil.GetProjectRelativePath(path));
-                    status.Success("Saved");
+                    OnSave();
                 }
                 if (GUILayout.Button("Load Settings"))
                 {
@@ -259,7 +259,7 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
                         data = d;
                         LoadReorderableList();
                     }
-                    status.Success("Loaded");
+                    OnLoad();
                 }
             }
             status.Display();

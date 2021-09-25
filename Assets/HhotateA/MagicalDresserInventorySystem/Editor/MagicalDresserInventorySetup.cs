@@ -26,7 +26,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
 {
     public class MagicalDresserInventorySetup : WindowBase
     {
-        [MenuItem("Window/HhotateA/マジックドレッサーインベントリ(MDInventorySystem)",false,6)]
+        [MenuItem("Window/HhotateA/マジックドレッサーインベントリ(MDInventorySystem)",false,106)]
         public static void ShowWindow()
         {
             OpenSavedWindow();
@@ -905,7 +905,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                                 data = Instantiate(data);
                                 LoadReorderableList();
                                 AssetDatabase.CreateAsset(data, FileUtil.GetProjectRelativePath(path));
-                                status.Success("Saved");
+                                OnSave();
                             }
                             if (GUILayout.Button("Load Settings"))
                             {
@@ -946,8 +946,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                                         }
                                     }
                                 }
-                                
-                                status.Success("Loaded");
+                                OnLoad();
                             }
                         }
 

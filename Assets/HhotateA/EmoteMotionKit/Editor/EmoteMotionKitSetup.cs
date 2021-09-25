@@ -28,7 +28,7 @@ namespace HhotateA.AvatarModifyTools.EmoteMotionKit
 {
     public class EmoteMotionKitSetup : WindowBase
     {
-        [MenuItem("Window/HhotateA/エモートモーションキット(EmoteMotionKit)",false,8)]
+        [MenuItem("Window/HhotateA/エモートモーションキット(EmoteMotionKit)",false,108)]
 
         public static void ShowWindow()
         {
@@ -223,7 +223,7 @@ namespace HhotateA.AvatarModifyTools.EmoteMotionKit
                     data = Instantiate(data);
                     LoadReorderableList();
                     AssetDatabase.CreateAsset(data, FileUtil.GetProjectRelativePath(path));
-                    status.Success("Saved");
+                    OnSave();
                 }
                 if (GUILayout.Button("Load Settings"))
                 {
@@ -244,7 +244,7 @@ namespace HhotateA.AvatarModifyTools.EmoteMotionKit
                         data = d;
                         LoadReorderableList();
                     }
-                    status.Success("Loaded");
+                    OnLoad();
                 }
             }
             status.Display();

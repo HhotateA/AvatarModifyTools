@@ -20,7 +20,7 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
 {
     public class MeshModifyTool : EditorWindow
     {
-        [MenuItem("Window/HhotateA/にゃんにゃんメッシュエディター(MeshModifyTool)",false,-10)]
+        [MenuItem("Window/HhotateA/にゃんにゃんメッシュエディター(MeshModifyTool)",false,201)]
         public static void ShowWindow()
         {
             var wnd = GetWindow<MeshModifyTool>();
