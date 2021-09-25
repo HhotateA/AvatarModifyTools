@@ -658,21 +658,13 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         {
             if (String.IsNullOrWhiteSpace(path))
             {
-                obj = null;
+                obj = root.gameObject;
                 ReloadRendOption();
                 return;
             }
             
             root = root.Find(path);
-            if (root == null)
-            {
-                obj = null;
-                ReloadRendOption();
-                return;
-            }
-            
-            obj = root.gameObject;
-            
+            obj = root?.gameObject;
             ReloadRendOption();
         }
 
@@ -788,6 +780,11 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         
         public void GetRelativeGameobject(Transform root)
         {
+            if (String.IsNullOrWhiteSpace(path))
+            {
+                rend = root.gameObject.GetComponent<Renderer>();
+            }
+            
             root = root.Find(path);
             if (root == null)
             {
