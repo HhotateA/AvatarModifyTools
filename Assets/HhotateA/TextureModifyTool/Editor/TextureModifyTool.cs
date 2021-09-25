@@ -573,6 +573,38 @@ namespace HhotateA.AvatarModifyTools.TextureModifyTool
                 }
             }
             editMaterials[editIndex].mainTexture = isEnablePreview ? texturePreviewer?.GetTexture() : textureCreator?.GetTexture();
+
+            // キー関係
+            if (ec.type == EventType.KeyDown)
+            {
+                if (ec.keyCode == KeyCode.LeftShift || ec.keyCode == KeyCode.RightShift)
+                {
+                    straightMode = true;
+                }
+                
+                if (ec.keyCode == KeyCode.LeftControl || ec.keyCode == KeyCode.RightControl)
+                {
+                    if (pen.extraTool == TexturePenTool.ExtraTool.StampPaste)
+                    {
+                        pen.extraTool = TexturePenTool.ExtraTool.StampCopy;
+                    }
+                }
+            }
+            if (ec.type == EventType.KeyUp)
+            {
+                if (ec.keyCode == KeyCode.LeftShift || ec.keyCode == KeyCode.RightShift)
+                {
+                    straightMode = false;
+                }
+
+                if (ec.keyCode == KeyCode.LeftControl || ec.keyCode == KeyCode.RightControl)
+                {
+                    if (pen.extraTool == TexturePenTool.ExtraTool.StampCopy)
+                    {
+                        pen.extraTool = TexturePenTool.ExtraTool.StampPaste;
+                    }
+                }
+            }
         }
         
         void Setup()
