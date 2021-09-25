@@ -74,6 +74,8 @@ namespace HhotateA.AvatarModifyTools.TextureModifyTool
         private bool maskAllLayers = true;
         private bool isDragBuffer = false;
 
+        private bool keyboardShortcut = true;
+
         private Color brushBuffer;
         
         // 表示切替用バッファー
@@ -575,33 +577,36 @@ namespace HhotateA.AvatarModifyTools.TextureModifyTool
             editMaterials[editIndex].mainTexture = isEnablePreview ? texturePreviewer?.GetTexture() : textureCreator?.GetTexture();
 
             // キー関係
-            if (ec.type == EventType.KeyDown)
+            if (keyboardShortcut)
             {
-                if (ec.keyCode == KeyCode.LeftShift || ec.keyCode == KeyCode.RightShift)
+                if (ec.type == EventType.KeyDown)
                 {
-                    straightMode = true;
-                }
-                
-                if (ec.keyCode == KeyCode.LeftControl || ec.keyCode == KeyCode.RightControl)
-                {
-                    if (pen.extraTool == TexturePenTool.ExtraTool.StampPaste)
+                    if (ec.keyCode == KeyCode.LeftShift || ec.keyCode == KeyCode.RightShift)
                     {
-                        pen.extraTool = TexturePenTool.ExtraTool.StampCopy;
+                        straightMode = true;
+                    }
+                
+                    if (ec.keyCode == KeyCode.LeftControl || ec.keyCode == KeyCode.RightControl)
+                    {
+                        if (pen.extraTool == TexturePenTool.ExtraTool.StampPaste)
+                        {
+                            pen.extraTool = TexturePenTool.ExtraTool.StampCopy;
+                        }
                     }
                 }
-            }
-            if (ec.type == EventType.KeyUp)
-            {
-                if (ec.keyCode == KeyCode.LeftShift || ec.keyCode == KeyCode.RightShift)
+                if (ec.type == EventType.KeyUp)
                 {
-                    straightMode = false;
-                }
-
-                if (ec.keyCode == KeyCode.LeftControl || ec.keyCode == KeyCode.RightControl)
-                {
-                    if (pen.extraTool == TexturePenTool.ExtraTool.StampCopy)
+                    if (ec.keyCode == KeyCode.LeftShift || ec.keyCode == KeyCode.RightShift)
                     {
-                        pen.extraTool = TexturePenTool.ExtraTool.StampPaste;
+                        straightMode = false;
+                    }
+
+                    if (ec.keyCode == KeyCode.LeftControl || ec.keyCode == KeyCode.RightControl)
+                    {
+                        if (pen.extraTool == TexturePenTool.ExtraTool.StampCopy)
+                        {
+                            pen.extraTool = TexturePenTool.ExtraTool.StampPaste;
+                        }
                     }
                 }
             }
