@@ -62,6 +62,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
 
         public GameObject GetRoot()
         {
+            return GameObject.Find(avatarName);
             var root = GameObject.Find(avatarName);
             if (root)
             {
@@ -589,7 +590,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
     public class ItemElement
     {
         public string path;
-        public GameObject obj;
+        public GameObject obj { get; set; }
         public bool active = true;
         public FeedType type = FeedType.None;
         public float delay = 0f;
@@ -689,13 +690,9 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                     var currentRendOption = currentRendOptions.FirstOrDefault(r => r.path == newRendOptions[i].path);
                     if (currentRendOption!=null)
                     {
-                        // 設定飛んでそうだったら，破棄
                         currentRendOption.GetRelativeGameobject(obj.transform);
-                        if (currentRendOption.rend == newRendOptions[i].rend &&
-                            currentRendOption.changeMaterialsOptions.Count ==
-                            newRendOptions[i].changeMaterialsOptions.Count &&
-                            currentRendOption.changeBlendShapeOptions.Count ==
-                            newRendOptions[i].changeBlendShapeOptions.Count)
+                        if (currentRendOption.changeMaterialsOptions.Count == newRendOptions[i].changeMaterialsOptions.Count &&
+                            currentRendOption.changeBlendShapeOptions.Count == newRendOptions[i].changeBlendShapeOptions.Count)
                         {
                             newRendOptions[i] = currentRendOption;
                         }
@@ -722,49 +719,50 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             }
         }
         public string path;
-        public Renderer rend;
+        public Renderer rend { get; set; }
         public bool ExtendOption { get; set; }
-        // public bool extendMaterialOption = false;
-        // public bool extendBlendShapeOption = false;
         public List<MaterialOption> changeMaterialsOptions = new List<MaterialOption>();
         public List<BlendShapeOption> changeBlendShapeOptions = new List<BlendShapeOption>();
 
         public RendererOption(Renderer r, GameObject root)
         {
             rend = r;
-            RendEnable = r.enabled;
-            GetRelativePath(root);
-            if (r)
+            if (rend)
             {
-                changeMaterialsOptions = r.sharedMaterials.Select(m => new MaterialOption(m)).ToList();
-                if (r is SkinnedMeshRenderer)
+                RendEnable = rend.enabled;
+                GetRelativePath(root);
+                changeMaterialsOptions = rend.sharedMaterials.Select(m => new MaterialOption(m)).ToList();
+                if (rend is SkinnedMeshRenderer)
                 {
                     changeBlendShapeOptions = Enumerable.Range(0, r.GetMesh().blendShapeCount).Select(i =>
-                        new BlendShapeOption((r as SkinnedMeshRenderer).GetBlendShapeWeight(i))).ToList();
+                        new BlendShapeOption((rend as SkinnedMeshRenderer).GetBlendShapeWeight(i))).ToList();
                 }
             }
         }
         public RendererOption Clone(GameObject root,bool invert = false)
         {
             var clone = new RendererOption(rend, root);
-            clone.changeMaterialsOptions = changeMaterialsOptions.Select(e => e.Clone()).ToList();
-            clone.changeBlendShapeOptions = changeBlendShapeOptions.Select(e=> e.Clone()).ToList();
-            if (invert)
+            if (rend)
             {
-                for (int i = 0; i < changeMaterialsOptions.Count; i++)
+                clone.changeMaterialsOptions = changeMaterialsOptions.Select(e => e.Clone()).ToList();
+                clone.changeBlendShapeOptions = changeBlendShapeOptions.Select(e => e.Clone()).ToList();
+                if (invert)
                 {
-                    clone.changeMaterialsOptions[i].material = rend.sharedMaterials[i];
-                }
-
-                if (rend is SkinnedMeshRenderer)
-                {
-                    for (int i = 0; i < changeBlendShapeOptions.Count; i++)
+                    for (int i = 0; i < changeMaterialsOptions.Count; i++)
                     {
-                        clone.changeBlendShapeOptions[i].weight = (rend as SkinnedMeshRenderer).GetBlendShapeWeight(i);
+                        clone.changeMaterialsOptions[i].material = rend.sharedMaterials[i];
+                    }
+
+                    if (rend is SkinnedMeshRenderer)
+                    {
+                        for (int i = 0; i < changeBlendShapeOptions.Count; i++)
+                        {
+                            clone.changeBlendShapeOptions[i].weight =
+                                (rend as SkinnedMeshRenderer).GetBlendShapeWeight(i);
+                        }
                     }
                 }
             }
-
             return clone;
         }
         
@@ -790,12 +788,6 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         
         public void GetRelativeGameobject(Transform root)
         {
-            if (String.IsNullOrWhiteSpace(path))
-            {
-                root = null;
-                return;
-            }
-            
             root = root.Find(path);
             if (root == null)
             {

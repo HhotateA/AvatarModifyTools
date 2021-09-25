@@ -1216,6 +1216,8 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
 
         void RendererOptionDisplay(ItemElement item, RendererOption rendOption)
         {
+            if(rendOption == null) return;
+            if(rendOption.rend == null) return;
             using (new EditorGUILayout.HorizontalScope())
             {
                 EditorGUILayout.LabelField("", GUILayout.Width(25));
@@ -2274,28 +2276,28 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                     {
                         GetDefaultRendEnable(option.rend);
                         option.rend.enabled = option.RendEnable;
-                    }
-                    
-                    if (material)
-                    {
-                        for (int i = 0; i < option.changeMaterialsOptions.Count; i++)
+                        
+                        if (material)
                         {
-                            if (option.changeMaterialsOptions[i] != null)
+                            for (int i = 0; i < option.changeMaterialsOptions.Count; i++)
                             {
-                                GetDefaultMaterial(option.rend, i);
-                                option.rend.sharedMaterials[i] = option.changeMaterialsOptions[i].material;
+                                if (option.changeMaterialsOptions[i] != null)
+                                {
+                                    GetDefaultMaterial(option.rend, i);
+                                    option.rend.sharedMaterials[i] = option.changeMaterialsOptions[i].material;
+                                }
                             }
                         }
-                    }
-
-                    if (blendShape)
-                    {
-                        for (int i = 0; i < option.changeBlendShapeOptions.Count; i++)
+                    
+                        if (blendShape)
                         {
-                            if (option.changeBlendShapeOptions[i].change)
+                            for (int i = 0; i < option.changeBlendShapeOptions.Count; i++)
                             {
-                                GetDefaultBlendshape(option.rend as SkinnedMeshRenderer, i);
-                                (option.rend as SkinnedMeshRenderer)?.SetBlendShapeWeight(i,option.changeBlendShapeOptions[i].weight);
+                                if (option.changeBlendShapeOptions[i].change)
+                                {
+                                    GetDefaultBlendshape(option.rend as SkinnedMeshRenderer, i);
+                                    (option.rend as SkinnedMeshRenderer)?.SetBlendShapeWeight(i,option.changeBlendShapeOptions[i].weight);
+                                }
                             }
                         }
                     }
