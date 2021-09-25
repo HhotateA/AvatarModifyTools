@@ -82,6 +82,15 @@ namespace HhotateA.AvatarModifyTools.Core
         {
             status.Error(e.Message);
         }
+        
+        public void OnSave()
+        {
+            status.Success("Saved");
+        }
+        public void OnLoad()
+        {
+            status.Success("Loaded");
+        }
 
         public void AvatartField(string label = "",Action onReload = null)
         {

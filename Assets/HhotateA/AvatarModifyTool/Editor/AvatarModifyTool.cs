@@ -1525,13 +1525,13 @@ namespace HhotateA.AvatarModifyTools.Core
         
         public List<string> HasActivateKeyframeLayers(GameObject[] obj)
         {
-            var path = obj.Select(o=>GetRelativePath(o.transform)).ToArray();
+            var path = obj.Where(o=>o!=null).Select(o=>GetRelativePath(o.transform)).ToArray();
             return HasKeyframeLayers(path, "m_IsActive");
         }
         
         public List<string> HasMaterialKeyframeLayers(GameObject[] obj)
         {
-            var path = obj.Select(o=>GetRelativePath(o.transform)).ToArray();
+            var path = obj.Where(o=>o!=null).Select(o=>GetRelativePath(o.transform)).ToArray();
             return HasKeyframeLayers(path, "m_Materials");
         }
         
