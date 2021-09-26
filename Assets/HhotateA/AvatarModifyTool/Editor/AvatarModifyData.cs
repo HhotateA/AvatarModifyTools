@@ -29,6 +29,9 @@ namespace HhotateA.AvatarModifyTools.Core
 #if VRC_SDK_VRCSDK3
         public VRCExpressionParameters parameter;
         public VRCExpressionsMenu menu;
+#else
+        public Object parameter;
+        public Object menu;
 #endif
     }
 

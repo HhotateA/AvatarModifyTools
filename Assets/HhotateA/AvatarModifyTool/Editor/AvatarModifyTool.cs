@@ -94,14 +94,15 @@ namespace HhotateA.AvatarModifyTools.Core
                 }
 #if VRC_SDK_VRCSDK3
                 ComputeLayersOffset(assets);
+#endif
                 ModifyAvatarAnimatorController(AnimatorLayerType.Locomotion,assets.locomotion_controller);
                 ModifyAvatarAnimatorController(AnimatorLayerType.Idle,assets.idle_controller);
                 ModifyAvatarAnimatorController(AnimatorLayerType.Gesture,assets.gesture_controller);
                 ModifyAvatarAnimatorController(AnimatorLayerType.Action,assets.action_controller);
                 ModifyAvatarAnimatorController(AnimatorLayerType.Fx,assets.fx_controller);
+#if VRC_SDK_VRCSDK3
                 ModifyExpressionParameter(assets.parameter);
                 ModifyExpressionMenu(assets.menu);
-#else
 #endif
                 AssetDatabase.SaveAssets();
             }
@@ -133,15 +134,14 @@ namespace HhotateA.AvatarModifyTools.Core
                         RevertGameObject(item.prefab, item.target);
                     }
                 }
-#if VRC_SDK_VRCSDK3
                 RevertAnimator(AnimatorLayerType.Locomotion,assets.locomotion_controller);
                 RevertAnimator(AnimatorLayerType.Idle,assets.idle_controller);
                 RevertAnimator(AnimatorLayerType.Gesture,assets.gesture_controller);
                 RevertAnimator(AnimatorLayerType.Action,assets.action_controller);
                 RevertAnimator(AnimatorLayerType.Fx,assets.fx_controller);
+#if VRC_SDK_VRCSDK3
                 RevertExpressionParameter(assets.parameter);
                 RevertExpressionMenu(assets.menu);
-#else
 #endif
                 AssetDatabase.SaveAssets();
             }
@@ -201,7 +201,7 @@ namespace HhotateA.AvatarModifyTools.Core
             RepathAnimators(fromPath, toPath);
         }
 
-        void RepathAnimators(string from, string to)
+        public void RepathAnimators(string from, string to)
         {
 #if VRC_SDK_VRCSDK3
             foreach (var playableLayer in avatar.baseAnimationLayers)
@@ -309,89 +309,6 @@ namespace HhotateA.AvatarModifyTools.Core
 #endif
 
             return layers;
-        }
-
-#if VRC_SDK_VRCSDK3
-        private Dictionary<AnimatorLayerType, int> layerOffset = new Dictionary<AnimatorLayerType, int>();
-        
-        void ComputeLayersOffset(AvatarModifyData assets)
-        {
-            layerOffset = new Dictionary<AnimatorLayerType, int>();
-            foreach (AnimatorLayerType type in Enum.GetValues(typeof(AnimatorLayerType)))
-            {
-                layerOffset.Add(type,GetLayerOffset(assets,type));
-            }
-        }
-        
-        int GetLayerOffset(AvatarModifyData assets,AnimatorLayerType type)
-        {
-            var index = Array.FindIndex(avatar.baseAnimationLayers,l => l.type == GetVRChatAnimatorLayerType(type));
-            if (avatar.customizeAnimationLayers == false) return 0;
-            if (avatar.baseAnimationLayers[index].isDefault == true) return 0;
-            if (!avatar.baseAnimationLayers[index].animatorController) return 0;
-            AnimatorController a = (AnimatorController) avatar.baseAnimationLayers[index].animatorController;
-            AnimatorController b =
-                type == AnimatorLayerType.Idle ? assets.idle_controller :
-                type == AnimatorLayerType.Gesture ? assets.gesture_controller :
-                type == AnimatorLayerType.Action ? assets.action_controller :
-                type == AnimatorLayerType.Fx ? assets.fx_controller :
-                null;
-            if (a == null) return 0;
-            if (b == null) return a.layers.Length;
-            int i = 0;
-            foreach (var la in a.layers)
-            {
-                if (b.layers.Any(lb => la.name == lb.name))
-                {
-                    continue;
-                }
-                else
-                {
-                    i++;
-                }
-            }
-            return i;
-        }
-#endif
-
-        void ModifyAvatarAnimatorController(AnimatorLayerType type, AnimatorController controller)
-        {
-            if (controller == null) return;
-            if (!GetAvatarAnimatorControllerExists(type))
-            {
-                if (type == AnimatorLayerType.Locomotion)
-                {
-                    SetAvatarAnimatorController(type,
-                        MakeCopy<AnimatorController>(
-                            AssetUtility.LoadAssetAtGuid<AnimatorController>(EnvironmentVariable.baseAnimator)));
-                }
-                else if (type == AnimatorLayerType.Idle)
-                {
-                    SetAvatarAnimatorController(type,
-                        MakeCopy<AnimatorController>(
-                            AssetUtility.LoadAssetAtGuid<AnimatorController>(EnvironmentVariable.idleAnimator)));
-                }
-                else if (type == AnimatorLayerType.Gesture)
-                {
-                    SetAvatarAnimatorController(type,
-                        MakeCopy<AnimatorController>(
-                            AssetUtility.LoadAssetAtGuid<AnimatorController>(EnvironmentVariable.gestureAnimator)));
-                }
-                else if (type == AnimatorLayerType.Action)
-                {
-                    SetAvatarAnimatorController(type,
-                        MakeCopy<AnimatorController>(
-                            AssetUtility.LoadAssetAtGuid<AnimatorController>(EnvironmentVariable.actionAnimator)));
-                }
-                else if (type == AnimatorLayerType.Fx)
-                {
-                    SetAvatarAnimatorController(type,
-                        MakeCopy<AnimatorController>(
-                            AssetUtility.LoadAssetAtGuid<AnimatorController>(EnvironmentVariable.fxAnimator)));
-                }
-            }
-
-            ModifyAnimatorController(GetAvatarAnimatorController(type), controller);
         }
 
         AvatarModifyData RenameAssetsParameters(AvatarModifyData assets)
@@ -578,6 +495,46 @@ namespace HhotateA.AvatarModifyTools.Core
 
         #region AnimatorCombinator
 
+        void ModifyAvatarAnimatorController(AnimatorLayerType type, AnimatorController controller)
+        {
+            if (controller == null) return;
+            if (!GetAvatarAnimatorControllerExists(type))
+            {
+                if (type == AnimatorLayerType.Locomotion)
+                {
+                    SetAvatarAnimatorController(type,
+                        MakeCopy<AnimatorController>(
+                            AssetUtility.LoadAssetAtGuid<AnimatorController>(EnvironmentVariable.baseAnimator)));
+                }
+                else if (type == AnimatorLayerType.Idle)
+                {
+                    SetAvatarAnimatorController(type,
+                        MakeCopy<AnimatorController>(
+                            AssetUtility.LoadAssetAtGuid<AnimatorController>(EnvironmentVariable.idleAnimator)));
+                }
+                else if (type == AnimatorLayerType.Gesture)
+                {
+                    SetAvatarAnimatorController(type,
+                        MakeCopy<AnimatorController>(
+                            AssetUtility.LoadAssetAtGuid<AnimatorController>(EnvironmentVariable.gestureAnimator)));
+                }
+                else if (type == AnimatorLayerType.Action)
+                {
+                    SetAvatarAnimatorController(type,
+                        MakeCopy<AnimatorController>(
+                            AssetUtility.LoadAssetAtGuid<AnimatorController>(EnvironmentVariable.actionAnimator)));
+                }
+                else if (type == AnimatorLayerType.Fx)
+                {
+                    SetAvatarAnimatorController(type,
+                        MakeCopy<AnimatorController>(
+                            AssetUtility.LoadAssetAtGuid<AnimatorController>(EnvironmentVariable.fxAnimator)));
+                }
+            }
+
+            ModifyAnimatorController(GetAvatarAnimatorController(type), controller);
+        }
+        
         /// <summary>
         /// AnimatorControllerのStateMachineとParameterの結合
         /// </summary>
@@ -1683,7 +1640,98 @@ namespace HhotateA.AvatarModifyTools.Core
         #endregion
 
         #region AnimatorModifier
+        
+        public enum AnimatorLayerType
+        {
+            Locomotion,
+            Idle,
+            Gesture,
+            Action,
+            Fx
+        }
+        
+#if VRC_SDK_VRCSDK3
 
+        private Dictionary<AnimatorLayerType, int> layerOffset = new Dictionary<AnimatorLayerType, int>();
+        
+        void ComputeLayersOffset(AvatarModifyData assets)
+        {
+            layerOffset = new Dictionary<AnimatorLayerType, int>();
+            foreach (AnimatorLayerType type in Enum.GetValues(typeof(AnimatorLayerType)))
+            {
+                layerOffset.Add(type,GetLayerOffset(assets,type));
+            }
+        }
+        
+        int GetLayerOffset(AvatarModifyData assets,AnimatorLayerType type)
+        {
+            var index = Array.FindIndex(avatar.baseAnimationLayers,l => l.type == GetVRChatAnimatorLayerType(type));
+            if (avatar.customizeAnimationLayers == false) return 0;
+            if (avatar.baseAnimationLayers[index].isDefault == true) return 0;
+            if (!avatar.baseAnimationLayers[index].animatorController) return 0;
+            AnimatorController a = (AnimatorController) avatar.baseAnimationLayers[index].animatorController;
+            AnimatorController b =
+                type == AnimatorLayerType.Idle ? assets.idle_controller :
+                type == AnimatorLayerType.Gesture ? assets.gesture_controller :
+                type == AnimatorLayerType.Action ? assets.action_controller :
+                type == AnimatorLayerType.Fx ? assets.fx_controller :
+                null;
+            if (a == null) return 0;
+            if (b == null) return a.layers.Length;
+            int i = 0;
+            foreach (var la in a.layers)
+            {
+                if (b.layers.Any(lb => la.name == lb.name))
+                {
+                    continue;
+                }
+                else
+                {
+                    i++;
+                }
+            }
+            return i;
+        }
+
+        static VRCAvatarDescriptor.AnimLayerType GetVRChatAnimatorLayerType(AnimatorLayerType type)
+        {
+            switch (type)
+            {
+                case AnimatorLayerType.Locomotion : return VRCAvatarDescriptor.AnimLayerType.Base;
+                case AnimatorLayerType.Idle : return VRCAvatarDescriptor.AnimLayerType.Additive; 
+                case AnimatorLayerType.Gesture : return VRCAvatarDescriptor.AnimLayerType.Gesture; 
+                case AnimatorLayerType.Action : return VRCAvatarDescriptor.AnimLayerType.Action; 
+                case AnimatorLayerType.Fx : return VRCAvatarDescriptor.AnimLayerType.FX; 
+            }
+            return VRCAvatarDescriptor.AnimLayerType.Base;
+        }
+        
+        static AnimatorLayerType GetAnimatorLayerType(VRCAvatarDescriptor.AnimLayerType type)
+        {
+            switch (type)
+            {
+                case VRCAvatarDescriptor.AnimLayerType.Base : return AnimatorLayerType.Locomotion;
+                case VRCAvatarDescriptor.AnimLayerType.Additive : return AnimatorLayerType.Idle; 
+                case VRCAvatarDescriptor.AnimLayerType.Gesture : return AnimatorLayerType.Gesture; 
+                case VRCAvatarDescriptor.AnimLayerType.Action : return AnimatorLayerType.Action; 
+                case VRCAvatarDescriptor.AnimLayerType.FX : return AnimatorLayerType.Fx; 
+            }
+            return AnimatorLayerType.Locomotion;
+        }
+        
+        static AnimatorLayerType GetAnimatorLayerType(VRC_AnimatorLayerControl.BlendableLayer type)
+        {
+            switch (type)
+            {
+                case VRC_AnimatorLayerControl.BlendableLayer.Additive : return AnimatorLayerType.Idle; 
+                case VRC_AnimatorLayerControl.BlendableLayer.Gesture : return AnimatorLayerType.Gesture; 
+                case VRC_AnimatorLayerControl.BlendableLayer.Action : return AnimatorLayerType.Action; 
+                case VRC_AnimatorLayerControl.BlendableLayer.FX : return AnimatorLayerType.Fx; 
+            }
+            return AnimatorLayerType.Locomotion;
+        }
+#endif
+        
         string GetRelativePath(Transform o)
         {
             return AssetUtility.GetRelativePath(avatar.transform, o);
@@ -1978,54 +2026,5 @@ namespace HhotateA.AvatarModifyTools.Core
             return param.GetSafeParam(prefix, RenameParameters);
         }
 
-        public enum AnimatorLayerType
-        {
-            Locomotion,
-            Idle,
-            Gesture,
-            Action,
-            Fx
-        }
-
-#if VRC_SDK_VRCSDK3
-        static VRCAvatarDescriptor.AnimLayerType GetVRChatAnimatorLayerType(AnimatorLayerType type)
-        {
-            switch (type)
-            {
-                case AnimatorLayerType.Locomotion : return VRCAvatarDescriptor.AnimLayerType.Base;
-                case AnimatorLayerType.Idle : return VRCAvatarDescriptor.AnimLayerType.Additive; 
-                case AnimatorLayerType.Gesture : return VRCAvatarDescriptor.AnimLayerType.Gesture; 
-                case AnimatorLayerType.Action : return VRCAvatarDescriptor.AnimLayerType.Action; 
-                case AnimatorLayerType.Fx : return VRCAvatarDescriptor.AnimLayerType.FX; 
-            }
-            return VRCAvatarDescriptor.AnimLayerType.Base;
-        }
-        
-        static AnimatorLayerType GetAnimatorLayerType(VRCAvatarDescriptor.AnimLayerType type)
-        {
-            switch (type)
-            {
-                case VRCAvatarDescriptor.AnimLayerType.Base : return AnimatorLayerType.Locomotion;
-                case VRCAvatarDescriptor.AnimLayerType.Additive : return AnimatorLayerType.Idle; 
-                case VRCAvatarDescriptor.AnimLayerType.Gesture : return AnimatorLayerType.Gesture; 
-                case VRCAvatarDescriptor.AnimLayerType.Action : return AnimatorLayerType.Action; 
-                case VRCAvatarDescriptor.AnimLayerType.FX : return AnimatorLayerType.Fx; 
-            }
-            return AnimatorLayerType.Locomotion;
-        }
-        
-        static AnimatorLayerType GetAnimatorLayerType(VRC_AnimatorLayerControl.BlendableLayer type)
-        {
-            switch (type)
-            {
-                case VRC_AnimatorLayerControl.BlendableLayer.Additive : return AnimatorLayerType.Idle; 
-                case VRC_AnimatorLayerControl.BlendableLayer.Gesture : return AnimatorLayerType.Gesture; 
-                case VRC_AnimatorLayerControl.BlendableLayer.Action : return AnimatorLayerType.Action; 
-                case VRC_AnimatorLayerControl.BlendableLayer.FX : return AnimatorLayerType.Fx; 
-            }
-            return AnimatorLayerType.Locomotion;
-        }
-
-#endif
     }
 }
