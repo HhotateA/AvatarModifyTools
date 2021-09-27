@@ -244,6 +244,7 @@ namespace HhotateA.AvatarModifyTools.Core
         }
         public void AddKeyframe(float time, Component o, string property, float value, float weight = 1f)
         {
+            if (o == null) return;
             KeyFrameTarget target = new KeyFrameTarget()
             {
                 path = GetRelativePath(o.gameObject),

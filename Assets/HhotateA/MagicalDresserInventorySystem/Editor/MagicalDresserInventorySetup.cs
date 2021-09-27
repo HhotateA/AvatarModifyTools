@@ -1569,6 +1569,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                         // option処理
                         foreach (var rendOption in item.rendOptions)
                         {
+                            if (rendOption.rend == null) continue;
                             if (rendOption.rend is SkinnedMeshRenderer)
                             {
                                 activeAnim.AddKeyframe(0f, rendOption.rend as SkinnedMeshRenderer, "m_Enabled", rendOption.RendEnable ? 1 : 0);

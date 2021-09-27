@@ -590,7 +590,8 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
     public class ItemElement
     {
         public string path;
-        public GameObject obj { get; set; }
+        // なぜかここが[System.NonSerialized]だとばぐる
+        public GameObject obj;
         public bool active = true;
         public FeedType type = FeedType.None;
         public float delay = 0f;
@@ -614,7 +615,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             obj = o;
             active = defaultActive;
 
-            rendOptions = o?.GetComponentsInChildren<Renderer>().Select(r => new RendererOption(r, o)).ToList();
+            rendOptions = obj.GetComponentsInChildren<Renderer>().Select(r => new RendererOption(r, o)).ToList();
             
             if(root) GetRelativePath(root);
         }
@@ -660,12 +661,13 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             {
                 obj = root.gameObject;
                 ReloadRendOption();
-                return;
             }
-            
-            root = root.Find(path);
-            obj = root?.gameObject;
-            ReloadRendOption();
+            else
+            {
+                root = root.Find(path);
+                obj = root?.gameObject;
+                ReloadRendOption();
+            }
         }
 
         public void ReloadRendOption()
@@ -722,7 +724,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             if (rend)
             {
                 RendEnable = rend.enabled;
-                GetRelativePath(root);
+            GetRelativePath(root);
                 changeMaterialsOptions = rend.sharedMaterials.Select(m => new MaterialOption(m)).ToList();
                 if (rend is SkinnedMeshRenderer)
                 {
@@ -736,19 +738,19 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             var clone = new RendererOption(rend, root);
             if (rend)
             {
-                clone.changeMaterialsOptions = changeMaterialsOptions.Select(e => e.Clone()).ToList();
-                clone.changeBlendShapeOptions = changeBlendShapeOptions.Select(e => e.Clone()).ToList();
-                if (invert)
+            clone.changeMaterialsOptions = changeMaterialsOptions.Select(e => e.Clone()).ToList();
+            clone.changeBlendShapeOptions = changeBlendShapeOptions.Select(e=> e.Clone()).ToList();
+            if (invert)
+            {
+                for (int i = 0; i < changeMaterialsOptions.Count; i++)
                 {
-                    for (int i = 0; i < changeMaterialsOptions.Count; i++)
-                    {
-                        clone.changeMaterialsOptions[i].material = rend.sharedMaterials[i];
-                    }
+                    clone.changeMaterialsOptions[i].material = rend.sharedMaterials[i];
+                }
 
-                    if (rend is SkinnedMeshRenderer)
+                if (rend is SkinnedMeshRenderer)
+                {
+                    for (int i = 0; i < changeBlendShapeOptions.Count; i++)
                     {
-                        for (int i = 0; i < changeBlendShapeOptions.Count; i++)
-                        {
                             clone.changeBlendShapeOptions[i].weight =
                                 (rend as SkinnedMeshRenderer).GetBlendShapeWeight(i);
                         }
