@@ -590,7 +590,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
     public class ItemElement
     {
         public string path;
-        // なぜかここが[System.NonSerialized]だとばぐる
+        // なぜかここが[System.NonSerialized]だとばぐる（たぶんInstanceしてるから）
         public GameObject obj;
         public bool active = true;
         public FeedType type = FeedType.None;
@@ -677,21 +677,29 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             }
             else
             {
-                var currentRendOptions = rendOptions;
+                var currentRendOptions = rendOptions.ToList();
                 var newRendOptions = obj.GetComponentsInChildren<Renderer>().Select(r => new RendererOption(r, obj)).ToList();
                 for (int i = 0; i < newRendOptions.Count; i++)
                 {
-                    var currentRendOption = currentRendOptions.FirstOrDefault(r => r.path == newRendOptions[i].path);
+                    var currentRendOption = currentRendOptions.FirstOrDefault(r => 
+                        r.path == newRendOptions[i].path &&
+                        r.mesh == newRendOptions[i].mesh);
                     if (currentRendOption!=null)
                     {
                         currentRendOption.GetRelativeGameobject(obj.transform);
                         if (currentRendOption.changeMaterialsOptions.Count == newRendOptions[i].changeMaterialsOptions.Count &&
                             currentRendOption.changeBlendShapeOptions.Count == newRendOptions[i].changeBlendShapeOptions.Count)
                         {
+                            currentRendOptions.Remove(currentRendOption);
                             newRendOptions[i] = currentRendOption;
                         }
                     }
                 }
+                for (int i = 0; i < currentRendOptions.Count; i++)
+                {
+                    currentRendOptions[i].rend = null;
+                }
+                newRendOptions.AddRange(currentRendOptions);
                 rendOptions = newRendOptions;
             }
         }
@@ -713,8 +721,9 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             }
         }
         public string path;
-        // なぜかここが[System.NonSerialized]だとばぐる
+        // なぜかここが[System.NonSerialized]だとばぐる（たぶんInstanceしてるから）
         public Renderer rend;
+        public Mesh mesh;
         public bool ExtendOption { get; set; }
         public List<MaterialOption> changeMaterialsOptions = new List<MaterialOption>();
         public List<BlendShapeOption> changeBlendShapeOptions = new List<BlendShapeOption>();
@@ -724,8 +733,9 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             rend = r;
             if (rend)
             {
+                mesh = rend.GetMesh();
                 RendEnable = rend.enabled;
-            GetRelativePath(root);
+                GetRelativePath(root);
                 changeMaterialsOptions = rend.sharedMaterials.Select(m => new MaterialOption(m)).ToList();
                 if (rend is SkinnedMeshRenderer)
                 {

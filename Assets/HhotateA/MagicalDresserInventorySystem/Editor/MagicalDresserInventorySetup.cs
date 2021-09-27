@@ -47,12 +47,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         Dictionary<GameObject,bool> defaultActive = new Dictionary<GameObject, bool>();
         Dictionary<Renderer,bool> defaultRendEnable = new Dictionary<Renderer, bool>();
 
-        Dictionary<MaterialReference, Material> defaultMaterials = new Dictionary<MaterialReference, Material>();
-        struct MaterialReference
-        {
-            public Renderer rend;
-            public int index;
-        }
+        Dictionary<Renderer, Material[]> defaultMaterials = new Dictionary<Renderer, Material[]>();
         
         Dictionary<BlendShapeReference,float> defaultBlendShapes = new Dictionary<BlendShapeReference, float>();
         struct BlendShapeReference
@@ -2096,50 +2091,63 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         {
             foreach (var rendOpt in toElement.rendOptions)
             {
+                if(rendOpt.rend == null) continue;
                 var rend = rendOpt.rend;
                 var to = toElement.rendOptions.FirstOrDefault(r => r.rend == rend);
-                if(to==null) return;
+                if(to==null) continue;
                 var from = fromElement.rendOptions.FirstOrDefault(r => r.rend == rend);
-                if(from==null) return;
-                for (int i = 0; i < to.changeMaterialsOptions.Count; i++)
+                if(from==null) continue;
+                if (from.changeMaterialsOptions.Count == to.changeMaterialsOptions.Count)
                 {
-                    if (to.changeMaterialsOptions[i].change)
+                    for (int i = 0; i < to.changeMaterialsOptions.Count; i++)
                     {
-                        if(to.changeMaterialsOptions[i].material == null) continue;
-                        if(from.changeMaterialsOptions[i].material == to.changeMaterialsOptions[i].material) continue;
-                        if (to.changeMaterialsOptions[i].delay < 0)
+                        if (to.changeMaterialsOptions[i].change)
                         {
+                            if(to.changeMaterialsOptions[i].material == null) continue;
+                            if(from.changeMaterialsOptions[i].material == to.changeMaterialsOptions[i].material) continue;
+                            if (to.changeMaterialsOptions[i].delay < 0)
+                            {
                         
-                        }
-                        else
-                        {
-                            if(to.changeMaterialsOptions[i].delay < 1f/60f)transitionAnim.AddKeyframe_Material(rend,GetDefaultMaterial(rend,i),0f,i);
-                            transitionAnim.AddKeyframe_Material(rend,to.changeMaterialsOptions[i].material,to.changeMaterialsOptions[i].delay,i);
+                            }
+                            else
+                            {
+                                if(to.changeMaterialsOptions[i].delay < 1f/60f)transitionAnim.AddKeyframe_Material(rend,GetDefaultMaterial(rend,i),0f,i);
+                                transitionAnim.AddKeyframe_Material(rend,to.changeMaterialsOptions[i].material,to.changeMaterialsOptions[i].delay,i);
+                            }
                         }
                     }
                 }
-                for (int i = 0; i < from.changeBlendShapeOptions.Count; i++)
+
+                if (from.changeBlendShapeOptions.Count == to.changeBlendShapeOptions.Count)
                 {
-                    if (to.changeBlendShapeOptions[i].change)
+                    for (int i = 0; i < from.changeBlendShapeOptions.Count; i++)
                     {
-                        if(0f > to.changeBlendShapeOptions[i].weight && to.changeBlendShapeOptions[i].weight > 100f) continue;
-                        if(Mathf.Abs(from.changeBlendShapeOptions[i].weight - to.changeBlendShapeOptions[i].weight)<1f) continue;
-                        if (to.changeBlendShapeOptions[i].delay < 0)
+                        if (to.changeBlendShapeOptions[i].change)
                         {
-                        
+                            if (0f > to.changeBlendShapeOptions[i].weight &&
+                                to.changeBlendShapeOptions[i].weight > 100f) continue;
+                            if (Mathf.Abs(from.changeBlendShapeOptions[i].weight -
+                                          to.changeBlendShapeOptions[i].weight) < 1f) continue;
+                            if (to.changeBlendShapeOptions[i].delay < 0)
+                            {
+
+                            }
+                            else
+                            {
+                                //transitionAnim.AddKeyframe_Material(rend.rend,rend.changeBlendShapeOptions[i].weight);
+                                transitionAnim.AddKeyframe(to.changeBlendShapeOptions[i].delay,
+                                    rend as SkinnedMeshRenderer,
+                                    "blendShape." + rend.GetMesh().GetBlendShapeName(i),
+                                    from.changeBlendShapeOptions[i].change
+                                        ? from.changeBlendShapeOptions[i].weight
+                                        : (rend as SkinnedMeshRenderer).GetBlendShapeWeight(i));
+                                transitionAnim.AddKeyframe(
+                                    to.changeBlendShapeOptions[i].delay + to.changeBlendShapeOptions[i].duration,
+                                    rend as SkinnedMeshRenderer,
+                                    "blendShape." + rend.GetMesh().GetBlendShapeName(i),
+                                    to.changeBlendShapeOptions[i].weight);
+                            }
                         }
-                        else
-                        {
-                            //transitionAnim.AddKeyframe_Material(rend.rend,rend.changeBlendShapeOptions[i].weight);
-                            transitionAnim.AddKeyframe(to.changeBlendShapeOptions[i].delay, rend as SkinnedMeshRenderer, 
-                                "blendShape."+rend.GetMesh().GetBlendShapeName(i) , 
-                                from.changeBlendShapeOptions[i].change ?
-                                    from.changeBlendShapeOptions[i].weight :
-                                    (rend as SkinnedMeshRenderer).GetBlendShapeWeight(i));
-                            transitionAnim.AddKeyframe(to.changeBlendShapeOptions[i].delay + to.changeBlendShapeOptions[i].duration, rend as SkinnedMeshRenderer, 
-                                "blendShape."+rend.GetMesh().GetBlendShapeName(i) , 
-                                to.changeBlendShapeOptions[i].weight);
-                        } 
                     }
                 }
             }
@@ -2281,10 +2289,12 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                         {
                             for (int i = 0; i < option.changeMaterialsOptions.Count; i++)
                             {
-                                if (option.changeMaterialsOptions[i] != null)
+                                GetDefaultMaterial(option.rend, i);
+                                if (option.changeMaterialsOptions[i].change)
                                 {
-                                    GetDefaultMaterial(option.rend, i);
-                                    option.rend.sharedMaterials[i] = option.changeMaterialsOptions[i].material;
+                                    var mats = option.rend.sharedMaterials.ToArray();
+                                    mats[i] = option.changeMaterialsOptions[i].material;
+                                    option.rend.sharedMaterials = mats.ToArray();
                                 }
                             }
                         }
@@ -2293,9 +2303,9 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                         {
                             for (int i = 0; i < option.changeBlendShapeOptions.Count; i++)
                             {
+                                GetDefaultBlendshape(option.rend as SkinnedMeshRenderer, i);
                                 if (option.changeBlendShapeOptions[i].change)
                                 {
-                                    GetDefaultBlendshape(option.rend as SkinnedMeshRenderer, i);
                                     (option.rend as SkinnedMeshRenderer)?.SetBlendShapeWeight(i,option.changeBlendShapeOptions[i].weight);
                                 }
                             }
@@ -2320,7 +2330,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             {
                 foreach (var dm in defaultMaterials)
                 {
-                    dm.Key.rend.sharedMaterials[dm.Key.index] = dm.Value;
+                    dm.Key.sharedMaterials = dm.Value.ToArray();
                 }
             }
 
@@ -2363,18 +2373,13 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         Material GetDefaultMaterial(Renderer rend, int index)
         {
             if (rend == null) return null;
-            var key = new MaterialReference()
-            {
-                rend = rend,
-                index = index,
-            };
             
-            if (!defaultMaterials.ContainsKey(key))
+            if (!defaultMaterials.ContainsKey(rend))
             {
-                defaultMaterials.Add(key,rend.sharedMaterials[index]);
+                defaultMaterials.Add(rend,rend.sharedMaterials.ToArray());
             }
 
-            return defaultMaterials[key];
+            return defaultMaterials[rend][index];
         }
         
         // デフォルトのBlendShape状態(シーン)を記録&取得する

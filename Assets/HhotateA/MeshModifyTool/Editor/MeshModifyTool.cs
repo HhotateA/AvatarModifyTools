@@ -906,6 +906,10 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
             }
             else
             {
+                if (editIndex == -1)
+                {
+                    SelectMeshCreater(0);
+                }
                 saveAction?.Invoke();
             }
         }
