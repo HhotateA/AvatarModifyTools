@@ -664,7 +664,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             }
             else
             {
-                root = root.Find(path);
+            root = root.Find(path);
                 obj = root?.gameObject;
                 ReloadRendOption();
             }
@@ -713,7 +713,8 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             }
         }
         public string path;
-        public Renderer rend { get; set; }
+        // なぜかここが[System.NonSerialized]だとばぐる
+        public Renderer rend;
         public bool ExtendOption { get; set; }
         public List<MaterialOption> changeMaterialsOptions = new List<MaterialOption>();
         public List<BlendShapeOption> changeBlendShapeOptions = new List<BlendShapeOption>();
@@ -782,12 +783,11 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         
         public void GetRelativeGameobject(Transform root)
         {
-            if (String.IsNullOrWhiteSpace(path))
+            if (!String.IsNullOrWhiteSpace(path))
             {
-                rend = root.gameObject.GetComponent<Renderer>();
+                root = root.Find(path);
             }
             
-            root = root.Find(path);
             if (root == null)
             {
                 rend = null;
