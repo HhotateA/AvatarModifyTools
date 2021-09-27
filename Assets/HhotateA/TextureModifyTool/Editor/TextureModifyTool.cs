@@ -75,6 +75,9 @@ namespace HhotateA.AvatarModifyTools.TextureModifyTool
         private bool isDragBuffer = false;
 
         private bool keyboardShortcut = true;
+        private bool keyboardShift = false;
+        private bool keyboardCtr = false;
+        private int shortcutToolBuffer = -1;
 
         private Color brushBuffer;
         
@@ -267,7 +270,7 @@ namespace HhotateA.AvatarModifyTools.TextureModifyTool
                             }
                         }
 
-                        using (new EditorGUI.DisabledScope(penIndex == 6))
+                        using (new EditorGUI.DisabledScope(pen.extraTool == TexturePenTool.ExtraTool.ColorPick))
                         {
                             if (penTools[6].Button(30, 50))
                             {
@@ -583,14 +586,24 @@ namespace HhotateA.AvatarModifyTools.TextureModifyTool
                 {
                     if (ec.keyCode == KeyCode.LeftShift || ec.keyCode == KeyCode.RightShift)
                     {
+                        keyboardShift = true;
                         straightMode = true;
                     }
                 
                     if (ec.keyCode == KeyCode.LeftControl || ec.keyCode == KeyCode.RightControl)
                     {
-                        if (pen.extraTool == TexturePenTool.ExtraTool.StampPaste)
+                        keyboardCtr = true;
+                        if (pen.extraTool == TexturePenTool.ExtraTool.StampCopy || pen.extraTool == TexturePenTool.ExtraTool.StampPaste)
                         {
                             pen.extraTool = TexturePenTool.ExtraTool.StampCopy;
+                        }
+                        else
+                        if(shortcutToolBuffer == -1)
+                        {
+                            // ctrを押したらカラーピックモードに
+                            shortcutToolBuffer = penIndex;
+                            penIndex = penTools.ToList()
+                                .FindIndex(p => p.extraTool == TexturePenTool.ExtraTool.ColorPick);
                         }
                     }
                 }
@@ -598,14 +611,23 @@ namespace HhotateA.AvatarModifyTools.TextureModifyTool
                 {
                     if (ec.keyCode == KeyCode.LeftShift || ec.keyCode == KeyCode.RightShift)
                     {
+                        keyboardShift = false;
                         straightMode = false;
                     }
 
                     if (ec.keyCode == KeyCode.LeftControl || ec.keyCode == KeyCode.RightControl)
                     {
-                        if (pen.extraTool == TexturePenTool.ExtraTool.StampCopy)
+                        keyboardCtr = false;
+                        if (pen.extraTool == TexturePenTool.ExtraTool.StampCopy || pen.extraTool == TexturePenTool.ExtraTool.StampPaste)
                         {
+                            // ctrを押したらコピーモードに
                             pen.extraTool = TexturePenTool.ExtraTool.StampPaste;
+                        }
+                        else
+                        if(shortcutToolBuffer != -1)
+                        {
+                            penIndex = shortcutToolBuffer;
+                            shortcutToolBuffer = -1;
                         }
                     }
                 }
