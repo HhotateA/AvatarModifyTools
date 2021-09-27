@@ -13,15 +13,11 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
-using System.IO;
 using UnityEditor.Animations;
-using UnityEngine.Animations;
-using Object = UnityEngine.Object;
 using AnimatorLayerType = HhotateA.AvatarModifyTools.Core.AnimatorUtility.AnimatorLayerType;
 
 #if VRC_SDK_VRCSDK3
 using VRC.SDKBase;
-using VRC.SDK3.Avatars.ScriptableObjects;
 using VRC.SDK3.Avatars.Components;
 #endif
 
@@ -1059,6 +1055,7 @@ namespace HhotateA.AvatarModifyTools.Core
             Fx
         }
         
+#if VRC_SDK_VRCSDK3
         public static VRCAvatarDescriptor.AnimLayerType GetVRChatAnimatorLayerType(this AnimatorLayerType type)
         {
             switch (type)
@@ -1096,5 +1093,6 @@ namespace HhotateA.AvatarModifyTools.Core
             }
             return AnimatorLayerType.Locomotion;
         }
+#endif
     }
 }

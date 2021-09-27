@@ -20,7 +20,6 @@ using Object = UnityEngine.Object;
 using AnimatorLayerType = HhotateA.AvatarModifyTools.Core.AnimatorUtility.AnimatorLayerType;
 
 #if VRC_SDK_VRCSDK3
-using VRC.SDKBase;
 using VRC.SDK3.Avatars.ScriptableObjects;
 using VRC.SDK3.Avatars.Components;
 #endif
@@ -212,14 +211,7 @@ namespace HhotateA.AvatarModifyTools.Core
                 animMod.SetOrigin((AnimatorController) playableLayer.animatorController).RepathAnims(from,to);
             }
 #else
-            AnimatorController ac = (AnimatorController) avatar.runtimeAnimatorController;
-            if (ac)
-            {
-                foreach (var layer in ac.layers)
-                {
-                    RePathStateMachine(layer.stateMachine, from, to);
-                }
-            }
+            animMod.SetOrigin((AnimatorController) avatar.runtimeAnimatorController).RepathAnims(from,to);
 #endif
         }
 
@@ -233,17 +225,7 @@ namespace HhotateA.AvatarModifyTools.Core
                 layers.AddRange(animMod.SetOrigin((AnimatorController) playableLayer.animatorController).WriteDefaultLayers());
             }
 #else
-            AnimatorController ac = (AnimatorController) avatar.runtimeAnimatorController;
-            if (ac)
-            {
-                foreach (var layer in ac.layers)
-                {
-                    if (HaWriteDefaultStateMachine(layer.stateMachine))
-                    {
-                        layers.Add(layer.name);
-                    }
-                }
-            }
+            layers.AddRange(animMod.SetOrigin((AnimatorController) avatar.runtimeAnimatorController).WriteDefaultLayers());
 #endif
             return layers;
         }
@@ -273,17 +255,10 @@ namespace HhotateA.AvatarModifyTools.Core
                         HasKeyframeLayers(path, attribute));
             }
 #else
-            AnimatorController ac = (AnimatorController) avatar.runtimeAnimatorController;
-            if (ac)
-            {
-                foreach (var layer in ac.layers)
-                {
-                    if (HasKeyFrameStateMachine(layer.stateMachine, path, attribute))
-                    {
-                        layers.Add(layer.name);
-                    }
-                }
-            }
+            layers.AddRange(
+                animMod.
+                    SetOrigin((AnimatorController) avatar.runtimeAnimatorController).
+                    HasKeyframeLayers(path, attribute));
 #endif
 
             return layers;
