@@ -53,7 +53,22 @@ namespace HhotateA.AvatarModifyTools.Core
                 animMod.writeDefaultOverride = value;
             }
         }
-
+        
+        // コンストラクタ,VRCSDKない環境でもうまく動くよう引数を調節
+#if VRC_SDK_VRCSDK3
+        public AvatarModifyTool(VRCAvatarDescriptor a, string dir = "Assets/Export")
+        {
+            avatar = a;
+            Init(dir);
+        }
+#else
+        public AvatarModifyTool(Animator a, string dir = "Assets/Export")
+        {
+            avatar = a;
+            Init(dir);
+        }
+#endif
+        
         public AvatarModifyTool(MonoBehaviour a, string dir = "Assets/Export")
         {
 #if VRC_SDK_VRCSDK3
@@ -61,8 +76,12 @@ namespace HhotateA.AvatarModifyTools.Core
 #else
             avatar = a.GetComponent<Animator>();
 #endif
-            if (avatar == null) return;
+            Init(dir);
+        }
 
+        void Init(string dir = "Assets/Export")
+        {
+            if(avatar == null) return;
             if (dir == "Assets/Export")
             {
                 if (!AssetDatabase.IsValidFolder(dir))
