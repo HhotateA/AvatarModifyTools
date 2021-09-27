@@ -17,6 +17,7 @@ using System.IO;
 using UnityEditor.Animations;
 using UnityEngine.Animations;
 using Object = UnityEngine.Object;
+using AnimatorLayerType = HhotateA.AvatarModifyTools.Core.AnimatorUtility.AnimatorLayerType;
 
 #if VRC_SDK_VRCSDK3
 using VRC.SDKBase;
@@ -36,16 +37,23 @@ namespace HhotateA.AvatarModifyTools.Core
 #else
         private Animator avatar;
 #endif
-        public bool? WriteDefaultOverride { get; set; } = null;
-        public bool DuplicateAssets { get; set; } = true;
-        public bool OverrideSettings { get; set; } = true;
-        public bool RenameParameters { get; set; } = false;
-        public bool ModifyOriginalAsset { get; set; } = false;
-        public bool AutoAddNextPage { get; set; } = false;
-        public bool OverrideNullAnimation { get; set; } = true;
+        
+        private AnimatorModifier animMod;
+        public bool DuplicateAssets {private get; set; } = true;
+        public bool OverrideSettings {private get; set; } = true;
+        public bool RenameParameters {private get; set; } = false;
+        public bool ModifyOriginalAsset {private get; set; } = false;
+        public bool AutoAddNextPage {private get; set; } = false;
+        public bool OverrideNullAnimation {private get; set; } = true;
         private string exportDir = "Assets/";
         string prefix = "";
-        private Dictionary<string, string> animRepathList = new Dictionary<string, string>();
+        public bool? WriteDefaultOverride
+        {
+            set
+            {
+                animMod.writeDefaultOverride = value;
+            }
+        }
 
         public AvatarModifyTool(MonoBehaviour a, string dir = "Assets/Export")
         {
@@ -68,6 +76,11 @@ namespace HhotateA.AvatarModifyTools.Core
                 .HasFlag(FileAttributes.Directory)
                 ? dir
                 : Path.GetDirectoryName(dir);
+            
+            animMod = new AnimatorModifier();
+            animMod.onFindParam += GetSafeParam;
+            animMod.onFindAnimationClip += clip => MakeCopy<AnimationClip>(clip);
+            animMod.onFindAvatarMask += CloneAvatarMask;
         }
 
         /// <summary>
@@ -83,17 +96,17 @@ namespace HhotateA.AvatarModifyTools.Core
             if (OverrideSettings) RevertByAssets(assets);
             if (avatar != null)
             {
-                animRepathList = new Dictionary<string, string>();
+                animMod.animRepathList = new Dictionary<string, string>();
                 if (assets.items != null)
                 {
                     foreach (var item in assets.items)
                     {
                         ModifyGameObject(item.prefab, out var from, out var to, item.target);
-                        animRepathList.Add(from, to);
+                        animMod.animRepathList.Add(from, to);
                     }
                 }
 #if VRC_SDK_VRCSDK3
-                ComputeLayersOffset(assets);
+                animMod.layerOffset = ComputeLayersOffset(assets);
 #endif
                 ModifyAvatarAnimatorController(AnimatorLayerType.Locomotion,assets.locomotion_controller);
                 ModifyAvatarAnimatorController(AnimatorLayerType.Idle,assets.idle_controller);
@@ -126,7 +139,7 @@ namespace HhotateA.AvatarModifyTools.Core
             if (ModifyOriginalAsset) assets = RenameAssetsParameters(assets);
             if (avatar != null)
             {
-                animRepathList = new Dictionary<string, string>();
+                animMod.animRepathList = new Dictionary<string, string>();
                 if (assets.items != null)
                 {
                     foreach (var item in assets.items)
@@ -182,17 +195,6 @@ namespace HhotateA.AvatarModifyTools.Core
             EditorUtility.SetDirty(avatar);
         }
 
-        public void RevertAnimator(AnimatorLayerType type, string keyword)
-        {
-            if (String.IsNullOrWhiteSpace(keyword)) return;
-            if (GetAvatarAnimatorControllerExists(type))
-            {
-                var current = GetAvatarAnimatorController(type);
-                current.parameters = current.parameters.Where(p => !p.name.StartsWith(keyword)).ToArray();
-                current.layers = current.layers.Where(l => !l.name.StartsWith(keyword)).ToArray();
-                EditorUtility.SetDirty(current);
-            }
-        }
 
         public void RepathAnimators(GameObject from, GameObject to)
         {
@@ -207,14 +209,7 @@ namespace HhotateA.AvatarModifyTools.Core
             foreach (var playableLayer in avatar.baseAnimationLayers)
             {
                 if (playableLayer.animatorController == null) continue;
-                AnimatorController ac = (AnimatorController) playableLayer.animatorController;
-                if (ac)
-                {
-                    foreach (var layer in ac.layers)
-                    {
-                        RePathStateMachine(layer.stateMachine, from, to);
-                    }
-                }
+                animMod.SetOrigin((AnimatorController) playableLayer.animatorController).RepathAnims(from,to);
             }
 #else
             AnimatorController ac = (AnimatorController) avatar.runtimeAnimatorController;
@@ -235,17 +230,7 @@ namespace HhotateA.AvatarModifyTools.Core
             foreach (var playableLayer in avatar.baseAnimationLayers)
             {
                 if (playableLayer.animatorController == null) continue;
-                AnimatorController ac = (AnimatorController) playableLayer.animatorController;
-                if (ac)
-                {
-                    foreach (var layer in ac.layers)
-                    {
-                        if (HaWriteDefaultStateMachine(layer.stateMachine))
-                        {
-                            layers.Add(layer.name);
-                        }
-                    }
-                }
+                layers.AddRange(animMod.SetOrigin((AnimatorController) playableLayer.animatorController).WriteDefaultLayers());
             }
 #else
             AnimatorController ac = (AnimatorController) avatar.runtimeAnimatorController;
@@ -282,17 +267,10 @@ namespace HhotateA.AvatarModifyTools.Core
             foreach (var playableLayer in avatar.baseAnimationLayers)
             {
                 if (playableLayer.animatorController == null) continue;
-                AnimatorController ac = (AnimatorController) playableLayer.animatorController;
-                if (ac)
-                {
-                    foreach (var layer in ac.layers)
-                    {
-                        if (HasKeyFrameStateMachine(layer.stateMachine, path, attribute))
-                        {
-                            layers.Add(layer.name);
-                        }
-                    }
-                }
+                layers.AddRange(
+                    animMod.
+                        SetOrigin((AnimatorController) playableLayer.animatorController).
+                        HasKeyframeLayers(path, attribute));
             }
 #else
             AnimatorController ac = (AnimatorController) avatar.runtimeAnimatorController;
@@ -313,11 +291,11 @@ namespace HhotateA.AvatarModifyTools.Core
 
         AvatarModifyData RenameAssetsParameters(AvatarModifyData assets)
         {
-            assets.locomotion_controller = AnimatorControllerParameterRename(assets.locomotion_controller);
-            assets.idle_controller = AnimatorControllerParameterRename(assets.idle_controller);
-            assets.action_controller = AnimatorControllerParameterRename(assets.action_controller);
-            assets.gesture_controller = AnimatorControllerParameterRename(assets.gesture_controller);
-            assets.fx_controller = AnimatorControllerParameterRename(assets.fx_controller);
+            assets.locomotion_controller = animMod.SetOrigin(assets.locomotion_controller).AnimatorControllerParameterRename();
+            assets.idle_controller = animMod.SetOrigin(assets.idle_controller).AnimatorControllerParameterRename();
+            assets.action_controller = animMod.SetOrigin(assets.action_controller).AnimatorControllerParameterRename();
+            assets.gesture_controller = animMod.SetOrigin(assets.gesture_controller).AnimatorControllerParameterRename();
+            assets.fx_controller = animMod.SetOrigin(assets.fx_controller).AnimatorControllerParameterRename();
 #if VRC_SDK_VRCSDK3
             assets.menu = ExpressionMenuParameterRename(assets.menu);
             assets.parameter = ExpressionParameterRename(assets.parameter);
@@ -326,45 +304,6 @@ namespace HhotateA.AvatarModifyTools.Core
         }
 
         #region ObjectCombinator
-
-        AnimatorController GetAvatarAnimatorController(AnimatorLayerType type)
-        {
-#if VRC_SDK_VRCSDK3
-             var index = Array.FindIndex(avatar.baseAnimationLayers,
-                 l => l.type == GetVRChatAnimatorLayerType(type));
-             if (avatar.baseAnimationLayers[index].animatorController)
-             {
-                 return (AnimatorController) avatar.baseAnimationLayers[index].animatorController;
-             }
-             return null;
-#else
-            return avatar.runtimeAnimatorController as AnimatorController;
-#endif
-        }
-
-        void SetAvatarAnimatorController(AnimatorLayerType type, AnimatorController controller)
-        {
-#if VRC_SDK_VRCSDK3
-             avatar.customizeAnimationLayers = true;
-             var index = Array.FindIndex(avatar.baseAnimationLayers,
-                 l => l.type == GetVRChatAnimatorLayerType(type));
-             avatar.baseAnimationLayers[index].isDefault = false;
-             avatar.baseAnimationLayers[index].animatorController = controller;
-#else
-            avatar.runtimeAnimatorController = controller;
-#endif
-        }
-
-        bool GetAvatarAnimatorControllerExists(AnimatorLayerType type)
-        {
-#if VRC_SDK_VRCSDK3
-             var index = Array.FindIndex(avatar.baseAnimationLayers,
-                 l => l.type == GetVRChatAnimatorLayerType(type));
-             return avatar.baseAnimationLayers[index].animatorController != null;
-#else
-            return avatar.runtimeAnimatorController != null;
-#endif
-        }
 
         /// <summary>
         /// prefabをボーン下にインスタンスする
@@ -495,6 +434,45 @@ namespace HhotateA.AvatarModifyTools.Core
 
         #region AnimatorCombinator
 
+        AnimatorController GetAvatarAnimatorController(AnimatorLayerType type)
+        {
+#if VRC_SDK_VRCSDK3
+            var index = Array.FindIndex(avatar.baseAnimationLayers,
+                l => l.type == type.GetVRChatAnimatorLayerType());
+            if (avatar.baseAnimationLayers[index].animatorController)
+            {
+                return (AnimatorController) avatar.baseAnimationLayers[index].animatorController;
+            }
+            return null;
+#else
+            return avatar.runtimeAnimatorController as AnimatorController;
+#endif
+        }
+
+        void SetAvatarAnimatorController(AnimatorLayerType type, AnimatorController controller)
+        {
+#if VRC_SDK_VRCSDK3
+            avatar.customizeAnimationLayers = true;
+            var index = Array.FindIndex(avatar.baseAnimationLayers,
+                l => l.type == type.GetVRChatAnimatorLayerType());
+            avatar.baseAnimationLayers[index].isDefault = false;
+            avatar.baseAnimationLayers[index].animatorController = controller;
+#else
+            avatar.runtimeAnimatorController = controller;
+#endif
+        }
+
+        bool GetAvatarAnimatorControllerExists(AnimatorLayerType type)
+        {
+#if VRC_SDK_VRCSDK3
+            var index = Array.FindIndex(avatar.baseAnimationLayers,
+                l => l.type == type.GetVRChatAnimatorLayerType());
+            return avatar.baseAnimationLayers[index].animatorController != null;
+#else
+            return avatar.runtimeAnimatorController != null;
+#endif
+        }
+        
         void ModifyAvatarAnimatorController(AnimatorLayerType type, AnimatorController controller)
         {
             if (controller == null) return;
@@ -532,103 +510,70 @@ namespace HhotateA.AvatarModifyTools.Core
                 }
             }
 
-            ModifyAnimatorController(GetAvatarAnimatorController(type), controller);
+            animMod.SetOrigin(GetAvatarAnimatorController(type)).ModifyAnimatorController(controller);
+        }
+
+        void RevertAnimator(AnimatorLayerType type, string keyword)
+        {
+            if (String.IsNullOrWhiteSpace(keyword)) return;
+            if (GetAvatarAnimatorControllerExists(type))
+            {
+                animMod.SetOrigin(GetAvatarAnimatorController(type)).RevertAnimator(keyword);
+            }
+        }
+
+        void RevertAnimator(AnimatorLayerType type, AnimatorController controller)
+        {
+            if (controller == null) return;
+            if (GetAvatarAnimatorControllerExists(type))
+            {
+                animMod.SetOrigin(GetAvatarAnimatorController(type)).RevertAnimator(controller);
+            }
         }
         
-        /// <summary>
-        /// AnimatorControllerのStateMachineとParameterの結合
-        /// </summary>
-        /// <param name="controller"></param>
-        /// <param name="origin"></param>
-        void ModifyAnimatorController(AnimatorController controller, AnimatorController origin)
+#if VRC_SDK_VRCSDK3
+        
+        Dictionary<AnimatorLayerType, int> ComputeLayersOffset(AvatarModifyData assets)
         {
-            if (controller != origin)
+            var layerOffset = new Dictionary<AnimatorLayerType, int>();
+            foreach (AnimatorLayerType type in Enum.GetValues(typeof(AnimatorLayerType)))
             {
-                int originLayerCount = controller.layers.Length;
-                CloneLayers(controller, origin);
-                CloneAnimatorParamaters(controller, origin);
-                for (int i = originLayerCount; i < controller.layers.Length; i++)
+                layerOffset.Add(type,GetLayerOffset(assets,type));
+            }
+            return layerOffset;
+        }
+        
+        int GetLayerOffset(AvatarModifyData assets,AnimatorLayerType type)
+        {
+            var index = Array.FindIndex(avatar.baseAnimationLayers,l => l.type == type.GetVRChatAnimatorLayerType());
+            if (avatar.customizeAnimationLayers == false) return 0;
+            if (avatar.baseAnimationLayers[index].isDefault == true) return 0;
+            if (!avatar.baseAnimationLayers[index].animatorController) return 0;
+            AnimatorController a = (AnimatorController) avatar.baseAnimationLayers[index].animatorController;
+            AnimatorController b =
+                type == AnimatorLayerType.Idle ? assets.idle_controller :
+                type == AnimatorLayerType.Gesture ? assets.gesture_controller :
+                type == AnimatorLayerType.Action ? assets.action_controller :
+                type == AnimatorLayerType.Fx ? assets.fx_controller :
+                null;
+            if (a == null) return 0;
+            if (b == null) return a.layers.Length;
+            int i = 0;
+            foreach (var la in a.layers)
+            {
+                if (b.layers.Any(lb => la.name == lb.name))
                 {
-                    SaveLayer(controller.layers[i], AssetDatabase.GetAssetPath(controller));
+                    continue;
+                }
+                else
+                {
+                    i++;
                 }
             }
+            return i;
         }
 
-        /// <summary>
-        /// AnimatorController全レイヤーの安全な結合
-        /// </summary>
-        /// <param name="cloneController"></param>
-        /// <param name="originController"></param>
-        void CloneLayers(AnimatorController cloneController, AnimatorController originController)
-        {
-            if (cloneController != originController && cloneController != null && originController != null)
-            {
-                foreach (var layer in originController.layers)
-                {
-                    // すでに同名レイヤーがあれば削除する
-                    int index = Array.FindIndex(cloneController.layers, l => l.name == GetSafeParam(layer.name));
-                    if (index > -1) cloneController.RemoveLayer(index);
-                    // レイヤーの複製
-                    var newLayer = CloneLayer(layer);
-                    cloneController.AddLayer(newLayer);
-                }
-            }
-        }
-
-        /// <summary>
-        /// AnimatorControllerのLayerごとの複製
-        /// </summary>
-        /// <param name="originLayer"></param>
-        /// <returns></returns>
-        AnimatorControllerLayer CloneLayer(AnimatorControllerLayer originLayer)
-        {
-            var cloneLayer = new AnimatorControllerLayer()
-            {
-                avatarMask = CloneAvatarMask(originLayer.avatarMask),
-                blendingMode = originLayer.blendingMode,
-                defaultWeight = originLayer.defaultWeight,
-                iKPass = originLayer.iKPass,
-                name = GetSafeParam(originLayer.name),
-                syncedLayerAffectsTiming = originLayer.syncedLayerAffectsTiming,
-                syncedLayerIndex = originLayer.syncedLayerIndex,
-                // StateMachineは別途複製
-                stateMachine = CloneStateMachine(originLayer.stateMachine),
-            };
-            CloneTrasitions(cloneLayer.stateMachine, originLayer.stateMachine);
-            return cloneLayer;
-        }
-
-        /// <summary>
-        /// Statemachineの複製
-        /// </summary>
-        /// <param name="originMachine"></param>
-        /// <returns></returns>
-        AnimatorStateMachine CloneStateMachine(AnimatorStateMachine originMachine)
-        {
-            var cloneChildMachine = originMachine.stateMachines.Select(cs => new ChildAnimatorStateMachine()
-            {
-                position = cs.position,
-                stateMachine = CloneStateMachine(cs.stateMachine)
-            }).ToList();
-            var cloneStates = CloneStates(originMachine);
-
-            // StateMachineの複製
-            var cloneStateMachine = new AnimatorStateMachine
-            {
-                anyStatePosition = originMachine.anyStatePosition,
-                entryPosition = originMachine.entryPosition,
-                exitPosition = originMachine.exitPosition,
-                hideFlags = originMachine.hideFlags,
-                name = originMachine.name,
-                parentStateMachinePosition = originMachine.parentStateMachinePosition,
-                // ChildAnimatorStateMachineは別途複製
-                states = cloneStates.ToArray(),
-                stateMachines = cloneChildMachine.ToArray(),
-                defaultState = cloneStates.FirstOrDefault(s => s.state.name == originMachine.defaultState.name).state,
-            };
-
-            return cloneStateMachine;
-        }
+#endif
 
         AvatarMask CloneAvatarMask(AvatarMask origin)
         {
@@ -677,575 +622,6 @@ namespace HhotateA.AvatarModifyTools.Core
             }
 
             return l;
-        }
-
-        /// <summary>
-        /// ChildAnimationStateの複製
-        /// </summary>
-        /// <param name="originMachine"></param>
-        /// <returns></returns>
-        List<ChildAnimatorState> CloneStates(AnimatorStateMachine originMachine)
-        {
-            // Stateの複製
-            var cloneStates = new List<ChildAnimatorState>();
-            foreach (var animstate in originMachine.states)
-            {
-                cloneStates.Add(CloneChildAnimatorState(animstate));
-            }
-
-            return cloneStates;
-        }
-
-        void CloneTrasitions(AnimatorStateMachine clone, AnimatorStateMachine origin)
-        {
-            // リスト作成
-            var cloneStates = new List<AnimatorState>();
-            var originStates = new List<AnimatorState>();
-            var cloneMachines = GetStatemachines(clone);
-            var originMachines = GetStatemachines(origin);
-            foreach (var m in cloneMachines)
-            {
-                cloneStates.AddRange(m.states.Select(s => s.state).ToList());
-            }
-
-            foreach (var m in originMachines)
-            {
-                originStates.AddRange(m.states.Select(s => s.state).ToList());
-            }
-
-            // Transitionの複製
-            foreach (var originState in originStates)
-            {
-                var cloneState = cloneStates.FirstOrDefault(s => s.name == originState.name);
-                if (cloneState != null)
-                {
-                    foreach (var originTransition in originState.transitions)
-                    {
-                        var cloneTransition = new AnimatorStateTransition();
-
-                        if (originTransition.isExit)
-                        {
-                            cloneTransition = cloneState.AddExitTransition();
-                        }
-
-                        if (originTransition.destinationState != null)
-                        {
-                            var destinationState =
-                                cloneStates.FirstOrDefault(s => s.name == originTransition.destinationState.name);
-                            cloneTransition = cloneState.AddTransition(destinationState);
-                        }
-
-                        if (originTransition.destinationStateMachine != null)
-                        {
-                            var destinationState = cloneMachines.FirstOrDefault(s =>
-                                s.name == originTransition.destinationStateMachine.name);
-                            cloneTransition = cloneState.AddTransition(destinationState);
-                        }
-
-                        CopyAnimatorStateTransition(cloneTransition, originTransition);
-                    }
-
-                    CopyStateBehaviours(cloneState, originState);
-                }
-                else
-                {
-                    Debug.LogError("NullState Copy");
-                }
-            }
-
-            foreach (var originMachine in originMachines)
-            {
-                var cloneMachine = cloneMachines.FirstOrDefault(m => m.name == originMachine.name);
-                if (cloneMachine != null)
-                {
-                    foreach (var originTransition in originMachine.anyStateTransitions)
-                    {
-                        var cloneTransition = new AnimatorStateTransition();
-
-                        if (originTransition.destinationState != null)
-                        {
-                            var destinationState =
-                                cloneStates.FirstOrDefault(s => s.name == originTransition.destinationState.name);
-                            cloneTransition = cloneMachine.AddAnyStateTransition(destinationState);
-                        }
-
-                        if (originTransition.destinationStateMachine != null)
-                        {
-                            var destinationState = cloneMachines.FirstOrDefault(s =>
-                                s.name == originTransition.destinationStateMachine.name);
-                            cloneTransition = cloneMachine.AddAnyStateTransition(destinationState);
-                        }
-
-                        CopyAnimatorStateTransition(cloneTransition, originTransition);
-                    }
-
-                    foreach (var originTransition in originMachine.entryTransitions)
-                    {
-                        var cloneTransition = new AnimatorTransition();
-
-                        if (originTransition.destinationState != null)
-                        {
-                            var destinationState =
-                                cloneStates.FirstOrDefault(s => s.name == originTransition.destinationState.name);
-                            cloneTransition = cloneMachine.AddEntryTransition(destinationState);
-                        }
-
-                        if (originTransition.destinationStateMachine != null)
-                        {
-                            var destinationState = cloneMachines.FirstOrDefault(s =>
-                                s.name == originTransition.destinationStateMachine.name);
-                            cloneTransition = cloneMachine.AddEntryTransition(destinationState);
-                        }
-
-                        CopyAnimatorTransition(cloneTransition, originTransition);
-                    }
-                }
-                else
-                {
-                    Debug.LogError("NullStateMachine Copy");
-                }
-            }
-        }
-
-
-        List<AnimatorStateMachine> GetStatemachines(AnimatorStateMachine root)
-        {
-            var l = new List<AnimatorStateMachine>();
-            l.Add(root);
-            foreach (var stateMachine in root.stateMachines)
-            {
-                l.AddRange(GetStatemachines(stateMachine.stateMachine));
-            }
-
-            return l;
-        }
-
-        AnimatorStateTransition CopyAnimatorStateTransition(AnimatorStateTransition clone,
-            AnimatorStateTransition origin)
-        {
-            clone.duration = origin.duration;
-            clone.offset = origin.offset;
-            clone.interruptionSource = origin.interruptionSource;
-            clone.orderedInterruption = origin.orderedInterruption;
-            clone.exitTime = origin.exitTime;
-            clone.hasExitTime = origin.hasExitTime;
-            clone.hasFixedDuration = origin.hasFixedDuration;
-            clone.canTransitionToSelf = origin.canTransitionToSelf;
-
-            CopyAnimatorTransition(clone, origin);
-            return clone;
-        }
-
-        AnimatorTransitionBase CopyAnimatorTransition(AnimatorTransitionBase clone, AnimatorTransitionBase origin)
-        {
-            clone.name = origin.name;
-            clone.hideFlags = origin.hideFlags;
-            clone.solo = origin.solo;
-            clone.mute = origin.mute;
-            clone.isExit = origin.isExit;
-
-            foreach (var originCondition in origin.conditions)
-            {
-                clone.AddCondition(originCondition.mode, originCondition.threshold,
-                    GetSafeParam(originCondition.parameter));
-            }
-
-            return clone;
-        }
-
-        ChildAnimatorState CloneChildAnimatorState(ChildAnimatorState origin)
-        {
-            var clone = new ChildAnimatorState()
-            {
-                position = origin.position,
-                state = CloneAnimationState(origin.state)
-            };
-            return clone;
-        }
-
-        AnimatorState CloneAnimationState(AnimatorState origin)
-        {
-            var clone = new AnimatorState()
-            {
-                cycleOffset = origin.cycleOffset,
-                cycleOffsetParameter = GetSafeParam(origin.cycleOffsetParameter),
-                cycleOffsetParameterActive = origin.cycleOffsetParameterActive,
-                hideFlags = origin.hideFlags,
-                iKOnFeet = origin.iKOnFeet,
-                mirror = origin.mirror,
-                mirrorParameter = GetSafeParam(origin.mirrorParameter),
-                mirrorParameterActive = origin.mirrorParameterActive,
-                motion = CloneMotion(origin.motion),
-                name = origin.name,
-                speed = origin.speed,
-                speedParameter = GetSafeParam(origin.speedParameter),
-                speedParameterActive = origin.speedParameterActive,
-                tag = origin.tag,
-                timeParameter = GetSafeParam(origin.timeParameter),
-                timeParameterActive = origin.timeParameterActive,
-                writeDefaultValues = WriteDefaultOverride ?? origin.writeDefaultValues
-            };
-            return clone;
-        }
-
-        Motion CloneMotion(Motion origin)
-        {
-            if (origin == null)
-            {
-                if (OverrideNullAnimation)
-                {
-                    return AssetUtility.LoadAssetAtGuid<AnimationClip>(EnvironmentVariable.nottingAnim);
-                }
-                else
-                {
-                    return null;
-                }
-            }
-
-            if (origin is BlendTree)
-            {
-                var o = origin as BlendTree;
-                BlendTree c = new BlendTree()
-                {
-                    blendParameter = GetSafeParam(o.blendParameter),
-                    blendParameterY = GetSafeParam(o.blendParameterY),
-                    children = o.children.Select(m =>
-                        new ChildMotion()
-                        {
-                            cycleOffset = m.cycleOffset,
-                            directBlendParameter = GetSafeParam(m.directBlendParameter),
-                            mirror = m.mirror,
-                            motion = CloneMotion(m.motion),
-                            position = m.position,
-                            threshold = m.threshold,
-                            timeScale = m.timeScale,
-                        }).ToArray(),
-                    blendType = o.blendType,
-                    hideFlags = o.hideFlags,
-                    maxThreshold = o.maxThreshold,
-                    minThreshold = o.minThreshold,
-                    name = o.name,
-                    useAutomaticThresholds = o.useAutomaticThresholds,
-                };
-                return c;
-            }
-            else if (origin is AnimationClip)
-            {
-                if (animRepathList.Count > 0)
-                {
-                    return RePathAnimation((AnimationClip) origin);
-                }
-
-                return origin;
-            }
-
-            return origin;
-        }
-
-        AnimatorState CopyStateBehaviours(AnimatorState clone, AnimatorState origin)
-        {
-            var behaviours = new List<StateMachineBehaviour>();
-            foreach (var behaviour in origin.behaviours)
-            {
-#if VRC_SDK_VRCSDK3
-                if (behaviour is VRCAnimatorLayerControl)
-                {
-                    VRCAnimatorLayerControl o = behaviour as VRCAnimatorLayerControl;
-                    var c = ScriptableObject.CreateInstance<VRCAnimatorLayerControl>();
-                    {
-                        c.ApplySettings = o.ApplySettings;
-                        c.debugString = o.debugString;
-                        c.playable = o.playable;
-                        c.layer = o.layer + layerOffset[GetAnimatorLayerType(o.playable)]; // レイヤーが増えた分加算する
-                        c.blendDuration = o.blendDuration;
-                        c.goalWeight = o.goalWeight;
-                        c.playable = o.playable;
-                    }
-                    behaviours.Add(c);
-                }
-                else
-                if (behaviour is VRCAvatarParameterDriver)
-                {
-                    VRCAvatarParameterDriver o = behaviour as VRCAvatarParameterDriver;
-                    var c = ScriptableObject.CreateInstance<VRCAvatarParameterDriver>();
-                    {
-                        c.name = o.name;
-                        c.parameters = o.parameters.Select(p =>
-                        {
-                            return new VRC_AvatarParameterDriver.Parameter()
-                            {
-                                name = GetSafeParam(p.name),
-                                chance = p.chance,
-                                type = p.type,
-                                value = p.value,
-                                valueMin = p.valueMin,
-                                valueMax = p.valueMax
-                            };
-                        }).ToList();
-                        c.debugString = o.debugString;
-                        c.hideFlags = o.hideFlags;
-                        c.localOnly = o.localOnly;
-                        c.ApplySettings = o.ApplySettings;
-                    }
-                    behaviours.Add(c);
-                }
-                else
-                {
-                    var c = ScriptableObject.Instantiate(behaviour);
-                    behaviours.Add(c);
-                }
-#else
-                var c = ScriptableObject.Instantiate(behaviour);
-                behaviours.Add(c);
-#endif
-            }
-
-            clone.behaviours = behaviours.ToArray();
-
-            return clone;
-        }
-
-        void SaveLayer(AnimatorControllerLayer l, string path)
-        {
-            // if(l.avatarMask) AssetDatabase.AddObjectToAsset(l.avatarMask,path);
-            SaveStateMachine(l.stateMachine, path);
-        }
-
-        void SaveStateMachine(AnimatorStateMachine machine, string path)
-        {
-            machine.hideFlags = HideFlags.HideInHierarchy;
-            AssetDatabase.AddObjectToAsset(machine, path);
-            foreach (var s in machine.states)
-            {
-                AssetDatabase.AddObjectToAsset(s.state, path);
-                SaveMotion(s.state.motion, path);
-                foreach (var t in s.state.transitions)
-                {
-                    t.hideFlags = HideFlags.HideInHierarchy;
-                    AssetDatabase.AddObjectToAsset(t, path);
-                }
-
-                foreach (var b in s.state.behaviours)
-                {
-                    b.hideFlags = HideFlags.HideInHierarchy;
-                    AssetDatabase.AddObjectToAsset(b, path);
-                }
-            }
-
-            foreach (var t in machine.entryTransitions)
-            {
-                t.hideFlags = HideFlags.HideInHierarchy;
-                AssetDatabase.AddObjectToAsset(t, path);
-            }
-
-            foreach (var t in machine.anyStateTransitions)
-            {
-                t.hideFlags = HideFlags.HideInHierarchy;
-                AssetDatabase.AddObjectToAsset(t, path);
-            }
-
-            foreach (var m in machine.stateMachines)
-            {
-                SaveStateMachine(m.stateMachine, path);
-                foreach (var b in m.stateMachine.behaviours)
-                {
-                    b.hideFlags = HideFlags.HideInHierarchy;
-                    AssetDatabase.AddObjectToAsset(b, path);
-                }
-            }
-        }
-
-        void SaveMotion(Motion motion, string path)
-        {
-            if (motion == null) return;
-            if (motion is BlendTree)
-            {
-                BlendTree tree = (BlendTree) motion;
-                tree.hideFlags = HideFlags.HideInHierarchy;
-                AssetDatabase.AddObjectToAsset(tree, path);
-                foreach (var m in tree.children)
-                {
-                    SaveMotion(m.motion, path);
-                }
-            }
-        }
-
-        /// <summary>
-        /// AnimatorControllerのパラメータの安全な結合
-        /// </summary>
-        /// <param name="cloneController"></param>
-        /// <param name="originController"></param>
-        void CloneAnimatorParamaters(AnimatorController cloneController, AnimatorController originController)
-        {
-            if (cloneController != originController || cloneController != null || originController != null)
-            {
-                foreach (var parameter in originController.parameters)
-                {
-                    // すでに同名パラメーターがあれば削除する
-                    int index = Array.FindIndex(cloneController.parameters,
-                        p => p.name == GetSafeParam(parameter.name));
-                    if (index > -1) cloneController.RemoveParameter(cloneController.parameters[index]);
-                    // パラメーターのコピー
-                    cloneController.AddParameter(new AnimatorControllerParameter()
-                    {
-                        defaultBool = parameter.defaultBool,
-                        defaultFloat = parameter.defaultFloat,
-                        defaultInt = parameter.defaultInt,
-                        name = GetSafeParam(parameter.name),
-                        type = parameter.type,
-                    });
-                }
-            }
-        }
-
-        void RevertAnimator(AnimatorLayerType type, AnimatorController controller)
-        {
-            if (controller == null) return;
-            if (GetAvatarAnimatorControllerExists(type))
-            {
-                var current = GetAvatarAnimatorController(type);
-                if (controller == current) return;
-                var newLayers = new List<AnimatorControllerLayer>();
-                foreach (var layer in current.layers)
-                {
-                    if (controller.layers.Any(l =>
-                        (GetSafeParam(l.name) == layer.name)))
-                    {
-                    }
-                    else
-                    {
-                        newLayers.Add(layer);
-                    }
-                }
-
-                current.layers = newLayers.ToArray();
-                EditorUtility.SetDirty(current);
-            }
-        }
-
-        AnimatorController AnimatorControllerParameterRename(AnimatorController anim)
-        {
-            if (anim == null) return null;
-            anim.parameters = anim.parameters.Select(p => new AnimatorControllerParameter()
-            {
-                name = GetSafeParam(p.name),
-                type = p.type,
-                defaultBool = p.defaultBool,
-                defaultFloat = p.defaultFloat,
-                defaultInt = p.defaultInt,
-            }).ToArray();
-            anim.layers = anim.layers.Select(l =>
-            {
-                l.name = GetSafeParam(l.name);
-                l.stateMachine = StateMachineParameterRename(l.stateMachine);
-                return l;
-            }).ToArray();
-            EditorUtility.SetDirty(anim);
-            return anim;
-        }
-
-        AnimatorStateMachine StateMachineParameterRename(AnimatorStateMachine machine)
-        {
-            machine.states = machine.states.Select(s =>
-            {
-                if (s.state.motion is BlendTree)
-                {
-                    BlendTree BlendTreeParameterRename(BlendTree b)
-                    {
-                        b.blendParameter = GetSafeParam(b.blendParameter);
-                        b.blendParameterY = GetSafeParam(b.blendParameterY);
-                        b.children = b.children.Select(c =>
-                        {
-                            if (c.motion is BlendTree)
-                            {
-                                c.motion = BlendTreeParameterRename((BlendTree) c.motion);
-                            }
-
-                            return c;
-                        }).ToArray();
-                        return b;
-                    }
-
-                    s.state.motion = BlendTreeParameterRename((BlendTree) s.state.motion);
-                }
-
-                s.state.timeParameter = GetSafeParam(s.state.timeParameter);
-                s.state.speedParameter = GetSafeParam(s.state.speedParameter);
-                s.state.mirrorParameter = GetSafeParam(s.state.mirrorParameter);
-                s.state.cycleOffsetParameter = GetSafeParam(s.state.cycleOffsetParameter);
-
-                s.state.transitions = s.state.transitions.Select(t =>
-                {
-                    t.conditions = t.conditions.Select(c => new AnimatorCondition()
-                    {
-                        mode = c.mode,
-                        parameter = GetSafeParam(c.parameter),
-                        threshold = c.threshold
-                    }).ToArray();
-                    return t;
-                }).ToArray();
-
-                s.state.behaviours = s.state.behaviours.Select(b =>
-                {
-#if VRC_SDK_VRCSDK3
-                    if (b is VRCAvatarParameterDriver)
-                    {
-                        var p = (VRCAvatarParameterDriver) b;
-                        p.parameters = p.parameters.Select(e =>
-                        {
-                            e.name = GetSafeParam(e.name);
-                            return e;
-                        }).ToList();
-                    }
-#endif
-                    return b;
-                }).ToArray();
-                return s;
-            }).ToArray();
-
-            machine.entryTransitions = machine.entryTransitions.Select(t =>
-            {
-                t.conditions = t.conditions.Select(c => new AnimatorCondition()
-                {
-                    mode = c.mode,
-                    parameter = GetSafeParam(c.parameter),
-                    threshold = c.threshold
-                }).ToArray();
-                return t;
-            }).ToArray();
-
-            machine.anyStateTransitions = machine.anyStateTransitions.Select(t =>
-            {
-                t.conditions = t.conditions.Select(c => new AnimatorCondition()
-                {
-                    mode = c.mode,
-                    parameter = GetSafeParam(c.parameter),
-                    threshold = c.threshold
-                }).ToArray();
-                return t;
-            }).ToArray();
-
-            machine.stateMachines = machine.stateMachines.Select(m =>
-            {
-                StateMachineParameterRename(m.stateMachine);
-                m.stateMachine.behaviours = m.stateMachine.behaviours.Select(b =>
-                {
-#if VRC_SDK_VRCSDK3
-                    if (b is VRCAvatarParameterDriver)
-                    {
-                        var p = (VRCAvatarParameterDriver) b;
-                        p.parameters = p.parameters.Select(e =>
-                        {
-                            e.name = GetSafeParam(e.name);
-                            return e;
-                        }).ToList();
-                    }
-#endif
-                    return b;
-                }).ToArray();
-                return m;
-            }).ToArray();
-            return machine;
         }
 
         #endregion
@@ -1467,6 +843,33 @@ namespace HhotateA.AvatarModifyTools.Core
             parentnmenu.controls = newControll.ToList();
             EditorUtility.SetDirty(parentnmenu);
         }
+
+        VRCExpressionsMenu ExpressionMenuParameterRename(VRCExpressionsMenu menu)
+        {
+            if (menu == null) return null;
+            if (menu.controls == null) return null;
+            // menu = ScriptableObject.Instantiate(menu);
+            menu.controls = menu.controls.Select(c =>
+            {
+                if (c.type == VRCExpressionsMenu.Control.ControlType.SubMenu)
+                {
+                    c.subMenu = ExpressionMenuParameterRename(c.subMenu);
+                }
+
+                c.parameter = new VRCExpressionsMenu.Control.Parameter() {name = GetSafeParam(c.parameter.name)};
+                if (c.subParameters != null)
+                {
+                    c.subParameters = c.subParameters.Select(cc =>
+                    {
+                        return new VRCExpressionsMenu.Control.Parameter() {name = GetSafeParam(cc.name)};
+                    }).ToArray();
+                }
+
+                return c;
+            }).ToList();
+            EditorUtility.SetDirty(menu);
+            return menu;
+        }
 #endif
         
         #endregion
@@ -1566,7 +969,7 @@ namespace HhotateA.AvatarModifyTools.Core
                 foreach (var parameter in current.parameters)
                 {
                     if (parameters.parameters.Any(p => (
-                        GetSafeParam(p.name) == parameter.name &&
+                        GetSafeParam(p.name) == GetSafeParam(parameter.name) &&
                         p.valueType == parameter.valueType)))
                     {
                     }
@@ -1609,364 +1012,14 @@ namespace HhotateA.AvatarModifyTools.Core
             EditorUtility.SetDirty(param);
             return param;
         }
-
-        VRCExpressionsMenu ExpressionMenuParameterRename(VRCExpressionsMenu menu)
-        {
-            if (menu == null) return null;
-            if (menu.controls == null) return null;
-            // menu = ScriptableObject.Instantiate(menu);
-            menu.controls = menu.controls.Select(c =>
-            {
-                if (c.type == VRCExpressionsMenu.Control.ControlType.SubMenu)
-                {
-                    c.subMenu = ExpressionMenuParameterRename(c.subMenu);
-                }
-
-                c.parameter = new VRCExpressionsMenu.Control.Parameter() {name = GetSafeParam(c.parameter.name)};
-                if (c.subParameters != null)
-                {
-                    c.subParameters = c.subParameters.Select(cc =>
-                    {
-                        return new VRCExpressionsMenu.Control.Parameter() {name = GetSafeParam(cc.name)};
-                    }).ToArray();
-                }
-
-                return c;
-            }).ToList();
-            EditorUtility.SetDirty(menu);
-            return menu;
-        }
 #endif
         #endregion
 
-        #region AnimatorModifier
-        
-        public enum AnimatorLayerType
-        {
-            Locomotion,
-            Idle,
-            Gesture,
-            Action,
-            Fx
-        }
-        
-#if VRC_SDK_VRCSDK3
-
-        private Dictionary<AnimatorLayerType, int> layerOffset = new Dictionary<AnimatorLayerType, int>();
-        
-        void ComputeLayersOffset(AvatarModifyData assets)
-        {
-            layerOffset = new Dictionary<AnimatorLayerType, int>();
-            foreach (AnimatorLayerType type in Enum.GetValues(typeof(AnimatorLayerType)))
-            {
-                layerOffset.Add(type,GetLayerOffset(assets,type));
-            }
-        }
-        
-        int GetLayerOffset(AvatarModifyData assets,AnimatorLayerType type)
-        {
-            var index = Array.FindIndex(avatar.baseAnimationLayers,l => l.type == GetVRChatAnimatorLayerType(type));
-            if (avatar.customizeAnimationLayers == false) return 0;
-            if (avatar.baseAnimationLayers[index].isDefault == true) return 0;
-            if (!avatar.baseAnimationLayers[index].animatorController) return 0;
-            AnimatorController a = (AnimatorController) avatar.baseAnimationLayers[index].animatorController;
-            AnimatorController b =
-                type == AnimatorLayerType.Idle ? assets.idle_controller :
-                type == AnimatorLayerType.Gesture ? assets.gesture_controller :
-                type == AnimatorLayerType.Action ? assets.action_controller :
-                type == AnimatorLayerType.Fx ? assets.fx_controller :
-                null;
-            if (a == null) return 0;
-            if (b == null) return a.layers.Length;
-            int i = 0;
-            foreach (var la in a.layers)
-            {
-                if (b.layers.Any(lb => la.name == lb.name))
-                {
-                    continue;
-                }
-                else
-                {
-                    i++;
-                }
-            }
-            return i;
-        }
-
-        static VRCAvatarDescriptor.AnimLayerType GetVRChatAnimatorLayerType(AnimatorLayerType type)
-        {
-            switch (type)
-            {
-                case AnimatorLayerType.Locomotion : return VRCAvatarDescriptor.AnimLayerType.Base;
-                case AnimatorLayerType.Idle : return VRCAvatarDescriptor.AnimLayerType.Additive; 
-                case AnimatorLayerType.Gesture : return VRCAvatarDescriptor.AnimLayerType.Gesture; 
-                case AnimatorLayerType.Action : return VRCAvatarDescriptor.AnimLayerType.Action; 
-                case AnimatorLayerType.Fx : return VRCAvatarDescriptor.AnimLayerType.FX; 
-            }
-            return VRCAvatarDescriptor.AnimLayerType.Base;
-        }
-        
-        static AnimatorLayerType GetAnimatorLayerType(VRCAvatarDescriptor.AnimLayerType type)
-        {
-            switch (type)
-            {
-                case VRCAvatarDescriptor.AnimLayerType.Base : return AnimatorLayerType.Locomotion;
-                case VRCAvatarDescriptor.AnimLayerType.Additive : return AnimatorLayerType.Idle; 
-                case VRCAvatarDescriptor.AnimLayerType.Gesture : return AnimatorLayerType.Gesture; 
-                case VRCAvatarDescriptor.AnimLayerType.Action : return AnimatorLayerType.Action; 
-                case VRCAvatarDescriptor.AnimLayerType.FX : return AnimatorLayerType.Fx; 
-            }
-            return AnimatorLayerType.Locomotion;
-        }
-        
-        static AnimatorLayerType GetAnimatorLayerType(VRC_AnimatorLayerControl.BlendableLayer type)
-        {
-            switch (type)
-            {
-                case VRC_AnimatorLayerControl.BlendableLayer.Additive : return AnimatorLayerType.Idle; 
-                case VRC_AnimatorLayerControl.BlendableLayer.Gesture : return AnimatorLayerType.Gesture; 
-                case VRC_AnimatorLayerControl.BlendableLayer.Action : return AnimatorLayerType.Action; 
-                case VRC_AnimatorLayerControl.BlendableLayer.FX : return AnimatorLayerType.Fx; 
-            }
-            return AnimatorLayerType.Locomotion;
-        }
-#endif
-        
         string GetRelativePath(Transform o)
         {
             return AssetUtility.GetRelativePath(avatar.transform, o);
         }
-
-        AnimationClip RePathAnimation(AnimationClip clip)
-        {
-            bool hasPath = false;
-            using (var o = new SerializedObject(clip))
-            {
-                var i = o.GetIterator();
-                while (i.Next(true))
-                {
-                    if (i.name == "path" && i.propertyType == SerializedPropertyType.String)
-                    {
-                        foreach (var ft in animRepathList)
-                        {
-                            if (i.stringValue.StartsWith(ft.Key))
-                            {
-                                hasPath = true;
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
-
-            if (hasPath)
-            {
-                clip = MakeCopy<AnimationClip>(clip, false);
-                using (var o = new SerializedObject(clip))
-                {
-                    var i = o.GetIterator();
-                    while (i.Next(true))
-                    {
-                        if (i.name == "path" && i.propertyType == SerializedPropertyType.String)
-                        {
-                            foreach (var ft in animRepathList)
-                            {
-                                if (i.stringValue.StartsWith(ft.Key))
-                                {
-                                    i.stringValue = i.stringValue.Replace(ft.Key, ft.Value);
-                                }
-                            }
-                        }
-                    }
-
-                    o.ApplyModifiedProperties();
-                }
-            }
-
-            return clip;
-        }
-
-        void RePathStateMachine(AnimatorStateMachine machine, string from, string to)
-        {
-            foreach (var s in machine.states)
-            {
-                if (s.state.motion)
-                {
-                    RePathMotion(s.state.motion, from, to);
-                }
-            }
-
-            foreach (var m in machine.stateMachines)
-            {
-                RePathStateMachine(m.stateMachine, from, to);
-            }
-        }
-
-        void RePathMotion(Motion motion, string from, string to)
-        {
-            if (motion is BlendTree)
-            {
-                BlendTree tree = (BlendTree) motion;
-                foreach (var m in tree.children)
-                {
-                    RePathMotion(m.motion, from, to);
-                }
-            }
-            else if (motion is AnimationClip)
-            {
-                AnimationClip clip = (AnimationClip) motion;
-                RePathAnimation(clip, from, to);
-            }
-        }
-
-        AnimationClip RePathAnimation(AnimationClip clip, string from, string to)
-        {
-            bool hasPath = false;
-            using (var o = new SerializedObject(clip))
-            {
-                var i = o.GetIterator();
-                while (i.Next(true))
-                {
-                    if (i.name == "path" && i.propertyType == SerializedPropertyType.String)
-                    {
-                        if (i.stringValue.StartsWith(from))
-                        {
-                            hasPath = true;
-                            break;
-                        }
-                    }
-                }
-            }
-
-            if (hasPath)
-            {
-                clip = MakeCopy<AnimationClip>(clip, false);
-                using (var o = new SerializedObject(clip))
-                {
-                    var i = o.GetIterator();
-                    while (i.Next(true))
-                    {
-                        if (i.name == "path" && i.propertyType == SerializedPropertyType.String)
-                        {
-                            if (i.stringValue.StartsWith(from))
-                            {
-                                i.stringValue = i.stringValue.Replace(from, to);
-                            }
-                        }
-                    }
-
-                    o.ApplyModifiedProperties();
-                }
-            }
-
-            return clip;
-        }
-
-        bool HaWriteDefaultStateMachine(AnimatorStateMachine machine)
-        {
-            foreach (var s in machine.states)
-            {
-                if (s.state.motion)
-                {
-                    return s.state.writeDefaultValues;
-                }
-            }
-
-            foreach (var m in machine.stateMachines)
-            {
-                if (HaWriteDefaultStateMachine(m.stateMachine))
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-
-        bool HasKeyFrameStateMachine(AnimatorStateMachine machine, string[] path, string attribute = "")
-        {
-            foreach (var s in machine.states)
-            {
-                if (s.state.motion)
-                {
-                    if (HasKeyframeMotion(s.state.motion, path, attribute))
-                    {
-                        return true;
-                    }
-                }
-            }
-
-            foreach (var m in machine.stateMachines)
-            {
-                if (HasKeyFrameStateMachine(m.stateMachine, path, attribute))
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        bool HasKeyframeMotion(Motion motion, string[] path, string attribute = "")
-        {
-            if (motion is BlendTree)
-            {
-                BlendTree tree = (BlendTree) motion;
-                foreach (var m in tree.children)
-                {
-                    if (HasKeyframeMotion(m.motion, path, attribute))
-                    {
-                        return true;
-                    }
-                }
-            }
-            else if (motion is AnimationClip)
-            {
-                AnimationClip clip = (AnimationClip) motion;
-                if (HasKeyframeAnimation(clip, path, attribute))
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        bool HasKeyframeAnimation(AnimationClip clip, string[] path, string attribute = "")
-        {
-            using (var o = new SerializedObject(clip))
-            {
-                var curves = o.FindProperty("m_FloatCurves");
-                for (int i = curves.arraySize - 1; i >= 0; i--)
-                {
-                    var pathProp = curves.GetArrayElementAtIndex(i).FindPropertyRelative("path");
-                    var attributeProp = curves.GetArrayElementAtIndex(i).FindPropertyRelative("attribute");
-                    if (pathProp != null)
-                    {
-                        if (path.Contains(pathProp.stringValue))
-                        {
-                            if (String.IsNullOrWhiteSpace(attribute))
-                            {
-                                return true;
-                            }
-                            else
-                            {
-                                if (attributeProp.stringValue.Contains(attribute))
-                                {
-                                    return true;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            return false;
-        }
-
-        #endregion
-
+        
         T SafeCopy<T>(T obj) where T : Object
         {
             if (ExistAssetObject(obj))
