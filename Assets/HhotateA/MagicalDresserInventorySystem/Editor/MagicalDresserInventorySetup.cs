@@ -814,9 +814,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                             if (GUILayout.Button("Setup"))
                             {
                                 RevertObjectActiveForScene();
-                                var path = EditorUtility.SaveFilePanel("Save", data.GetAssetDir(),
-                                    String.IsNullOrWhiteSpace(data.saveName) ? "MagicalDresserInventorySaveData" : data.saveName,
-                                    "mdinventry.asset");
+                                var path = EditorUtility.SaveFilePanel("Save", data.GetAssetDir(), data.GetAssetName(), "mdinventry.asset");
                                 if (string.IsNullOrEmpty(path))
                                 {
                                     OnCancel();
@@ -862,8 +860,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                         if (GUILayout.Button("Export Animation"))
                         {
                             RevertObjectActiveForScene();
-                            var path = EditorUtility.SaveFilePanel("Save", data.GetAssetDir(), data.saveName,
-                                "anim");
+                            var path = EditorUtility.SaveFilePanel("Save", data.GetAssetDir(), data.GetAssetName(), "anim");
                             if (string.IsNullOrEmpty(path))
                             {
                                 OnCancel();
@@ -891,7 +888,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                         {
                             if (GUILayout.Button("Save Settings"))
                             {
-                                var path = EditorUtility.SaveFilePanel("Save", data.GetAssetDir(), data.saveName,"mdinventry.asset");
+                                var path = EditorUtility.SaveFilePanel("Save", data.GetAssetDir(), data.GetAssetName(),"mdinventry.asset");
                                 if (string.IsNullOrEmpty(path))
                                 {
                                     OnCancel();

@@ -8,6 +8,7 @@ This software is released under the MIT License.
 http://opensource.org/licenses/mit-license.php
 */
 using System;
+using System.IO;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
@@ -107,7 +108,19 @@ namespace HhotateA.AvatarModifyTools.Core
                 return "Assets";
             }
 
-            return System.IO.Path.GetDirectoryName(path);
+            return Path.GetDirectoryName(path);
+        }
+        
+        public static string GetAssetName(this ScriptableObject asset)
+        {
+            var path = AssetDatabase.GetAssetPath(asset);
+            if (String.IsNullOrWhiteSpace(path))
+            {
+                return asset.name;
+            }
+
+            return Path.GetFileName(path).Split('.')[0];
+            return Path.GetFileNameWithoutExtension(path);
         }
 
         public static Transform[] GetBones(this GameObject root)
