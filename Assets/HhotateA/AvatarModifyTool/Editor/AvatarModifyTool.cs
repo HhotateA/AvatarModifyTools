@@ -81,7 +81,11 @@ namespace HhotateA.AvatarModifyTools.Core
 
         void Init(string dir = "Assets/Export")
         {
-            if(avatar == null) return;
+            if (avatar == null)
+            {
+                throw new NullReferenceException("Avatar reference missing");
+            }
+            
             if (dir == "Assets/Export")
             {
                 if (!AssetDatabase.IsValidFolder(dir))
@@ -89,7 +93,6 @@ namespace HhotateA.AvatarModifyTools.Core
                     AssetDatabase.CreateFolder("Assets", "Export");
                 }
             }
-
             exportDir = File.GetAttributes(dir)
                 .HasFlag(FileAttributes.Directory)
                 ? dir
@@ -112,35 +115,32 @@ namespace HhotateA.AvatarModifyTools.Core
             prefix = keyword;
             if (ModifyOriginalAsset) assets = RenameAssetsParameters(assets);
             if (OverrideSettings) RevertByAssets(assets);
-            if (avatar != null)
+            
+            animMod.animRepathList = new Dictionary<string, string>();
+            if (assets.items != null)
             {
-                animMod.animRepathList = new Dictionary<string, string>();
-                if (assets.items != null)
+                foreach (var item in assets.items)
                 {
-                    foreach (var item in assets.items)
-                    {
-                        ModifyGameObject(item.prefab, out var from, out var to, item.target);
-                        animMod.animRepathList.Add(from, to);
-                    }
+                    ModifyGameObject(item.prefab, out var from, out var to, item.target);
+                    animMod.animRepathList.Add(from, to);
                 }
-#if VRC_SDK_VRCSDK3
-                animMod.layerOffset = ComputeLayersOffset(assets);
-#endif
-                ModifyAvatarAnimatorController(AnimatorLayerType.Locomotion,assets.locomotion_controller);
-                ModifyAvatarAnimatorController(AnimatorLayerType.Idle,assets.idle_controller);
-                ModifyAvatarAnimatorController(AnimatorLayerType.Gesture,assets.gesture_controller);
-                ModifyAvatarAnimatorController(AnimatorLayerType.Action,assets.action_controller);
-                ModifyAvatarAnimatorController(AnimatorLayerType.Fx,assets.fx_controller);
-#if VRC_SDK_VRCSDK3
-                ModifyExpressionParameter(assets.parameter);
-                ModifyExpressionMenu(assets.menu);
-#endif
-                AssetDatabase.SaveAssets();
             }
-            else
-            {
-                throw new NullReferenceException("VRCAvatarDescriptor : avatar not found");
-            }
+#if VRC_SDK_VRCSDK3
+            // オフセットの記録
+            animMod.layerOffset = ComputeLayersOffset(assets);
+#endif
+            // Animatorの改変
+            ModifyAvatarAnimatorController(AnimatorLayerType.Locomotion,assets.locomotion_controller);
+            ModifyAvatarAnimatorController(AnimatorLayerType.Idle,assets.idle_controller);
+            ModifyAvatarAnimatorController(AnimatorLayerType.Gesture,assets.gesture_controller);
+            ModifyAvatarAnimatorController(AnimatorLayerType.Action,assets.action_controller);
+            ModifyAvatarAnimatorController(AnimatorLayerType.Fx,assets.fx_controller);
+#if VRC_SDK_VRCSDK3
+            // Avatar項目の改変
+            ModifyExpressionParameter(assets.parameter);
+            ModifyExpressionMenu(assets.menu);
+#endif
+            AssetDatabase.SaveAssets();
 
             EditorUtility.SetDirty(avatar);
         }

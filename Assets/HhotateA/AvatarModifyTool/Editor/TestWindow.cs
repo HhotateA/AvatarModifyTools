@@ -166,7 +166,8 @@ namespace HhotateA.AvatarModifyTools.Core
                     
                     try
                     {
-                        AssetDatabase.CreateAsset(data, path);
+                        data = Instantiate(data);
+                        AssetDatabase.CreateAsset(data, FileUtil.GetProjectRelativePath(path));
                     }
                     catch (Exception e)
                     {
