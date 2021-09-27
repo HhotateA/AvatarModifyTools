@@ -867,7 +867,7 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
         void Setup(GameObject anim)
         {
             DestroyControllMeshes();
-            rends = anim.transform.GetComponentsInChildren<Renderer>();
+            rends = anim.transform.GetComponentsInChildren<Renderer>().Where(r=>r.GetMesh()!=null).ToArray();
             defaultMeshs = rends.Select(m => m.GetMesh()).ToArray();
             meshsCreaters = rends.Select(m => new MeshCreater(m)).ToArray();
             
@@ -879,6 +879,8 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
 
         void AddRend(Renderer rend)
         {
+            if (rend == null) return;
+            if (rend.GetMesh() == null) return;
             int i = rends.Length;
             rends = rends.Append(rend).ToArray();
             defaultMeshs = defaultMeshs.Append(rend.GetMesh()).ToArray();

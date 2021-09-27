@@ -86,6 +86,10 @@ namespace HhotateA.AvatarModifyTools.Core
         
         public MeshCreater(Renderer rend)
         {
+            if (rend.GetMesh() == null)
+            {
+                throw new NullReferenceException("Mesh Not Found");
+            }
             if (rend is SkinnedMeshRenderer)
             {
                 var mesh = rend as SkinnedMeshRenderer;

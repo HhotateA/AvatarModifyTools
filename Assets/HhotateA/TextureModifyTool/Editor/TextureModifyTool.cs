@@ -614,7 +614,7 @@ namespace HhotateA.AvatarModifyTools.TextureModifyTool
         
         void Setup()
         {
-            var rends = avatar.GetComponentsInChildren<Renderer>();
+            var rends = avatar.GetComponentsInChildren<Renderer>().Where(r=>r.GetMesh()!=null).ToList();
             var mcs = rends.Select(r => new MeshCreater(r)).ToArray();
             meshCreater = new MeshCreater(avatar.transform, mcs);
             meshCreater.CombineMesh();
