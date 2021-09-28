@@ -35,6 +35,7 @@ namespace HhotateA.AvatarModifyTools.TextureModifyTool
         private bool keyboardShortcut = true;
         private bool keyboardShift = false;
         private bool keyboardCtr = false;
+        private bool keyboardAlt = false;
         private int shortcutToolBuffer = -1;
         
         // 改造するメッシュのルートオブジェクト
@@ -56,20 +57,24 @@ namespace HhotateA.AvatarModifyTools.TextureModifyTool
         {
             get
             {
-                if (textureCreators != null)
-                {
-                    if (editIndex != -1 && editIndex < textureCreators.Length)
-                    {
-                        return textureCreators[editIndex];
-                    }
-                }
-
-                return null;
+                return GetTextureCreater(editIndex);
             }
         }
         private int editIndex = -1;
         private bool isEnablePreview = true;
-        
+
+        TextureCreator GetTextureCreater(int i)
+        {
+            if (textureCreators != null)
+            {
+                if (0 <= i  && i < textureCreators.Length)
+                {
+                    return textureCreators[i];
+                }
+            }
+            return null;
+        }
+
         ReorderableList layerReorderableList;
         
         // 各種オプション
@@ -153,6 +158,7 @@ namespace HhotateA.AvatarModifyTools.TextureModifyTool
                         {
                             if (meshCreater.GetMaterials()[i] == null) continue;
                             if (meshCreater.GetMaterials()[i].mainTexture == null) continue;
+                            if (GetTextureCreater(i) == null) continue;
                             // Todo この辺のボタンの画像か
                             //if (GUILayout.Button(new GUIContent(meshCreater.GetMaterials()[i].name,meshCreater.GetMaterials()[i].mainTexture),GUILayout.Height(75),GUILayout.Width(300)))
                             if (GUILayout.Button(meshCreater.GetMaterials()[i].name))
@@ -170,6 +176,8 @@ namespace HhotateA.AvatarModifyTools.TextureModifyTool
                     squareMode = EditorGUILayout.Toggle("Texture Square Mode", squareMode);
                     EditorGUILayout.Space();
                     isEnablePreview = EditorGUILayout.Toggle("Enable Preview", isEnablePreview);
+                    EditorGUILayout.Space();
+                    keyboardShortcut = EditorGUILayout.Toggle("Keyboard Shortcut", keyboardShortcut);
                     EditorGUILayout.Space();
                     
                     if (textureCreator == null) return;
@@ -305,7 +313,7 @@ namespace HhotateA.AvatarModifyTools.TextureModifyTool
                             
                             pen.brushStrength = EditorGUILayout.Slider("Brush Strength", pen.brushStrength, 0.5f, 2.5f);
                             EditorGUILayout.Space();
-                            pen.brushWidth = EditorGUILayout.Slider("Brush Width", pen.brushWidth, 0.0f, 0.05f);
+                            pen.brushWidth = EditorGUILayout.Slider("Brush Width", pen.brushWidth, 0.0f, 0.15f);
                             EditorGUILayout.Space();
                             pen.brushPower = EditorGUILayout.Slider("Opaque", pen.brushPower, 0f, 1f);
                         }
@@ -502,8 +510,8 @@ namespace HhotateA.AvatarModifyTools.TextureModifyTool
                     {
                         using (new EditorGUILayout.VerticalScope())
                         {
-                            avatarMonitor?.Display((int) position.width-400, (int) position.height - 10 - ((int) position.width - 400),rotateButton,moveButton);
-                            texturePreviewer?.Display( (int) position.width-400, (int) position.width-400, squareMode,rotateButton,moveButton);
+                            avatarMonitor?.Display((int) position.width-400, (int) position.height - 10 - ((int) position.width - 400),rotateButton,moveButton, !keyboardShift && !keyboardCtr);
+                            texturePreviewer?.Display( (int) position.width-400, (int) position.width-400, squareMode,rotateButton,moveButton, !keyboardShift && !keyboardCtr);
                         }
                     }
                     else
@@ -511,8 +519,8 @@ namespace HhotateA.AvatarModifyTools.TextureModifyTool
                     {
                         using (new EditorGUILayout.HorizontalScope())
                         {
-                            avatarMonitor?.Display((int) position.width - 400 - ((int) position.height - 10), (int) position.height - 10,rotateButton,moveButton);
-                            texturePreviewer?.Display( (int) position.height - 10, (int) position.height - 10, squareMode,rotateButton,moveButton);
+                            avatarMonitor?.Display((int) position.width - 400 - ((int) position.height - 10), (int) position.height - 10,rotateButton,moveButton, !keyboardShift && !keyboardCtr && !keyboardAlt);
+                            texturePreviewer?.Display( (int) position.height - 10, (int) position.height - 10, squareMode,rotateButton,moveButton, !keyboardShift && !keyboardCtr && !keyboardAlt);
                         }
                     }
                 }
@@ -522,8 +530,8 @@ namespace HhotateA.AvatarModifyTools.TextureModifyTool
                     {
                         using (new EditorGUILayout.VerticalScope())
                         {
-                            avatarMonitor?.Display((int) position.width-400, (int) position.height/2 - 10,rotateButton,moveButton);
-                            texturePreviewer?.Display( (int) position.width-400, (int) position.height/2 - 10,squareMode,rotateButton,moveButton);
+                            avatarMonitor?.Display((int) position.width-400, (int) position.height/2 - 10,rotateButton,moveButton, !keyboardShift && !keyboardCtr && !keyboardAlt);
+                            texturePreviewer?.Display( (int) position.width-400, (int) position.height/2 - 10,squareMode,rotateButton,moveButton, !keyboardShift && !keyboardCtr && !keyboardAlt);
                         }
                     }
                     else
@@ -531,8 +539,8 @@ namespace HhotateA.AvatarModifyTools.TextureModifyTool
                     {
                         using (new EditorGUILayout.HorizontalScope())
                         {
-                            avatarMonitor?.Display(((int) position.width - 400)/2 - 5, (int) position.height - 5,rotateButton,moveButton);
-                            texturePreviewer?.Display( ((int) position.width - 400)/2 - 5, (int) position.height - 5,squareMode,rotateButton,moveButton);
+                            avatarMonitor?.Display(((int) position.width - 400)/2 - 5, (int) position.height - 5,rotateButton,moveButton, !keyboardShift && !keyboardCtr && !keyboardAlt);
+                            texturePreviewer?.Display( ((int) position.width - 400)/2 - 5, (int) position.height - 5,squareMode,rotateButton,moveButton, !keyboardShift && !keyboardCtr && !keyboardAlt);
                         }
                     }
                 }
@@ -607,65 +615,10 @@ namespace HhotateA.AvatarModifyTools.TextureModifyTool
                                 .FindIndex(p => p.extraTool == TexturePenTool.ExtraTool.ColorPick);
                         }
                     }
-                }
-                if (ec.type == EventType.KeyUp)
-                {
-                    if (ec.keyCode == KeyCode.LeftShift || ec.keyCode == KeyCode.RightShift)
+                    
+                    if (ec.keyCode == KeyCode.LeftAlt || ec.keyCode == KeyCode.RightAlt)
                     {
-                        keyboardShift = false;
-                        straightMode = false;
-                    }
-
-                    if (ec.keyCode == KeyCode.LeftControl || ec.keyCode == KeyCode.RightControl)
-                    {
-                        keyboardCtr = false;
-                        if (pen.extraTool == TexturePenTool.ExtraTool.StampCopy || pen.extraTool == TexturePenTool.ExtraTool.StampPaste)
-                        {
-                            // ctrを押したらコピーモードに
-                            pen.extraTool = TexturePenTool.ExtraTool.StampPaste;
-                        }
-                        else
-                        if(shortcutToolBuffer != -1)
-                        {
-                            penIndex = shortcutToolBuffer;
-                            shortcutToolBuffer = -1;
-                        }
-                    }
-                }
-            }
-            // キー関係
-            if (keyboardShortcut)
-            {
-                if (ec.type == EventType.KeyDown)
-                {
-                    if (ec.keyCode == KeyCode.LeftShift || ec.keyCode == KeyCode.RightShift)
-                    {
-                        keyboardShift = true;
-                        straightMode = true;
-                    }
-                    if (ec.keyCode == KeyCode.LeftControl || ec.keyCode == KeyCode.RightControl)
-                    {
-                        keyboardCtr = true;
-                        if (pen.extraTool == TexturePenTool.ExtraTool.StampCopy || pen.extraTool == TexturePenTool.ExtraTool.StampPaste)
-                        {
-                            pen.extraTool = TexturePenTool.ExtraTool.StampCopy;
-                        }
-                        else
-                        if(shortcutToolBuffer == -1)
-                        {
-                            // ctrを押したらカラーピックモードに
-                            shortcutToolBuffer = penIndex;
-                            penIndex = penTools.ToList()
-                                .FindIndex(p => p.extraTool == TexturePenTool.ExtraTool.ColorPick);
-                        }
-                    }
-                    if (ec.keyCode == KeyCode.Z)
-                    {
-                        textureCreator.UndoEditTexture();
-                    }
-                    if (ec.keyCode == KeyCode.Y)
-                    {
-                        textureCreator.RedoEditTexture();
+                        keyboardAlt = true;
                     }
                 }
                 if (ec.type == EventType.KeyUp)
@@ -690,6 +643,22 @@ namespace HhotateA.AvatarModifyTools.TextureModifyTool
                             penIndex = shortcutToolBuffer;
                             shortcutToolBuffer = -1;
                         }
+                    }
+                    
+                    if (ec.keyCode == KeyCode.LeftAlt || ec.keyCode == KeyCode.RightAlt)
+                    {
+                        keyboardAlt = false;
+                    }
+                }
+                if (ec.type == EventType.ScrollWheel)
+                {
+                    if (keyboardShift)
+                    {
+                        pen.brushWidth = pen.brushWidth + -ec.delta.y * 0.001f;
+                    }
+                    if (keyboardAlt)
+                    {
+                        pen.brushStrength = pen.brushStrength + -ec.delta.y * 0.05f;
                     }
                 }
             }
@@ -723,6 +692,7 @@ namespace HhotateA.AvatarModifyTools.TextureModifyTool
 
         void SelectRend(int i)
         {
+            if(GetTextureCreater(i) == null) return;
             editIndex = i;
             editMeshCollider.sharedMesh = meshCreater.CreateSubMesh(i);
             texturePreviewer = new TexturePreviewer(textureCreator);

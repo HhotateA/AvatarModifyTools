@@ -28,6 +28,10 @@ namespace HhotateA.AvatarModifyTools.Core
         
         public TexturePreviewer(TextureCreator tc)
         {
+            if (tc == null)
+            {
+                throw new NullReferenceException("Missing Texture Creater");
+            }
             textureCreater = tc;
             previewTexture = new CustomRenderTexture(textureCreater.GetTexture().width,textureCreater.GetTexture().height);
             previewMaterial = new Material(AssetUtility.LoadAssetAtGuid<Shader>(EnvironmentVariable.texturePreviewShader));
@@ -66,17 +70,18 @@ namespace HhotateA.AvatarModifyTools.Core
             return targetTexture;
         }
 
-        public void Display(int width, int height, bool moveLimit = true, int rotationDrag = 2, int positionDrag = 1)
+        public void Display(int width, int height, bool moveLimit = true, int rotationDrag = 2, int positionDrag = 1,bool canTouch = true)
         {
             textureCreater.LayersUpdate();
             rect = GUILayoutUtility.GetRect(width, height, GUI.skin.box);
             EditorGUI.DrawPreviewTexture(rect, ScalePreview(width,height,moveLimit)); 
             var e = Event.current;
 
-            if (rect.Contains(e.mousePosition))
+            if (rect.Contains(e.mousePosition) && canTouch)
             {
                 if (e.type == EventType.MouseDrag && e.button == rotationDrag)
                 {
+                    
                 }
 
                 if (e.type == EventType.MouseDrag && e.button == positionDrag)

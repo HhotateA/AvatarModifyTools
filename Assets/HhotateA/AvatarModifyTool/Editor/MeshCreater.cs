@@ -99,7 +99,7 @@ namespace HhotateA.AvatarModifyTools.Core
         {
             if (rend.GetMesh() == null)
             {
-                throw new NullReferenceException("Mesh Not Found");
+                throw new NullReferenceException("MMissing esh");
             }
             if (rend is SkinnedMeshRenderer)
             {

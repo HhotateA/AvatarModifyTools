@@ -103,7 +103,7 @@ namespace HhotateA.AvatarModifyTools.Core
             ;
         }
 
-        public void Display(int width, int height, int rotationDrag = 1, int positionDrag = 2)
+        public void Display(int width, int height, int rotationDrag = 1, int positionDrag = 2,bool canTouch = true)
         {
             if (width != targetTexture.width || height != targetTexture.height)
             {
@@ -115,7 +115,7 @@ namespace HhotateA.AvatarModifyTools.Core
 
             var e = Event.current;
 
-            if (rect.Contains(e.mousePosition))
+            if (rect.Contains(e.mousePosition) && canTouch)
             {
                 if (e.type == EventType.MouseDrag && e.button == rotationDrag)
                 {
