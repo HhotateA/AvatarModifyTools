@@ -43,7 +43,6 @@ namespace HhotateA.AvatarModifyTools.Core
         List<BlendShapeData> blendShapes = new List<BlendShapeData>();
         Transform rendBone; // 追加したRendererのTransform
 
-        private MeshUndoCash data;
         // Undo,Redo用のキャッシュ
         // 頂点位置の履歴(index0は常に初期位置の記録(BlendShapeに基準となる))
         private List<List<Vector3>> vertexsCaches = new List<List<Vector3>>();
@@ -2155,7 +2154,7 @@ namespace HhotateA.AvatarModifyTools.Core
                     TrianglesTransform(triangles[i], rootBone ?? rendBone, meshTransforms[i],false);
                 }
             }
-            
+
             Mesh combinedMesh = new Mesh();
             combinedMesh.SetVertices(vertexs);
             if (vertexs.Count > 65535)

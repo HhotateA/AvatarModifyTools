@@ -31,6 +31,12 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
         private int drawButton = 0;
         private int rotateButton = 1;
         private int moveButton = 2;
+
+        // ショートカット取得
+        private bool keyboardShortcut = true;
+        private bool keyboardShift = false;
+        private bool keyboardCtr = false;
+        private int shortcutToolBuffer = -1;
         
         // 改造するメッシュのルートオブジェクト
         private GameObject avatar;
@@ -841,6 +847,47 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
                     }
                 }
             }
+            
+            var ec = Event.current;
+            // キー関係
+            if (keyboardShortcut)
+            {
+                if (ec.type == EventType.KeyDown)
+                {
+                    if (ec.keyCode == KeyCode.LeftShift || ec.keyCode == KeyCode.RightShift)
+                    {
+                        keyboardShift = true;
+                    }
+                    if (ec.keyCode == KeyCode.LeftControl || ec.keyCode == KeyCode.RightControl)
+                    {
+                        keyboardCtr = true;
+                    }
+                    if (ec.keyCode == KeyCode.Z)
+                    {
+                        DestroyControllPoint();
+                        editMeshCreater?.UndoCaches();
+                        ReloadMesh(false,editMeshCreater,controll_vertexes);
+                    }
+                    if (ec.keyCode == KeyCode.Y)
+                    {
+                        DestroyControllPoint();
+                        editMeshCreater?.RedoCaches();
+                        ReloadMesh(false,editMeshCreater,controll_vertexes);
+                    }
+                }
+                
+                if (ec.type == EventType.KeyUp)
+                {
+                    if (ec.keyCode == KeyCode.LeftShift || ec.keyCode == KeyCode.RightShift)
+                    {
+                        keyboardShift = false;
+                    }
+                    if (ec.keyCode == KeyCode.LeftControl || ec.keyCode == KeyCode.RightControl)
+                    {
+                        keyboardCtr = false;
+                    }
+                }
+            }
         }
         
         /// <summary>
@@ -1072,9 +1119,10 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
         /// <param name="mc"></param>
         void AvatarMonitorTouch(MeshCreater mc)
         {
+            var ec = Event.current;
             if (penMode == MeshPenTool.ExtraTool.Default)
             {
-                if (Event.current.type == EventType.MouseDown && Event.current.button == drawButton)
+                if (ec.type == EventType.MouseDown && ec.button == drawButton)
                 {
                     avatarMonitor.GetControllPoint(GetEditMeshCollider(), isSelectVertex,
                         h => { TransfromMeshMirror(mc, h); });
@@ -1083,7 +1131,7 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
             else
             if (penMode == MeshPenTool.ExtraTool.DetailMode)
             {
-                if (Event.current.type == EventType.MouseDown && Event.current.button == drawButton)
+                if (ec.type == EventType.MouseDown && ec.button == drawButton)
                 {
                     avatarMonitor.GetControllPoint(GetEditMeshCollider(), isSelectVertex,
                         h => { GenerateControllPoint(mc, h); });
@@ -1092,7 +1140,7 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
             else
             if(penMode == MeshPenTool.ExtraTool.TriangleEraser)
             {
-                if (Event.current.type == EventType.MouseDown && Event.current.button == drawButton)
+                if (ec.type == EventType.MouseDown && ec.button == drawButton)
                 {
                     avatarMonitor.GetTriangle(GetEditMeshCollider(), h =>
                     {
@@ -1104,7 +1152,7 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
             else
             if(penMode == MeshPenTool.ExtraTool.SelectLand)
             {
-                if (Event.current.type == EventType.MouseDown && Event.current.button == drawButton)
+                if (ec.type == EventType.MouseDown && ec.button == drawButton)
                 {
                     avatarMonitor.GetTriangle(GetEditMeshCollider(), h =>
                     {
@@ -1122,7 +1170,7 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
             else
             if(penMode == MeshPenTool.ExtraTool.UnSelectLand)
             {
-                if (Event.current.type == EventType.MouseDown && Event.current.button == drawButton)
+                if (ec.type == EventType.MouseDown && ec.button == drawButton)
                 {
                     avatarMonitor.GetTriangle(GetEditMeshCollider(), h =>
                     {
@@ -1140,7 +1188,7 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
             else
             if(penMode == MeshPenTool.ExtraTool.SelectVertex)
             {
-                if (Event.current.type == EventType.MouseDown && Event.current.button == drawButton)
+                if (ec.type == EventType.MouseDown && ec.button == drawButton)
                 {
                     avatarMonitor.GetTriangle(GetEditMeshCollider(), h =>
                     {
@@ -1158,7 +1206,7 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
             else
             if(penMode == MeshPenTool.ExtraTool.UnSelectVertex)
             {
-                if (Event.current.type == EventType.MouseDown && Event.current.button == drawButton)
+                if (ec.type == EventType.MouseDown && ec.button == drawButton)
                 {
                     avatarMonitor.GetTriangle(GetEditMeshCollider(), h =>
                     {
@@ -1176,7 +1224,7 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
             else
             if (penMode == MeshPenTool.ExtraTool.WeightCopy)
             {
-                if (Event.current.type == EventType.MouseDown && Event.current.button == drawButton)
+                if (ec.type == EventType.MouseDown && ec.button == drawButton)
                 {
                     avatarMonitor.GetVertex(GetEditMeshCollider(), (h, p) =>
                     {
@@ -1190,7 +1238,7 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
             else
             if(penMode == MeshPenTool.ExtraTool.Decimate)
             {
-                if (Event.current.type == EventType.MouseDown && Event.current.button == drawButton)
+                if (ec.type == EventType.MouseDown && ec.button == drawButton)
                 {
                     avatarMonitor.GetTriangle(GetEditMeshCollider(), h =>
                     {
@@ -1202,7 +1250,7 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
             else
             if(penMode == MeshPenTool.ExtraTool.Subdivision)
             {
-                if (Event.current.type == EventType.MouseDown && Event.current.button == drawButton)
+                if (ec.type == EventType.MouseDown && ec.button == drawButton)
                 {
                     avatarMonitor.GetTriangle(GetEditMeshCollider(), (h, p) =>
                     {
@@ -1215,7 +1263,7 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
 
             if (extendRawdata)
             {
-                if (Event.current.type == EventType.MouseDown && Event.current.button == drawButton)
+                if (ec.type == EventType.MouseDown && ec.button == drawButton)
                 {
                     avatarMonitor.GetVertex(GetEditMeshCollider(), (h, p) =>
                     {
@@ -1479,6 +1527,7 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
             if (mc==null) mc = editMeshCreater;
             if (verts == null) verts = controll_vertexes;
             if (rend == null) rend = rends?[editIndex];
+
             rend.SetMesh(mc.Create(false));
 
             if (selectMode)
@@ -1504,8 +1553,11 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
                 return m;
             }).ToArray();
             CreateNormalMesh();
-            
-            if(cashes) mc.AddCaches();
+
+            if (cashes)
+            {
+                mc.AddCaches();
+            }
             
             if (isRealtimeTransform && verts.Count > 0 && selectMode)
             {

@@ -30,6 +30,12 @@ namespace HhotateA.AvatarModifyTools.TextureModifyTool
         private int drawButton = 0;
         private int rotateButton = 1;
         private int moveButton = 2;
+
+        // ショートカット取得
+        private bool keyboardShortcut = true;
+        private bool keyboardShift = false;
+        private bool keyboardCtr = false;
+        private int shortcutToolBuffer = -1;
         
         // 改造するメッシュのルートオブジェクト
         private GameObject avatar;
@@ -73,11 +79,6 @@ namespace HhotateA.AvatarModifyTools.TextureModifyTool
         private bool squareMode = true; // 正方形固定(TextureWindow)
         private bool maskAllLayers = true;
         private bool isDragBuffer = false;
-
-        private bool keyboardShortcut = true;
-        private bool keyboardShift = false;
-        private bool keyboardCtr = false;
-        private int shortcutToolBuffer = -1;
 
         private Color brushBuffer;
         
@@ -605,6 +606,66 @@ namespace HhotateA.AvatarModifyTools.TextureModifyTool
                             penIndex = penTools.ToList()
                                 .FindIndex(p => p.extraTool == TexturePenTool.ExtraTool.ColorPick);
                         }
+                    }
+                }
+                if (ec.type == EventType.KeyUp)
+                {
+                    if (ec.keyCode == KeyCode.LeftShift || ec.keyCode == KeyCode.RightShift)
+                    {
+                        keyboardShift = false;
+                        straightMode = false;
+                    }
+
+                    if (ec.keyCode == KeyCode.LeftControl || ec.keyCode == KeyCode.RightControl)
+                    {
+                        keyboardCtr = false;
+                        if (pen.extraTool == TexturePenTool.ExtraTool.StampCopy || pen.extraTool == TexturePenTool.ExtraTool.StampPaste)
+                        {
+                            // ctrを押したらコピーモードに
+                            pen.extraTool = TexturePenTool.ExtraTool.StampPaste;
+                        }
+                        else
+                        if(shortcutToolBuffer != -1)
+                        {
+                            penIndex = shortcutToolBuffer;
+                            shortcutToolBuffer = -1;
+                        }
+                    }
+                }
+            }
+            // キー関係
+            if (keyboardShortcut)
+            {
+                if (ec.type == EventType.KeyDown)
+                {
+                    if (ec.keyCode == KeyCode.LeftShift || ec.keyCode == KeyCode.RightShift)
+                    {
+                        keyboardShift = true;
+                        straightMode = true;
+                    }
+                    if (ec.keyCode == KeyCode.LeftControl || ec.keyCode == KeyCode.RightControl)
+                    {
+                        keyboardCtr = true;
+                        if (pen.extraTool == TexturePenTool.ExtraTool.StampCopy || pen.extraTool == TexturePenTool.ExtraTool.StampPaste)
+                        {
+                            pen.extraTool = TexturePenTool.ExtraTool.StampCopy;
+                        }
+                        else
+                        if(shortcutToolBuffer == -1)
+                        {
+                            // ctrを押したらカラーピックモードに
+                            shortcutToolBuffer = penIndex;
+                            penIndex = penTools.ToList()
+                                .FindIndex(p => p.extraTool == TexturePenTool.ExtraTool.ColorPick);
+                        }
+                    }
+                    if (ec.keyCode == KeyCode.Z)
+                    {
+                        textureCreator.UndoEditTexture();
+                    }
+                    if (ec.keyCode == KeyCode.Y)
+                    {
+                        textureCreator.RedoEditTexture();
                     }
                 }
                 if (ec.type == EventType.KeyUp)
