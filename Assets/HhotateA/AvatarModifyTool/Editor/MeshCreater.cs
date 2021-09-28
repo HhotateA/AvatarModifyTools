@@ -43,6 +43,18 @@ namespace HhotateA.AvatarModifyTools.Core
         List<BlendShapeData> blendShapes = new List<BlendShapeData>();
         Transform rendBone; // 追加したRendererのTransform
 
+        private MeshUndoCash data;
+        // Undo,Redo用のキャッシュ
+        // 頂点位置の履歴(index0は常に初期位置の記録(BlendShapeに基準となる))
+        private List<List<Vector3>> vertexsCaches = new List<List<Vector3>>();
+        // 最大キャッシュ数
+        private int maxCaches
+        {
+            get => EnvironmentVariable.maxCaches;
+        }
+        // 現在参照中のキャッシュインデックス
+        private int currentCacheIndex = -1;
+
         public bool IsRecalculateNormals { get; set; } = false;
         public bool IsRecalculateBlendShapeNormals { get; set; } = false;
         public Transform RendBone
@@ -202,7 +214,7 @@ namespace HhotateA.AvatarModifyTools.Core
             //vertexs = defaultVertexs;
             AddCaches();
             //TransformMesh(editVertexs.ToArray());
-            AddCaches();
+            //AddCaches();
         }
         
         /// <summary>
@@ -1595,17 +1607,6 @@ namespace HhotateA.AvatarModifyTools.Core
                 vertexnormals = newNormals;
             }
         }
-
-        // Undo,Redo用のキャッシュ
-        // 頂点位置の履歴(index0は常に初期位置の記録(BlendShapeに基準となる))
-        private List<List<Vector3>> vertexsCaches = new List<List<Vector3>>();
-        // 最大キャッシュ数
-        private int maxCaches
-        {
-            get => EnvironmentVariable.maxCaches;
-        }
-        // 現在参照中のキャッシュインデックス
-        private int currentCacheIndex = -1;
 
         /// <summary>
         /// 現在の頂点位置をキャッシュに保存する
