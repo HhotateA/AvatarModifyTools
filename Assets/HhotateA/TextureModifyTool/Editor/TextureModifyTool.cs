@@ -620,6 +620,16 @@ namespace HhotateA.AvatarModifyTools.TextureModifyTool
                     {
                         keyboardAlt = true;
                     }
+                    
+                    if (ec.keyCode == KeyCode.Z)
+                    {
+                        textureCreator.UndoEditTexture();
+                    }
+
+                    if (ec.keyCode == KeyCode.Y)
+                    {
+                        textureCreator.RedoEditTexture();
+                    }
                 }
                 if (ec.type == EventType.KeyUp)
                 {

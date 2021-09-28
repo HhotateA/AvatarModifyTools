@@ -1692,7 +1692,7 @@ namespace HhotateA.AvatarModifyTools.Core
         /// </summary>
         public void UndoCaches()
         {
-            if (currentCacheIndex > 0)
+            if (CanUndo())
             {
                 currentCacheIndex --;
                 TransformMesh(vertexsCaches[currentCacheIndex].ToArray());
@@ -1714,7 +1714,7 @@ namespace HhotateA.AvatarModifyTools.Core
         /// </summary>
         public void RedoCaches()
         {
-            if (vertexsCaches.Count > currentCacheIndex+1)
+            if (CanRedo())
             {
                 currentCacheIndex++;
                 TransformMesh(vertexsCaches[currentCacheIndex].ToArray());

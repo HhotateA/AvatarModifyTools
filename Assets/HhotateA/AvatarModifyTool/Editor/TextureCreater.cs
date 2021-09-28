@@ -124,10 +124,13 @@ namespace HhotateA.AvatarModifyTools.Core
         }
         public void UndoEditTexture()
         {
-            var currentRT = RenderTexture.active;
-            Graphics.Blit(caches[cashIndex-1],GetEditTexture());
-            RenderTexture.active = currentRT;
-            cashIndex--;
+            if (CanUndo())
+            {
+                var currentRT = RenderTexture.active;
+                Graphics.Blit(caches[cashIndex-1],GetEditTexture());
+                RenderTexture.active = currentRT;
+                cashIndex--;
+            }
         }
 
         public bool CanRedo()
@@ -136,10 +139,13 @@ namespace HhotateA.AvatarModifyTools.Core
         }
         public void RedoEditTexture()
         {
-            var currentRT = RenderTexture.active;
-            Graphics.Blit(caches[cashIndex+1],GetEditTexture());
-            RenderTexture.active = currentRT;
-            cashIndex++;
+            if (CanRedo())
+            {
+                var currentRT = RenderTexture.active;
+                Graphics.Blit(caches[cashIndex+1],GetEditTexture());
+                RenderTexture.active = currentRT;
+                cashIndex++;
+            }
         }
         public void ResetCashes()
         {
