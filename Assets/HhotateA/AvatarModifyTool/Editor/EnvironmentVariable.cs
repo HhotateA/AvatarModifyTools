@@ -15,7 +15,7 @@ namespace HhotateA.AvatarModifyTools.Core
     /// </summary>
     public static class EnvironmentVariable
     {
-        public static string version = "1.30.10";
+        public static string version = "1.30.11";
         public static string githubLink = "https://github.com/HhotateA/AvatarModifyTools";
         public static string icon = "1549a00a4e9d1734ca9f8862981c623f";
         public static string iconMat = "d8f2ec63ea255c24f8fe567fac92c852";

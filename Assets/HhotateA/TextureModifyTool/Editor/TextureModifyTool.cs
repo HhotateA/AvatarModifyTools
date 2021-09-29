@@ -32,7 +32,7 @@ namespace HhotateA.AvatarModifyTools.TextureModifyTool
         private int moveButton = 2;
 
         // ショートカット取得
-        private bool keyboardShortcut = true;
+        private bool keyboardShortcut = false;
         private bool keyboardShift = false;
         private bool keyboardCtr = false;
         private bool keyboardAlt = false;
@@ -177,7 +177,17 @@ namespace HhotateA.AvatarModifyTools.TextureModifyTool
                     EditorGUILayout.Space();
                     isEnablePreview = EditorGUILayout.Toggle("Enable Preview", isEnablePreview);
                     EditorGUILayout.Space();
-                    keyboardShortcut = EditorGUILayout.Toggle("Keyboard Shortcut", keyboardShortcut);
+                    keyboardShortcut = EditorGUILayout.Toggle( new GUIContent("Keyboard Shortcut", 
+                        "Ctr + Z : Undo \n" +
+                        "Ctr + Y : Redo \n" +
+                        "Shift + Wheel : Power Change \n" +
+                        "Alt + Wheel : Strength Change \n" +
+                        "Shift Hold: Straight Mode \n" +
+                        "Ctr Hold : Color Pick \n" +
+                        "Stamp Mode : \n" +
+                        "   Shift Hold : SelectLand \n" +
+                        "   Ctr Hold : Copy \n" +
+                        ""), keyboardShortcut);
                     EditorGUILayout.Space();
                     
                     if (textureCreator == null) return;
@@ -504,14 +514,15 @@ namespace HhotateA.AvatarModifyTools.TextureModifyTool
                     EditorGUILayout.Space();
                 }
 
+                bool useShortcut = keyboardShortcut && (keyboardShift || keyboardCtr || keyboardAlt);
                 if (squareMode)
                 {
                     if ((int) position.height - 10 - ((int) position.width - 400) > 0)
                     {
                         using (new EditorGUILayout.VerticalScope())
                         {
-                            avatarMonitor?.Display((int) position.width-400, (int) position.height - 10 - ((int) position.width - 400),rotateButton,moveButton, !keyboardShift && !keyboardCtr);
-                            texturePreviewer?.Display( (int) position.width-400, (int) position.width-400, squareMode,rotateButton,moveButton, !keyboardShift && !keyboardCtr);
+                            avatarMonitor?.Display((int) position.width-400, (int) position.height - 10 - ((int) position.width - 400),rotateButton,moveButton, !useShortcut);
+                            texturePreviewer?.Display( (int) position.width-400, (int) position.width-400, squareMode,rotateButton,moveButton, !useShortcut);
                         }
                     }
                     else
@@ -519,8 +530,8 @@ namespace HhotateA.AvatarModifyTools.TextureModifyTool
                     {
                         using (new EditorGUILayout.HorizontalScope())
                         {
-                            avatarMonitor?.Display((int) position.width - 400 - ((int) position.height - 10), (int) position.height - 10,rotateButton,moveButton, !keyboardShift && !keyboardCtr && !keyboardAlt);
-                            texturePreviewer?.Display( (int) position.height - 10, (int) position.height - 10, squareMode,rotateButton,moveButton, !keyboardShift && !keyboardCtr && !keyboardAlt);
+                            avatarMonitor?.Display((int) position.width - 400 - ((int) position.height - 10), (int) position.height - 10,rotateButton,moveButton, !useShortcut);
+                            texturePreviewer?.Display( (int) position.height - 10, (int) position.height - 10, squareMode,rotateButton,moveButton, !useShortcut);
                         }
                     }
                 }
@@ -530,8 +541,8 @@ namespace HhotateA.AvatarModifyTools.TextureModifyTool
                     {
                         using (new EditorGUILayout.VerticalScope())
                         {
-                            avatarMonitor?.Display((int) position.width-400, (int) position.height/2 - 10,rotateButton,moveButton, !keyboardShift && !keyboardCtr && !keyboardAlt);
-                            texturePreviewer?.Display( (int) position.width-400, (int) position.height/2 - 10,squareMode,rotateButton,moveButton, !keyboardShift && !keyboardCtr && !keyboardAlt);
+                            avatarMonitor?.Display((int) position.width-400, (int) position.height/2 - 10,rotateButton,moveButton, !useShortcut);
+                            texturePreviewer?.Display( (int) position.width-400, (int) position.height/2 - 10,squareMode,rotateButton,moveButton, !useShortcut);
                         }
                     }
                     else
@@ -539,8 +550,8 @@ namespace HhotateA.AvatarModifyTools.TextureModifyTool
                     {
                         using (new EditorGUILayout.HorizontalScope())
                         {
-                            avatarMonitor?.Display(((int) position.width - 400)/2 - 5, (int) position.height - 5,rotateButton,moveButton, !keyboardShift && !keyboardCtr && !keyboardAlt);
-                            texturePreviewer?.Display( ((int) position.width - 400)/2 - 5, (int) position.height - 5,squareMode,rotateButton,moveButton, !keyboardShift && !keyboardCtr && !keyboardAlt);
+                            avatarMonitor?.Display(((int) position.width - 400)/2 - 5, (int) position.height - 5,rotateButton,moveButton, !useShortcut);
+                            texturePreviewer?.Display( ((int) position.width - 400)/2 - 5, (int) position.height - 5,squareMode,rotateButton,moveButton, !useShortcut);
                         }
                     }
                 }
@@ -591,6 +602,7 @@ namespace HhotateA.AvatarModifyTools.TextureModifyTool
             // キー関係
             if (keyboardShortcut)
             {
+                Undo.ClearAll();
                 if (ec.type == EventType.KeyDown)
                 {
                     if (ec.keyCode == KeyCode.LeftShift || ec.keyCode == KeyCode.RightShift)
@@ -704,6 +716,8 @@ namespace HhotateA.AvatarModifyTools.TextureModifyTool
         {
             if(GetTextureCreater(i) == null) return;
             editIndex = i;
+            ReveertMaterials();
+            ReplaceMaterials(currentMaterials[editIndex], editMaterials[editIndex]);
             editMeshCollider.sharedMesh = meshCreater.CreateSubMesh(i);
             texturePreviewer = new TexturePreviewer(textureCreator);
             layerReorderableList = new ReorderableList(textureCreator.LayerDatas, typeof(LayerData),true,false,true,true)
@@ -747,6 +761,11 @@ namespace HhotateA.AvatarModifyTools.TextureModifyTool
         private void Release()
         {
             DestroyEditMesh();
+            ReveertMaterials();
+        }
+
+        void ReveertMaterials()
+        {
             for (int i = 0; i < editMaterials.Length; i++)
             {
                 ReplaceMaterials(editMaterials[i],currentMaterials[i]);

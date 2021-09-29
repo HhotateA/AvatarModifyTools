@@ -33,9 +33,10 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
         private int moveButton = 2;
 
         // ショートカット取得
-        private bool keyboardShortcut = true;
+        private bool keyboardShortcut = false;
         private bool keyboardShift = false;
         private bool keyboardCtr = false;
+        private bool keyboardAlt = false;
         private int shortcutToolBuffer = -1;
         
         // 改造するメッシュのルートオブジェクト
@@ -53,9 +54,20 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
         {
             get
             {
-                if (meshsCreaters == null) return null;
-                if (editIndex == -1 || editIndex >= meshsCreaters.Length) return null;
-                return meshsCreaters[editIndex];
+                if (meshsCreaters == null)
+                {
+                    return null;
+                }
+
+                if (0 <= editIndex && editIndex < meshsCreaters.Length)
+                {
+                    return meshsCreaters[editIndex];
+                }
+                else
+                {
+                    return null;
+                }
+
             }
         }
         
@@ -314,6 +326,16 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
                             // isRemoveAsBlendShape = EditorGUILayout.Toggle("DeleteAsBlendShape", isRemoveAsBlendShape, GUILayout.Width(155));
                             isSelectOverlappingVertexes = EditorGUILayout.Toggle("SelectOverlapping",
                                 isSelectOverlappingVertexes, GUILayout.Width(155));
+                            keyboardShortcut = EditorGUILayout.Toggle( new GUIContent("Keyboard Shortcut", 
+                                "Ctr + Z : Undo \n" +
+                                "Ctr + Y : Redo \n" +
+                                "Shift + Wheel : Power Change \n" +
+                                "Ctr Hold: Reverse Power \n" +
+                                "Alt + Wheel : Strength Change \n" +
+                                "SelectMode : \n" +
+                                "   Shift Hold: SelectLand \n" +
+                                "   Ctr Hold: UnSelect \n" +
+                                ""), keyboardShortcut);
 
                             using (new EditorGUILayout.HorizontalScope())
                             {
@@ -852,15 +874,38 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
             // キー関係
             if (keyboardShortcut)
             {
+                Undo.ClearAll();
                 if (ec.type == EventType.KeyDown)
                 {
                     if (ec.keyCode == KeyCode.LeftShift || ec.keyCode == KeyCode.RightShift)
                     {
                         keyboardShift = true;
+                        if (penMode == MeshPenTool.ExtraTool.SelectVertex)
+                        {
+                            penMode = MeshPenTool.ExtraTool.SelectLand;
+                        }
+                        else
+                        if (penMode == MeshPenTool.ExtraTool.UnSelectVertex)
+                        {
+                            penMode = MeshPenTool.ExtraTool.UnSelectLand;
+                        }
                     }
                     if (ec.keyCode == KeyCode.LeftControl || ec.keyCode == KeyCode.RightControl)
                     {
                         keyboardCtr = true;
+                        if (penMode == MeshPenTool.ExtraTool.SelectVertex)
+                        {
+                            penMode = MeshPenTool.ExtraTool.UnSelectVertex;
+                        }
+                        else
+                        if (penMode == MeshPenTool.ExtraTool.SelectLand)
+                        {
+                            penMode = MeshPenTool.ExtraTool.UnSelectLand;
+                        }
+                    }
+                    if (ec.keyCode == KeyCode.LeftAlt || ec.keyCode == KeyCode.RightAlt)
+                    {
+                        keyboardAlt = true;
                     }
                     if (ec.keyCode == KeyCode.Z)
                     {
@@ -881,10 +926,44 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
                     if (ec.keyCode == KeyCode.LeftShift || ec.keyCode == KeyCode.RightShift)
                     {
                         keyboardShift = false;
+                        if (penMode == MeshPenTool.ExtraTool.SelectLand)
+                        {
+                            penMode = MeshPenTool.ExtraTool.SelectVertex;
+                        }
+                        else
+                        if (penMode == MeshPenTool.ExtraTool.UnSelectLand)
+                        {
+                            penMode = MeshPenTool.ExtraTool.UnSelectVertex;
+                        }
                     }
                     if (ec.keyCode == KeyCode.LeftControl || ec.keyCode == KeyCode.RightControl)
                     {
                         keyboardCtr = false;
+                        if (penMode == MeshPenTool.ExtraTool.UnSelectVertex)
+                        {
+                            penMode = MeshPenTool.ExtraTool.SelectVertex;
+                        }
+                        else
+                        if (penMode == MeshPenTool.ExtraTool.UnSelectLand)
+                        {
+                            penMode = MeshPenTool.ExtraTool.SelectLand;
+                        }
+                    }
+                    if (ec.keyCode == KeyCode.LeftAlt || ec.keyCode == KeyCode.RightAlt)
+                    {
+                        keyboardAlt = false;
+                    }
+                }
+                
+                if (ec.type == EventType.ScrollWheel)
+                {
+                    if (keyboardShift)
+                    {
+                        brushWidth = brushWidth + -ec.delta.y * 0.001f;
+                    }
+                    if (keyboardAlt)
+                    {
+                        brushStrength = brushStrength + -ec.delta.y * 0.05f;
                     }
                 }
             }
@@ -1415,7 +1494,14 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
         {
             if (isVec)
             {
-                mc.TransformMesh(from, to, brushPower*avatarMonitor.GetBound, brushWidth*avatarMonitor.GetBound, brushStrength);
+                if (keyboardShortcut && keyboardCtr)
+                {
+                    mc.TransformMesh(from, to, -brushPower*avatarMonitor.GetBound, brushWidth*avatarMonitor.GetBound, brushStrength);
+                }
+                else
+                {
+                    mc.TransformMesh(from, to, brushPower*avatarMonitor.GetBound, brushWidth*avatarMonitor.GetBound, brushStrength);
+                }
             }
             else
             {
@@ -1524,9 +1610,28 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
         /// <param name="verts"></param>
         void ReloadMesh(bool cashes = true,MeshCreater mc = null,List<int> verts = null,Renderer rend = null)
         {
-            if (mc==null) mc = editMeshCreater;
-            if (verts == null) verts = controll_vertexes;
-            if (rend == null) rend = rends?[editIndex];
+            if (mc == null)
+            {
+                mc = editMeshCreater;
+                if (mc == null) return;
+            }
+
+            if (verts == null)
+            {
+                verts = controll_vertexes;
+            }
+
+            if (rend == null)
+            {
+                if (0 <= editIndex && editIndex < meshsCreaters.Length)
+                {
+                    rend = rends?[editIndex];
+                }
+                else
+                {
+                    return;
+                }
+            }
 
             rend.SetMesh(mc.Create(false));
 
