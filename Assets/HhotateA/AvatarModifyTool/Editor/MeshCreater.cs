@@ -103,6 +103,11 @@ namespace HhotateA.AvatarModifyTools.Core
             }
             if (rend is SkinnedMeshRenderer)
             {
+                // トランスフォームのリセット
+                rend.transform.localPosition = Vector3.zero;
+                rend.transform.localScale = Vector3.one;
+                rend.transform.localRotation = Quaternion.identity;
+                // メッシュのセットアップ
                 var mesh = rend as SkinnedMeshRenderer;
                 var originMesh = mesh.sharedMesh;
                 name = mesh.name;
@@ -115,6 +120,7 @@ namespace HhotateA.AvatarModifyTools.Core
             else
             if (rend is MeshRenderer)
             {
+                // メッシュのセットアップ
                 var mesh = rend.GetComponent<MeshFilter>() as MeshFilter;
                 var originMesh = mesh.sharedMesh;
                 name = mesh.sharedMesh.name;
@@ -235,9 +241,6 @@ namespace HhotateA.AvatarModifyTools.Core
             {
                 Mesh b = Mesh.Instantiate(rend.sharedMesh);
                 // rend.BakeMesh(b,true); //unity2020にしてほしい
-                rend.transform.localPosition = Vector3.zero;
-                rend.transform.localScale = Vector3.one;
-                rend.transform.localRotation = Quaternion.identity;
                 rend.BakeMesh(b);
                 TransformMesh(b,0,rend.transform);
             }
