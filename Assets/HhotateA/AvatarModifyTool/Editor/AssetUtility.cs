@@ -141,6 +141,7 @@ namespace HhotateA.AvatarModifyTools.Core
 
                 if (bone == null)
                 {
+                    Debug.Log(humanBone.ToString());
                     var boneNames = EnvironmentVariable.boneNamePatterns.FirstOrDefault(b => b[0] == humanBone.ToString());
                     if(boneNames == null) continue;
                     foreach (var boneName in boneNames)

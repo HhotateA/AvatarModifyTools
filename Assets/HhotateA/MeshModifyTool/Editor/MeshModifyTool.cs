@@ -326,16 +326,18 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
                             // isRemoveAsBlendShape = EditorGUILayout.Toggle("DeleteAsBlendShape", isRemoveAsBlendShape, GUILayout.Width(155));
                             isSelectOverlappingVertexes = EditorGUILayout.Toggle("SelectOverlapping",
                                 isSelectOverlappingVertexes, GUILayout.Width(155));
-                            keyboardShortcut = EditorGUILayout.Toggle( new GUIContent("Keyboard Shortcut", 
-                                "Ctr + Z : Undo \n" +
-                                "Ctr + Y : Redo \n" +
-                                "Shift + Wheel : Power Change \n" +
-                                "Ctr Hold: Reverse Power \n" +
-                                "Alt + Wheel : Strength Change \n" +
-                                "SelectMode : \n" +
-                                "   Shift Hold: SelectLand \n" +
-                                "   Ctr Hold: UnSelect \n" +
-                                ""), keyboardShortcut);
+                            keyboardShortcut = EditorGUILayout.Toggle( new GUIContent("Keyboard Shortcut",
+                                "Shortcuts : \n" +
+                                "   Alt + Right Drag : Move \n" +
+                                "   Alt + Left Drag : Rotate \n" +
+                                "   Ctr + Z : Undo \n" +
+                                "   Ctr + Y : Redo \n" +
+                                "   Shift + Wheel : Power Change \n" +
+                                "   Ctr Hold: Reverse Power \n" +
+                                "   Alt + Wheel : Strength Change \n" +
+                                "   SelectMode : \n" +
+                                "      Shift Hold: SelectLand \n" +
+                                "     Ctr Hold: UnSelect \n"), keyboardShortcut);
 
                             using (new EditorGUILayout.HorizontalScope())
                             {
@@ -776,7 +778,11 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
                     if (avatarMonitor != null)
                     {
                         var avatarMonitorWidth = extendRawdata ? 750 : 300;
-                        avatarMonitor.Display( (int) position.width-avatarMonitorWidth, (int) position.height-10,rotateButton,moveButton);
+                        int positionDrag = keyboardShortcut && keyboardAlt ? drawButton : moveButton;
+                        bool canNotTouch = keyboardShortcut && (keyboardShift || keyboardCtr);
+                        bool canNotWheel = keyboardShortcut && (keyboardShift || keyboardAlt);
+                        avatarMonitor.Display( (int) position.width-avatarMonitorWidth, (int) position.height-10,
+                            rotateButton, positionDrag, !canNotTouch, !canNotWheel);
                         if (editIndex != -1)
                         {
                             AvatarMonitorTouch(editMeshCreater);
@@ -1198,6 +1204,8 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
         /// <param name="mc"></param>
         void AvatarMonitorTouch(MeshCreater mc)
         {
+            // ショートカット使用中は書かない
+            if (keyboardShortcut && keyboardAlt) return;
             var ec = Event.current;
             if (penMode == MeshPenTool.ExtraTool.Default)
             {

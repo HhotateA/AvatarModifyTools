@@ -103,7 +103,7 @@ namespace HhotateA.AvatarModifyTools.Core
             ;
         }
 
-        public void Display(int width, int height, int rotationDrag = 1, int positionDrag = 2,bool canTouch = true)
+        public void Display(int width, int height, int rotationDrag = 1, int positionDrag = 2,bool canTouch = true,bool canWheel = true)
         {
             if (width != targetTexture.width || height != targetTexture.height)
             {
@@ -115,40 +115,44 @@ namespace HhotateA.AvatarModifyTools.Core
 
             var e = Event.current;
 
-            if (rect.Contains(e.mousePosition) && canTouch)
+            if (rect.Contains(e.mousePosition))
             {
-                if (e.type == EventType.MouseDrag && e.button == rotationDrag)
+                if (canTouch)
                 {
-                    // Drag
-                    var r = baseObject.transform.rotation;
-                    baseObject.transform.RotateAround(baseObject.transform.position, Vector3.up, e.delta.x * rotateSpeed);
-                    baseObject.transform.RotateAround(baseObject.transform.position, baseObject.transform.right,
-                        e.delta.y * 0.1f);
-                }
+                    if (e.type == EventType.MouseDrag && e.button == rotationDrag)
+                    {
+                        // Drag
+                        var r = baseObject.transform.rotation;
+                        baseObject.transform.RotateAround(baseObject.transform.position, Vector3.up,
+                            e.delta.x * rotateSpeed);
+                        baseObject.transform.RotateAround(baseObject.transform.position, baseObject.transform.right,
+                            e.delta.y * 0.1f);
+                    }
+                    if (e.type == EventType.MouseDrag && e.button == positionDrag)
+                    {
+                        // Drag
+                        var r = baseObject.transform.rotation;
+                        baseObject.transform.position =
+                            baseObject.transform.position + camera.transform.up * e.delta.y * dragSpeed * bound;
+                        baseObject.transform.position =
+                            baseObject.transform.position + camera.transform.right * -e.delta.x * dragSpeed * bound;
+                    }
 
-                if (e.type == EventType.MouseDrag && e.button == positionDrag)
+                    /*
+                    if (e.keyCode == KeyCode.W)
+                    {
+                        baseObject.transform.position = baseObject.transform.position + camera.transform.forward * Time.deltaTime*0.1f;
+                    }
+                    */
+                }
+                if(canWheel)
                 {
-                    // Drag
-                    var r = baseObject.transform.rotation;
-                    baseObject.transform.position =
-                        baseObject.transform.position + camera.transform.up * e.delta.y * dragSpeed * bound;
-                    baseObject.transform.position =
-                        baseObject.transform.position + camera.transform.right * -e.delta.x * dragSpeed * bound;
+                    if (e.type == EventType.ScrollWheel)
+                    {
+                        baseObject.transform.position =
+                            baseObject.transform.position + camera.transform.forward * -e.delta.y * scrollSpeed * bound;
+                    }
                 }
-
-
-                if (e.type == EventType.ScrollWheel)
-                {
-                    baseObject.transform.position =
-                        baseObject.transform.position + camera.transform.forward * -e.delta.y * scrollSpeed * bound;
-                }
-
-                /*
-                if (e.keyCode == KeyCode.W)
-                {
-                    baseObject.transform.position = baseObject.transform.position + camera.transform.forward * Time.deltaTime*0.1f;
-                }
-                */
             }
 
             camera.Render();

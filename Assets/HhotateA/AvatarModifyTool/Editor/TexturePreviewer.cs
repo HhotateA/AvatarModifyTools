@@ -70,45 +70,49 @@ namespace HhotateA.AvatarModifyTools.Core
             return targetTexture;
         }
 
-        public void Display(int width, int height, bool moveLimit = true, int rotationDrag = 2, int positionDrag = 1,bool canTouch = true)
+        public void Display(int width, int height, bool moveLimit = true, int rotationDrag = 2, int positionDrag = 1,bool canTouch = true,bool canWheel = true)
         {
             textureCreater.LayersUpdate();
             rect = GUILayoutUtility.GetRect(width, height, GUI.skin.box);
             EditorGUI.DrawPreviewTexture(rect, ScalePreview(width,height,moveLimit)); 
             var e = Event.current;
 
-            if (rect.Contains(e.mousePosition) && canTouch)
+            if (rect.Contains(e.mousePosition))
             {
-                if (e.type == EventType.MouseDrag && e.button == rotationDrag)
+                if (canTouch)
                 {
-                    
+                    if (e.type == EventType.MouseDrag && e.button == rotationDrag)
+                    {
+
+                    }
+
+                    if (e.type == EventType.MouseDrag && e.button == positionDrag)
+                    {
+                        previewPosition += new Vector2(-e.delta.x, e.delta.y) * previewScale * 0.002f;
+                    }
                 }
-
-                if (e.type == EventType.MouseDrag && e.button == positionDrag)
+                if(canWheel)
                 {
-                    previewPosition += new Vector2(-e.delta.x,e.delta.y) * previewScale * 0.002f;
-                }
-
-
-                if (e.type == EventType.ScrollWheel)
-                {
-                    var p = new Vector3(e.mousePosition.x - rect.x, rect.height - e.mousePosition.y + rect.y,1f);
-                    var uv = new Vector2(p.x/rect.width,p.y/rect.height);
+                    if (e.type == EventType.ScrollWheel)
+                    {
+                        var p = new Vector3(e.mousePosition.x - rect.x, rect.height - e.mousePosition.y + rect.y,1f);
+                        var uv = new Vector2(p.x/rect.width,p.y/rect.height);
             
-                    Vector2 previewUV = (uv 
-                                         - new Vector2(0.5f, 0.5f))
-                                        * previewScale
-                                        + previewPosition;
-                    if (moveLimit)
-                    {
-                        previewScale = Mathf.Clamp(previewScale + e.delta.y * 0.01f,0.05f,1f);
-                    }
-                    else
-                    {
-                        previewScale = Mathf.Clamp(previewScale + e.delta.y * 0.01f,0.05f,2.5f);
-                    }
+                        Vector2 previewUV = (uv 
+                                             - new Vector2(0.5f, 0.5f))
+                                            * previewScale
+                                            + previewPosition;
+                        if (moveLimit)
+                        {
+                            previewScale = Mathf.Clamp(previewScale + e.delta.y * 0.01f,0.05f,1f);
+                        }
+                        else
+                        {
+                            previewScale = Mathf.Clamp(previewScale + e.delta.y * 0.01f,0.05f,2.5f);
+                        }
                     
-                    previewPosition = previewUV - (uv - new Vector2(0.5f, 0.5f))*previewScale;
+                        previewPosition = previewUV - (uv - new Vector2(0.5f, 0.5f))*previewScale;
+                    }
                 }
             }
         }
