@@ -781,6 +781,14 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
                         int positionDrag = keyboardShortcut && keyboardAlt ? drawButton : moveButton;
                         bool canNotTouch = keyboardShortcut && (keyboardShift || keyboardCtr);
                         bool canNotWheel = keyboardShortcut && (keyboardShift || keyboardAlt);
+                        if (keyboardShortcut && keyboardAlt)
+                        {
+                            avatarMonitor.SetSpeed(0.1f,0.5f,0.3f);
+                        }
+                        else
+                        {
+                            avatarMonitor.SetSpeed();
+                        }
                         avatarMonitor.Display( (int) position.width-avatarMonitorWidth, (int) position.height-10,
                             rotateButton, positionDrag, !canNotTouch, !canNotWheel);
                         if (editIndex != -1)

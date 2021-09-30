@@ -24,6 +24,15 @@ namespace HhotateA.AvatarModifyTools.Core
         Vector2 previewPosition = new Vector2(0.5f,0.5f);
         private Rect rect;
 
+        public float dragSpeedRate { get; set; } = 1f;
+        public float scrollSpeedRate { get; set; } = 1f;
+
+        private float dragSpeedBase = 0.0015f;
+        private float scrollSpeedBase = 0.01f;
+        
+        private float dragSpeed => dragSpeedBase * dragSpeedRate;
+        private float scrollSpeed => scrollSpeedBase * scrollSpeedRate;
+
         private RenderTexture overlayTexture;
         
         public TexturePreviewer(TextureCreator tc)
@@ -70,6 +79,12 @@ namespace HhotateA.AvatarModifyTools.Core
             return targetTexture;
         }
 
+        public void SetSpeed(float move = 1f, float wheel = 1f)
+        {
+            dragSpeedRate = move;
+            scrollSpeedRate = wheel;
+        }
+
         public void Display(int width, int height, bool moveLimit = true, int rotationDrag = 2, int positionDrag = 1,bool canTouch = true,bool canWheel = true)
         {
             textureCreater.LayersUpdate();
@@ -88,7 +103,7 @@ namespace HhotateA.AvatarModifyTools.Core
 
                     if (e.type == EventType.MouseDrag && e.button == positionDrag)
                     {
-                        previewPosition += new Vector2(-e.delta.x, e.delta.y) * previewScale * 0.002f;
+                        previewPosition += new Vector2(-e.delta.x, e.delta.y) * previewScale * dragSpeed;
                     }
                 }
                 if(canWheel)
@@ -104,11 +119,11 @@ namespace HhotateA.AvatarModifyTools.Core
                                             + previewPosition;
                         if (moveLimit)
                         {
-                            previewScale = Mathf.Clamp(previewScale + e.delta.y * 0.01f,0.05f,1f);
+                            previewScale = Mathf.Clamp(previewScale + e.delta.y * scrollSpeed,0.05f,1f);
                         }
                         else
                         {
-                            previewScale = Mathf.Clamp(previewScale + e.delta.y * 0.01f,0.05f,2.5f);
+                            previewScale = Mathf.Clamp(previewScale + e.delta.y * scrollSpeed,0.05f,2.5f);
                         }
                     
                         previewPosition = previewUV - (uv - new Vector2(0.5f, 0.5f))*previewScale;

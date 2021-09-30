@@ -25,9 +25,17 @@ namespace HhotateA.AvatarModifyTools.Core
 
         private const int previewLayer = 2;
 
-        private float dragSpeed = 0.001f;
-        private float scrollSpeed = 0.01f;
-        private float rotateSpeed = 0.1f;
+        public float dragSpeedRate { get; set; } = 1f;
+        public float scrollSpeedRate { get; set; } = 1f;
+        public float rotateSpeedRate { get; set; } = 1f;
+
+        private float dragSpeedBase = 0.001f;
+        private float scrollSpeedBase = 0.01f;
+        private float rotateSpeedBase = 0.1f;
+        
+        private float dragSpeed => dragSpeedBase * dragSpeedRate;
+        private float scrollSpeed => scrollSpeedBase * scrollSpeedRate;
+        private float rotateSpeed => rotateSpeedBase * rotateSpeedRate;
 
         private float layRange = 50f;
 
@@ -101,6 +109,13 @@ namespace HhotateA.AvatarModifyTools.Core
         {
             return targetTexture as Texture;
             ;
+        }
+
+        public void SetSpeed(float move = 1f, float rotate = 1f, float wheel = 1f)
+        {
+            dragSpeedRate = move;
+            rotateSpeedRate = rotate;
+            scrollSpeedRate = wheel;
         }
 
         public void Display(int width, int height, int rotationDrag = 1, int positionDrag = 2,bool canTouch = true,bool canWheel = true)

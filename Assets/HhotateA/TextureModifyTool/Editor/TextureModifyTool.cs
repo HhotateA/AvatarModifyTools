@@ -189,8 +189,7 @@ namespace HhotateA.AvatarModifyTools.TextureModifyTool
                         "   Ctr Hold : Color Pick \n" +
                         "   Stamp Mode : \n" +
                         "      Shift Hold : SelectLand \n" +
-                        "      Ctr Hold : Copy \n" +
-                        ""), keyboardShortcut);
+                        "      Ctr Hold : Copy \n"), keyboardShortcut);
                     EditorGUILayout.Space();
                     
                     if (textureCreator == null) return;
@@ -517,18 +516,30 @@ namespace HhotateA.AvatarModifyTools.TextureModifyTool
                     EditorGUILayout.Space();
                 }
 
+                if (avatarMonitor == null) return;
+                if (texturePreviewer == null) return;
                 // ここらへん汚いので何とかしたい
                 int positionDrag = keyboardShortcut && keyboardAlt ? drawButton : moveButton;
                 bool canNotTouch = keyboardShortcut && (keyboardShift || keyboardCtr);
-                bool canNotWheel = keyboardShortcut && (keyboardShift || keyboardCtr || keyboardAlt);
+                bool canNotWheel = keyboardShortcut && (keyboardShift || keyboardAlt);
+                if (keyboardShortcut && keyboardAlt)
+                {
+                    avatarMonitor.SetSpeed(0.1f,0.5f,0.3f);
+                    texturePreviewer.SetSpeed(0.1f,0.3f);
+                }
+                else
+                {
+                    avatarMonitor.SetSpeed();
+                    texturePreviewer.SetSpeed();
+                }
                 if (squareMode)
                 {
                     if ((int) position.height - 10 - ((int) position.width - 400) > 0)
                     {
                         using (new EditorGUILayout.VerticalScope())
                         {
-                            avatarMonitor?.Display((int) position.width-400, (int) position.height - 10 - ((int) position.width - 400),rotateButton, positionDrag, !canNotTouch, !canNotWheel);
-                            texturePreviewer?.Display( (int) position.width-400, (int) position.width-400, squareMode,rotateButton, positionDrag, !canNotTouch, !canNotWheel);
+                            avatarMonitor.Display((int) position.width-400, (int) position.height - 10 - ((int) position.width - 400),rotateButton, positionDrag, !canNotTouch, !canNotWheel);
+                            texturePreviewer.Display( (int) position.width-400, (int) position.width-400, squareMode,rotateButton, positionDrag, !canNotTouch, !canNotWheel);
                         }
                     }
                     else
@@ -536,8 +547,8 @@ namespace HhotateA.AvatarModifyTools.TextureModifyTool
                     {
                         using (new EditorGUILayout.HorizontalScope())
                         {
-                            avatarMonitor?.Display((int) position.width - 400 - ((int) position.height - 10), (int) position.height - 10,rotateButton, positionDrag, !canNotTouch, !canNotWheel);
-                            texturePreviewer?.Display( (int) position.height - 10, (int) position.height - 10, squareMode,rotateButton, positionDrag, !canNotTouch, !canNotWheel);
+                            avatarMonitor.Display((int) position.width - 400 - ((int) position.height - 10), (int) position.height - 10,rotateButton, positionDrag, !canNotTouch, !canNotWheel);
+                            texturePreviewer.Display( (int) position.height - 10, (int) position.height - 10, squareMode,rotateButton, positionDrag, !canNotTouch, !canNotWheel);
                         }
                     }
                 }
@@ -547,8 +558,8 @@ namespace HhotateA.AvatarModifyTools.TextureModifyTool
                     {
                         using (new EditorGUILayout.VerticalScope())
                         {
-                            avatarMonitor?.Display((int) position.width-400, (int) position.height/2 - 10,rotateButton, positionDrag, !canNotTouch, !canNotWheel);
-                            texturePreviewer?.Display( (int) position.width-400, (int) position.height/2 - 10,squareMode,rotateButton, positionDrag, !canNotTouch, !canNotWheel);
+                            avatarMonitor.Display((int) position.width-400, (int) position.height/2 - 10,rotateButton, positionDrag, !canNotTouch, !canNotWheel);
+                            texturePreviewer.Display( (int) position.width-400, (int) position.height/2 - 10,squareMode,rotateButton, positionDrag, !canNotTouch, !canNotWheel);
                         }
                     }
                     else
@@ -556,8 +567,8 @@ namespace HhotateA.AvatarModifyTools.TextureModifyTool
                     {
                         using (new EditorGUILayout.HorizontalScope())
                         {
-                            avatarMonitor?.Display(((int) position.width - 400)/2 - 5, (int) position.height - 5,rotateButton, positionDrag, !canNotTouch, !canNotWheel);
-                            texturePreviewer?.Display( ((int) position.width - 400)/2 - 5, (int) position.height - 5,squareMode,rotateButton, positionDrag, !canNotTouch, !canNotWheel);
+                            avatarMonitor.Display(((int) position.width - 400)/2 - 5, (int) position.height - 5,rotateButton, positionDrag, !canNotTouch, !canNotWheel);
+                            texturePreviewer.Display( ((int) position.width - 400)/2 - 5, (int) position.height - 5,squareMode,rotateButton, positionDrag, !canNotTouch, !canNotWheel);
                         }
                     }
                 }
