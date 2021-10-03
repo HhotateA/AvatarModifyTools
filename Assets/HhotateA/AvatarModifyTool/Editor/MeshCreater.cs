@@ -99,14 +99,10 @@ namespace HhotateA.AvatarModifyTools.Core
         {
             if (rend.GetMesh() == null)
             {
-                throw new NullReferenceException("MMissing esh");
+                throw new NullReferenceException("MMissing Mesh");
             }
             if (rend is SkinnedMeshRenderer)
             {
-                // トランスフォームのリセット
-                rend.transform.localPosition = Vector3.zero;
-                rend.transform.localScale = Vector3.one;
-                rend.transform.localRotation = Quaternion.identity;
                 // メッシュのセットアップ
                 var mesh = rend as SkinnedMeshRenderer;
                 var originMesh = mesh.sharedMesh;
@@ -230,12 +226,33 @@ namespace HhotateA.AvatarModifyTools.Core
         public void AddSkinnedMesh(SkinnedMeshRenderer rend,bool bake = true)
         {
             if (rootBone == null) rootBone = rend.rootBone;
-
+            var mesh = rend.sharedMesh;
+            
+            // トランスフォームのリセット
+            rend.transform.localPosition = Vector3.zero;
+            rend.transform.localScale = Vector3.one;
+            rend.transform.localRotation = Quaternion.identity;
+            
             var boneTable = AddBones(rend.bones);
 
             var blendWeights = Enumerable.Range(0, rend.sharedMesh.blendShapeCount).Select(n => rend.GetBlendShapeWeight(n)).ToArray();
-            
-            AddMesh(rend.sharedMesh,rend.sharedMaterials,boneTable,null,blendWeights);
+
+            Matrix4x4 mat = Matrix4x4.identity;
+            if (rend.bones != null && mesh.bindposes != null)
+            {
+                for (int i = 0; i < rend.bones.Length && i < mesh.bindposes.Length ; i++)
+                {
+                    if (rend.bones[i] != null)
+                    {
+                        // bindposeのベースになっているオリジナルのtransformを特定
+                        // blendShapeに対して逆変換するといい感じになる（った）
+                        var trans = rend.bones[i].worldToLocalMatrix * rend.sharedMesh.bindposes[i].inverse;
+                        mat = trans.inverse;
+                        break;
+                    }
+                }
+            }
+            AddMesh(mesh,rend.sharedMaterials,boneTable,null,blendWeights,mat);
             
             if (bake)
             {
@@ -251,7 +268,7 @@ namespace HhotateA.AvatarModifyTools.Core
         /// </summary>
         /// <param name="origin"></param>
         /// <param name="bonetable">skinmeshの場合，</param>
-        public void AddMesh(Mesh origin, Material[] mats = null, int[] boneTable = null,Transform subMeshBone = null,float[] blendWeights = null)
+        public void AddMesh(Mesh origin, Material[] mats = null, int[] boneTable = null,Transform subMeshBone = null,float[] blendWeights = null,Matrix4x4? trans = null)
         {
             var offset = vertexs.Count;
             if (string.IsNullOrWhiteSpace(name)) name = origin.name;
@@ -294,7 +311,7 @@ namespace HhotateA.AvatarModifyTools.Core
             
             for (int i = 0; i < origin.blendShapeCount; ++i)
             {
-                blendShapes.Add(new BlendShapeData(origin,i,offset,blendWeights[i]));
+                blendShapes.Add(new BlendShapeData(origin,i,offset,blendWeights[i]).TransformRoot(trans??Matrix4x4.identity));
             }
         }
 
@@ -2991,6 +3008,24 @@ namespace HhotateA.AvatarModifyTools.Core
             // this.tangents = tangents.Select(t=> to.InverseTransformDirection(t)).ToList();
             return this;
         }
+        
+        public BlendShapeData TransformRoot(Vector3 position,Quaternion rotation,Vector3 scale)
+        {
+            var mat = Matrix4x4.TRS(position, rotation, scale);
+            this.vertices = vertices.Select(v=>  mat.MultiplyPoint3x4(v)).ToList();
+            this.normals = normals.Select(n=> mat.MultiplyPoint3x4(n)).ToList();
+            this.tangents = tangents.Select(t=> mat.MultiplyPoint3x4(t)).ToList();
+            return this;
+        }
+        
+        public BlendShapeData TransformRoot(Matrix4x4 trans)
+        {
+            var mat = Matrix4x4.TRS(Vector3.zero, trans.rotation, trans.lossyScale);
+            this.vertices = vertices.Select(v=>  mat.MultiplyPoint(v)).ToList();
+            this.normals = normals.Select(n=> mat.MultiplyPoint(n)).ToList();
+            this.tangents = tangents.Select(t=> mat.MultiplyPoint(t)).ToList();
+            return this;
+        }
 
         public BlendShapeData RemoveVertexIndex(int index)
         {
@@ -3104,26 +3139,26 @@ namespace HhotateA.AvatarModifyTools.Core
         {
             List<Vector3> blendShapeVertices = new List<Vector3>();
             List<Vector3> blendShapeNormals = new List<Vector3>();
-            List<Vector3> blendShapeTangets = new List<Vector3>();
+            List<Vector3> blendShapeTangents = new List<Vector3>();
             for (int i = 0; i < clone.vertexCount; ++i)
             {
                 if (i >= offset && i < offset + vertices.Count)
                 {
                     blendShapeVertices.Add(vertices[i - offset]);
                     blendShapeNormals.Add(normals[i - offset]*0.01f);
-                    blendShapeTangets.Add(tangents[i - offset]*0.01f);
+                    blendShapeTangents.Add(tangents[i - offset]*0.01f);
                 }
                 else
                 {
                     blendShapeVertices.Add(Vector3.zero);
                     blendShapeNormals.Add(Vector3.zero);
-                    blendShapeTangets.Add(Vector3.zero);
+                    blendShapeTangents.Add(Vector3.zero);
                 }
             }
             
             if(bakedWeight != 0f) ApplyBlendShape(ref clone,-bakedWeight);
 
-            clone.AddBlendShapeFrame( clone.GetBlendShapeNameSafe(name), 100, blendShapeVertices.ToArray(), blendShapeNormals.ToArray(), blendShapeTangets.ToArray());
+            clone.AddBlendShapeFrame( clone.GetBlendShapeNameSafe(name), 100, blendShapeVertices.ToArray(), blendShapeNormals.ToArray(), blendShapeTangents.ToArray());
         }
         
         public void ApplyBlendShape(ref Mesh clone,float weight = -100f)
