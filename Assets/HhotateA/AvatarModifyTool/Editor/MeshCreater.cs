@@ -194,7 +194,10 @@ namespace HhotateA.AvatarModifyTools.Core
                     }
                     else
                     {
-                        AddVertex( mc.vertexs[i] ,  mc.normals[i], mc.tangents[i], mc.colors[i], us[i], mc.boneWeights[i]);
+                        // AddVertex( mc.vertexs[i] ,  mc.normals[i], mc.tangents[i], mc.colors[i], us[i], mc.boneWeights[i]);
+                        AddVertex( mc.rendBone.TransformPoint(mc.vertexs[i]),
+                            mc.rendBone.TransformPoint(mc.normals[i]), 
+                            mc.tangents[i], mc.colors[i], us[i],mc.boneWeights[i], boneTable.ToArray());
                     }
                     //AddVertex( mc.vertexs[i] ,  mc.normals[i], mc.tangents[i], mc.colors[i], us[i], mc.boneWeights[i]);
                 }
@@ -919,6 +922,9 @@ namespace HhotateA.AvatarModifyTools.Core
 
         public void TrianglesTransform(List<int> triangle,Transform root,Transform transform,bool inverse = false)
         {
+            return;
+            // この処理不要説が強いのです(´・ω・`)
+            // 元々はmeshRendererのTransformを適応する処理
             if (root != null && transform != null)
             {
                 var tris = triangle.Distinct().ToList();
