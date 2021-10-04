@@ -135,7 +135,7 @@ namespace HhotateA.AvatarModifyTools.Core
             new string[] { "RightLittleIntermediate","IntermediateLittle_Right","IntermediateLittle_R"},
             new string[] { "RightLittleDistal","DistalLittle_Right","DistalLittle_R"},
             new string[] { "UpperChest"},
-            new string[] { "LastBone"},
+            new string[] { "LastBone","Armature"}, // 本来的ではないけど，Rootもhitさせたい
         };
     }
 }

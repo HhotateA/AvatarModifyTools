@@ -129,19 +129,20 @@ namespace HhotateA.AvatarModifyTools.Core
             var anim = root.GetComponent<Animator>();
             foreach (HumanBodyBones humanBone in Enum.GetValues(typeof(HumanBodyBones)))
             {
-                if (humanBone == HumanBodyBones.LastBone) continue;
                 Transform bone = null;
-                if (anim != null)
+                if (humanBone != HumanBodyBones.LastBone)
                 {
-                    if (anim.isHuman)
+                    if (anim != null)
                     {
-                        bone = anim.GetBoneTransform(humanBone);
+                        if (anim.isHuman)
+                        {
+                            bone = anim.GetBoneTransform(humanBone);
+                        }
                     }
                 }
 
                 if (bone == null)
                 {
-                    Debug.Log(humanBone.ToString());
                     var boneNames = EnvironmentVariable.boneNamePatterns.FirstOrDefault(b => b[0] == humanBone.ToString());
                     if(boneNames == null) continue;
                     foreach (var boneName in boneNames)

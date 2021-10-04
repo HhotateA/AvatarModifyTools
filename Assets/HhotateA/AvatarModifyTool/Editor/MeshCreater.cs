@@ -186,20 +186,9 @@ namespace HhotateA.AvatarModifyTools.Core
                 var us = mc.GetUVList();
                 for (int i = 0; i < mc.vertexs.Count; i++)
                 {
-                    if (isSkinnedMesh)
-                    {
-                        AddVertex(root.InverseTransformPoint(mc.rendBone.TransformPoint(mc.vertexs[i])) ,
-                            root.InverseTransformPoint(mc.rendBone.TransformPoint(mc.normals[i])),
-                            mc.tangents[i],mc.colors[i],us[i],mc.boneWeights[i],boneTable.ToArray());
-                    }
-                    else
-                    {
-                        // AddVertex( mc.vertexs[i] ,  mc.normals[i], mc.tangents[i], mc.colors[i], us[i], mc.boneWeights[i]);
-                        AddVertex( mc.rendBone.TransformPoint(mc.vertexs[i]),
-                            mc.rendBone.TransformPoint(mc.normals[i]), 
-                            mc.tangents[i], mc.colors[i], us[i],mc.boneWeights[i], boneTable.ToArray());
-                    }
-                    //AddVertex( mc.vertexs[i] ,  mc.normals[i], mc.tangents[i], mc.colors[i], us[i], mc.boneWeights[i]);
+                    AddVertex(root.InverseTransformPoint(mc.rendBone.TransformPoint(mc.vertexs[i])) ,
+                        root.InverseTransformPoint(mc.rendBone.TransformPoint(mc.normals[i])),
+                        mc.tangents[i],mc.colors[i],us[i],mc.boneWeights[i],boneTable.ToArray());
                 }
 
                 for (int i = 0; i < mc.triangles.Count; i++)
@@ -1392,20 +1381,8 @@ namespace HhotateA.AvatarModifyTools.Core
                 }
                 else
                 {
-                    if (nameMatch)
-                    {
-                        var t = target.transform.FindInChildren(bone.gameObject.name);
-                        if (t != null)
-                        {
-                            if (t.parent.name == bone.parent.name)
-                            {
-                                boneTable.Add(bone,t);
-                                newBones.Add(t);
-                                continue;
-                            }
-                        }
-                    }
-                    var newBone = GenerateBone(ref boneTable, bone);
+                    var newBone = GenerateBone(ref boneTable, bone, 
+                        nameMatch ? target.transform : null);
                     newBones.Add(newBone);
                     additiveBone?.Invoke(newBone);
                 }
@@ -1440,23 +1417,45 @@ namespace HhotateA.AvatarModifyTools.Core
         /// <returns></returns>
         Transform GenerateBone(
             ref Dictionary<Transform, Transform> boneTable,
-            Transform origin)
+            Transform origin,Transform newRoot = null)
         {
+            if (origin == null) return newRoot;
             // is not HumanBone
-            var g = new GameObject();
-            g.name = origin.gameObject.name;
-            g.transform.localPosition = origin.localPosition;
-            g.transform.localRotation = origin.localRotation;
-            g.transform.localScale = origin.localScale;
-            boneTable.Add(origin,g.transform);
-            if (boneTable.ContainsKey(origin.parent))
+            GameObject g = null;
+            if (boneTable.ContainsKey(origin))
             {
-                g.transform.SetParent(boneTable[origin.parent],false);
+                // 既にボーンがリストにある場合
+                g = boneTable[origin].gameObject;
             }
             else
             {
-                g.transform.SetParent(
-                    GenerateBone(ref boneTable,origin.parent),false);
+                if (newRoot != null)
+                {
+                    // ボーンのname match
+                    var t = newRoot.FindInChildren(origin.name);
+                    if (t != null)
+                    {
+                        g = t.gameObject;
+                    }
+                }
+
+                if (g == null)
+                {
+                    // ボーンの作成
+                    g = new GameObject();
+                    g.name = origin.gameObject.name;
+                    g.transform.localPosition = origin.localPosition;
+                    g.transform.localRotation = origin.localRotation;
+                    g.transform.localScale = origin.localScale;
+                    // 親探し
+                    boneTable.Add(origin,g.transform);
+                    g.transform.SetParent(GenerateBone(ref boneTable,origin.parent,newRoot),false);
+                }
+                else
+                {
+                    boneTable.Add(origin,g.transform);
+                }
+            
             }
 
             return g.transform;
