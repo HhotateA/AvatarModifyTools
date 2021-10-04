@@ -1651,20 +1651,11 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
 
             rend.SetMesh(mc.Create(false));
 
-            if (selectMode)
-            {
-                SetEditMesh(mc,CreateEditMesh(mc, verts));
-            }
-            else
-            if (verts.Count == 0)
-            {
-                SetEditMesh(mc,mc.GetMesh());
-            }
-            else
+            if (!selectMode && verts.Count != 0)
             {
                 ResetSelect();
-                SetEditMesh(mc,CreateEditMesh(mc, verts));
             }
+            SetEditMesh(mc,CreateEditMesh(mc, verts));
 
             defaultMaterials = rend.sharedMaterials.ToArray();
             normalMaterials = rends[editIndex].sharedMaterials.Select(mat =>
@@ -1738,11 +1729,25 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
         {
             if (verts.Count == 0)
             {
-                return mc.GetMesh();
+                if (controllMesh_editFilter == null)
+                {
+                    return mc.CreateEditMesh(null,null);
+                }
+                else
+                {
+                    return mc.CreateEditMesh(null,null, controllMesh_editFilter.sharedMesh);
+                }
             }
             else
             {
-                return mc.CreateEditMesh(verts,null, mc.GetMesh());
+                if (controllMesh_editFilter == null)
+                {
+                    return mc.CreateEditMesh(verts,null, null);
+                }
+                else
+                {
+                    return mc.CreateEditMesh(verts,null, controllMesh_editFilter.sharedMesh);
+                }
             }
         }
 

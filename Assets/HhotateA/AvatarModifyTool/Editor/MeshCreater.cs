@@ -922,9 +922,6 @@ namespace HhotateA.AvatarModifyTools.Core
 
         public void TrianglesTransform(List<int> triangle,Transform root,Transform transform,bool inverse = false)
         {
-            return;
-            // この処理不要説が強いのです(´・ω・`)
-            // 元々はmeshRendererのTransformを適応する処理
             if (root != null && transform != null)
             {
                 var tris = triangle.Distinct().ToList();
@@ -1296,10 +1293,6 @@ namespace HhotateA.AvatarModifyTools.Core
                         // ベイクにTransformが適応されるので逆変換
                         // 方向を治してからscaleを補正している（たぶん）
                         vertexs[i + offset] = root.InverseTransformVector(root.TransformDirection(vs[i]));
-                    }
-                    for (int i = 0; i < blendShapes.Count; ++i)
-                    {
-                        blendShapes[i].TransformRoot(root);
                     }
                 }
             }
@@ -2067,12 +2060,12 @@ namespace HhotateA.AvatarModifyTools.Core
         {
             if (origin == null)
             {
-                origin = Mesh.Instantiate(GetMesh());
+                origin = Mesh.Instantiate(Create(false,false));
             }
 
             if (origin.vertexCount != vertexs.Count)
             {
-                origin = Mesh.Instantiate(Create(false));
+                origin = Mesh.Instantiate(Create(false,false));
             }
 
             if (wp != null)
@@ -2084,6 +2077,10 @@ namespace HhotateA.AvatarModifyTools.Core
                     vs.Add(v+vec);
                 }
                 origin.SetVertices(vs);
+            }
+            else
+            {
+                origin.SetVertices(vertexs);
             }
 
             var cs = Enumerable.Range(0, origin.vertexCount).Select(_ => Color.white).ToList();
@@ -2126,10 +2123,6 @@ namespace HhotateA.AvatarModifyTools.Core
         public Mesh CreateSubMesh(int submeshID,bool skinning = false)
         {
             if (submeshID < 0 || triangles.Count < submeshID) return null;
-            if (meshTransforms[submeshID]!=null)
-            {
-                TrianglesTransform(triangles[submeshID], rootBone ?? rendBone, meshTransforms[submeshID],false);
-            }
             
             Mesh combinedMesh = new Mesh();
             combinedMesh.SetVertices(vertexs);
@@ -2157,12 +2150,7 @@ namespace HhotateA.AvatarModifyTools.Core
 
             combinedMesh.SetNormals(normals);
             combinedMesh.SetTangents(tangents);
-
-            if (meshTransforms[submeshID]!=null)
-            {
-                TrianglesTransform(triangles[submeshID], rootBone ?? rendBone, meshTransforms[submeshID],true);
-            }
-
+            
             return combinedMesh;
         }
         
@@ -2171,16 +2159,8 @@ namespace HhotateA.AvatarModifyTools.Core
         /// </summary>
         /// <param name="caches">キャッシュするかどうか</param>
         /// <returns></returns>
-        public Mesh Create(bool caches = true)
+        public Mesh Create(bool caches = true,bool createBlendShape = true)
         {
-            for (int i = 0; i < triangles.Count; i++)
-            {
-                if (meshTransforms[i]!=null)
-                {
-                    TrianglesTransform(triangles[i], rootBone ?? rendBone, meshTransforms[i],false);
-                }
-            }
-
             Mesh combinedMesh = new Mesh();
             combinedMesh.SetVertices(vertexs);
             if (vertexs.Count > 65535)
@@ -2207,10 +2187,13 @@ namespace HhotateA.AvatarModifyTools.Core
             combinedMesh.bindposes = bindPoses.ToArray();
             combinedMesh.boneWeights = boneWeights.ToArray();
 
-            combinedMesh.ClearBlendShapes();
-            foreach (var blendShape in blendShapes)
+            if (createBlendShape)
             {
-                blendShape.Apply(ref combinedMesh);
+                combinedMesh.ClearBlendShapes();
+                foreach (var blendShape in blendShapes)
+                {
+                    blendShape.Apply(ref combinedMesh);
+                }
             }
 
             combinedMesh.SetNormals(normals);
@@ -2222,14 +2205,6 @@ namespace HhotateA.AvatarModifyTools.Core
             }
 
             asset = combinedMesh;
-            
-            for (int i = 0; i < triangles.Count; i++)
-            {
-                if (meshTransforms[i]!=null)
-                {
-                    TrianglesTransform(triangles[i], rootBone ?? rendBone, meshTransforms[i],true);
-                }
-            }
             
             try
             {
@@ -2305,11 +2280,6 @@ namespace HhotateA.AvatarModifyTools.Core
                 {
                     if (materials[i] == nm)
                     {
-                        if (meshTransforms[i]!=null)
-                        {
-                            TrianglesTransform(triangles[i], rootBone ?? rendBone, meshTransforms[i]);
-                        }
-                        
                         ts.AddRange(triangles[i]);
                     }
                 }
@@ -2345,7 +2315,6 @@ namespace HhotateA.AvatarModifyTools.Core
                     {
                         if (meshTransforms[i]!=null)
                         {
-                            TrianglesTransform(triangles[i], rootBone ?? rendBone, meshTransforms[i]);
                             meshTransforms[i] = null;
                         }
                         mats.Add(materials[i]);
@@ -2428,11 +2397,6 @@ namespace HhotateA.AvatarModifyTools.Core
             var ts = new List<int>();
             for (int i = 0; i < triangles.Count; i++)
             {
-                if (meshTransforms[i]!=null)
-                {
-                    TrianglesTransform(triangles[i], rootBone ?? rendBone, meshTransforms[i]);
-                }
-                
                 ts.AddRange(triangles[i]);
             }
 
@@ -3005,13 +2969,6 @@ namespace HhotateA.AvatarModifyTools.Core
             this.vertices = vertices.Select(v=> to.InverseTransformPoint( from.TransformPoint( v))).ToList();
             // this.normals = normals.Select(n=> from.TransformDirection( to.InverseTransformDirection( n))).ToList();
             // this.tangents = tangents.Select(t=> to.InverseTransformDirection( from.TransformDirection( t))).ToList();
-            return this;
-        }
-        public BlendShapeData TransformRoot(Transform to)
-        {
-            // this.vertices = vertices.Select(v=>  to.InverseTransformPoint(v)).ToList();
-            // this.normals = normals.Select(n=> to.InverseTransformDirection(n)).ToList();
-            // this.tangents = tangents.Select(t=> to.InverseTransformDirection(t)).ToList();
             return this;
         }
         
