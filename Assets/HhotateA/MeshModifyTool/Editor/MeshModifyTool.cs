@@ -1126,15 +1126,15 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
                 }
             }
 
-            if (isCombineMesh && combineMeshMode == CombineMeshMode.CombineAllMesh)
-            {
-                var sm = SaveMeshCreater(mc,dir,file);
-                AddRend(sm);
-            }
-            else if (isMergeBone && targetHuman != null)
+            if (isMergeBone && targetHuman != null)
             {
                 var sm = SaveMeshCreater(mc,dir,file);
                 sm.transform.SetParent(targetHuman.transform);
+                AddRend(sm);
+            }
+            else if (isCombineMesh && combineMeshMode == CombineMeshMode.CombineAllMesh)
+            {
+                var sm = SaveMeshCreater(mc,dir,file);
                 AddRend(sm);
             }
             else if (isGenerateNewMesh)
