@@ -41,7 +41,6 @@ namespace HhotateA.AvatarModifyTools.Core
         List<Matrix4x4> bindPoses = new List<Matrix4x4>(); // 一応事前計算してるけど，メッシュ化時でもいいかも
         // その他メッシュの固有情報
         List<BlendShapeData> blendShapes = new List<BlendShapeData>();
-        Transform rendBone; // 追加したRendererのTransform
 
         // Undo,Redo用のキャッシュ
         // 頂点位置の履歴(index0は常に初期位置の記録(BlendShapeに基準となる))
@@ -56,28 +55,17 @@ namespace HhotateA.AvatarModifyTools.Core
 
         public bool IsRecalculateNormals { get; set; } = false;
         public bool IsRecalculateBlendShapeNormals { get; set; } = false;
+        Transform rendBone; // 追加したRendererのTransform
+        Transform rootBone; // 追加したskinmeshのrootBone
         public Transform RendBone
         {
-            get
-            {
-                return rendBone;
-            }
-            set
-            {
-                rendBone = value;
-            }
+            get { return rendBone; }
+            set { rendBone = value; }
         }
-        Transform rootBone; // 追加したskinmeshのrootBone
         public Transform RootBone
         {
-            get
-            {
-                return rootBone;
-            }
-            set
-            {
-                rootBone = value;
-            }
+            get { return rootBone; }
+            set { rootBone = value; }
         }
 
         public int VertexsCount()
@@ -95,7 +83,7 @@ namespace HhotateA.AvatarModifyTools.Core
             name = n;
         }
         
-        public MeshCreater(Renderer rend)
+        public MeshCreater(Renderer rend,Transform avatarRoot = null)
         {
             if (rend.GetMesh() == null)
             {
@@ -125,7 +113,6 @@ namespace HhotateA.AvatarModifyTools.Core
                 rootBone = rend.transform;
                 Create(originMesh);
             }
-            
         }
         
         public MeshCreater(Mesh mesh)
@@ -168,9 +155,9 @@ namespace HhotateA.AvatarModifyTools.Core
         /// 複数のMeshCreaterを合体する
         /// </summary>
         /// <param name="mcs"></param>
-        public MeshCreater(Transform root,MeshCreater[] mcs)
+        public MeshCreater(Transform avatarRoot,MeshCreater[] mcs)
         {
-            rendBone = root;
+            rendBone = avatarRoot;
             var defaultVertexs = new List<Vector3>();
             var editVertexs = new List<Vector3>();
 
@@ -178,16 +165,14 @@ namespace HhotateA.AvatarModifyTools.Core
             {
                 if (rootBone == null) rootBone = mc.rootBone;
                 var offset = vertexs.Count;
-
-                bool isSkinnedMesh = mc.meshTransforms.Any(t => t == null);
                 
                 var boneTable = AddBones(mc.bones.ToArray());
 
                 var us = mc.GetUVList();
                 for (int i = 0; i < mc.vertexs.Count; i++)
                 {
-                    AddVertex(root.InverseTransformPoint(mc.rendBone.TransformPoint(mc.vertexs[i])) ,
-                        root.InverseTransformPoint(mc.rendBone.TransformPoint(mc.normals[i])),
+                    AddVertex(rendBone.InverseTransformPoint(mc.rendBone.TransformPoint(mc.vertexs[i])) ,
+                        rendBone.InverseTransformPoint(mc.rendBone.TransformPoint(mc.normals[i])),
                         mc.tangents[i],mc.colors[i],us[i],mc.boneWeights[i],boneTable.ToArray());
                 }
 
@@ -200,14 +185,10 @@ namespace HhotateA.AvatarModifyTools.Core
                 editVertexs.AddRange(mc.EditVertexs());
                 for (int i = 0; i < mc.blendShapes.Count; ++i)
                 {
-                    blendShapes.Add(mc.blendShapes[i].AddOffset(offset).TransformRoot(mc.rendBone,root));
+                    blendShapes.Add(mc.blendShapes[i].Clone().AddOffset(offset).TransformRoot(mc.RendBone,RendBone));
                 }
             }
-
-            //vertexs = defaultVertexs;
             AddCaches();
-            //TransformMesh(editVertexs.ToArray());
-            //AddCaches();
         }
         
         /// <summary>
@@ -218,40 +199,44 @@ namespace HhotateA.AvatarModifyTools.Core
         public void AddSkinnedMesh(SkinnedMeshRenderer rend,bool bake = true)
         {
             if (rootBone == null) rootBone = rend.rootBone;
-            var mesh = rend.sharedMesh;
-            
-            // トランスフォームのリセット
-            rend.transform.localPosition = Vector3.zero;
-            rend.transform.localScale = Vector3.one;
-            rend.transform.localRotation = Quaternion.identity;
             
             var boneTable = AddBones(rend.bones);
 
             var blendWeights = Enumerable.Range(0, rend.sharedMesh.blendShapeCount).Select(n => rend.GetBlendShapeWeight(n)).ToArray();
 
-            Matrix4x4 mat = Matrix4x4.identity;
-            if (rend.bones != null && mesh.bindposes != null)
-            {
-                for (int i = 0; i < rend.bones.Length && i < mesh.bindposes.Length ; i++)
-                {
-                    if (rend.bones[i] != null)
-                    {
-                        // bindposeのベースになっているオリジナルのtransformを特定
-                        // blendShapeに対して逆変換するといい感じになる（った）
-                        var trans = rend.bones[i].worldToLocalMatrix * rend.sharedMesh.bindposes[i].inverse;
-                        mat = trans.inverse;
-                        break;
-                    }
-                }
-            }
-            AddMesh(mesh,rend.sharedMaterials,boneTable,null,blendWeights,mat);
-            
             if (bake)
             {
+                Matrix4x4 mat = Matrix4x4.identity;
+                if (rend.bones != null && rend.sharedMesh.bindposes != null)
+                {
+                    for (int i = 0; i < rend.bones.Length && i < rend.sharedMesh.bindposes.Length ; i++)
+                    {
+                        if (rend.bones[i] != null)
+                        {
+                            // bindposeのベースになっているオリジナルのtransformを特定
+                            // blendShapeに対して逆変換するといい感じになる（った）
+                            mat = rend.bones[i].worldToLocalMatrix.inverse * rend.sharedMesh.bindposes[i]; //transform.localToWorldMatrix
+                            mat = mat.inverse;
+                            break;
+                        }
+                    }
+                }
+                // トランスフォームのリセット
+                var t = rend.transform;
+                t.localPosition = Vector3.zero;
+                t.localScale = new Vector3(1f/mat.lossyScale.x,1f/mat.lossyScale.y,1f/mat.lossyScale.z);
+                t.rotation = mat.rotation;
+                
+                AddMesh(rend.sharedMesh,rend.sharedMaterials,boneTable,null,blendWeights,mat.inverse*rend.localToWorldMatrix);
+                
                 Mesh b = Mesh.Instantiate(rend.sharedMesh);
                 // rend.BakeMesh(b,true); //unity2020にしてほしい
                 rend.BakeMesh(b);
                 TransformMesh(b,0,rend.transform);
+            }
+            else
+            {
+                AddMesh(rend.sharedMesh,rend.sharedMaterials,boneTable,null,blendWeights);
             }
         }
         
@@ -2957,6 +2942,21 @@ namespace HhotateA.AvatarModifyTools.Core
             }
         }
 
+        public BlendShapeData(BlendShapeData origin)
+        {
+            this.name = origin.name;
+            this.offset = origin.offset;
+            this.vertices = origin.vertices.ToList();
+            this.normals = origin.normals.ToList();
+            this.tangents = origin.tangents.ToList();
+            this.bakedWeight = origin.bakedWeight;
+        }
+
+        public BlendShapeData Clone()
+        {
+            return  new BlendShapeData(this);
+        }
+        
         public BlendShapeData AddOffset(int i)
         {
             this.offset += i;
@@ -2965,18 +2965,13 @@ namespace HhotateA.AvatarModifyTools.Core
 
         public BlendShapeData TransformRoot(Transform from,Transform to)
         {
-            this.vertices = vertices.Select(v=> to.InverseTransformPoint( from.TransformPoint( v))).ToList();
-            // this.normals = normals.Select(n=> from.TransformDirection( to.InverseTransformDirection( n))).ToList();
-            // this.tangents = tangents.Select(t=> to.InverseTransformDirection( from.TransformDirection( t))).ToList();
-            return this;
-        }
-        
-        public BlendShapeData TransformRoot(Vector3 position,Quaternion rotation,Vector3 scale)
-        {
-            var mat = Matrix4x4.TRS(position, rotation, scale);
-            this.vertices = vertices.Select(v=>  mat.MultiplyPoint3x4(v)).ToList();
-            this.normals = normals.Select(n=> mat.MultiplyPoint3x4(n)).ToList();
-            this.tangents = tangents.Select(t=> mat.MultiplyPoint3x4(t)).ToList();
+            var mat = to.localToWorldMatrix * from.worldToLocalMatrix;
+            mat = Matrix4x4.TRS(Vector3.zero, 
+                new Quaternion(mat.rotation.x,mat.rotation.y,mat.rotation.z,mat.rotation.w), 
+                mat.lossyScale);
+            this.vertices = vertices.Select(v=> mat.MultiplyPoint(v)).ToList();
+            this.normals = normals.Select(n=> mat.MultiplyPoint(n)).ToList();
+            this.tangents = tangents.Select(t=> mat.MultiplyPoint(t)).ToList();
             return this;
         }
         

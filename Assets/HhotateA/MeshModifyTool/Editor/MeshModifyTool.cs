@@ -493,7 +493,7 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
                                         meshSimplifier.Initialize(rends[editIndex].GetMesh());
                                         meshSimplifier.SimplifyMesh(meshSimplerQuality);
                                         rends[editIndex].SetMesh(meshSimplifier.ToMesh());
-                                        meshsCreaters[editIndex] = new MeshCreater(rends[editIndex]);
+                                        meshsCreaters[editIndex] = new MeshCreater(rends[editIndex],avatar.transform);
                                         SelectMeshCreater(editIndex);
                                     }
                                 }
@@ -1009,7 +1009,7 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
             DestroyControllMeshes();
             rends = anim.transform.GetComponentsInChildren<Renderer>().Where(r=>r.GetMesh()!=null).ToArray();
             defaultMeshs = rends.Select(m => m.GetMesh()).ToArray();
-            meshsCreaters = rends.Select(m => new MeshCreater(m)).ToArray();
+            meshsCreaters = rends.Select(m => new MeshCreater(m,avatar.transform)).ToArray();
             
             if(avatarMonitor!=null) avatarMonitor.Release();
             avatarMonitor = new AvatarMonitor(anim.transform);
@@ -1024,7 +1024,7 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
             int i = rends.Length;
             rends = rends.Append(rend).ToArray();
             defaultMeshs = defaultMeshs.Append(rend.GetMesh()).ToArray();
-            meshsCreaters = meshsCreaters.Append(new MeshCreater(rend)).ToArray();
+            meshsCreaters = meshsCreaters.Append(new MeshCreater(rend,avatar.transform)).ToArray();
             SelectMeshCreater(i);
         }
 
@@ -1198,8 +1198,10 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
 
             var sm = mc.ToSkinMesh(file,avatar.transform);
         
-            sm.transform.position = rends[0].transform.position;
-            sm.transform.rotation = rends[0].transform.rotation;
+            sm.transform.localPosition = Vector3.zero;
+            sm.transform.localRotation = Quaternion.identity;
+            sm.transform.localScale = Vector3.one;
+            
             var smsm = sm.GetComponent<SkinnedMeshRenderer>();
             smsm.SetMesh(m);
 
