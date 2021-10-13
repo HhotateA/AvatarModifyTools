@@ -87,7 +87,7 @@ namespace HhotateA.AvatarModifyTools.Core
         {
             if (rend.GetMesh() == null)
             {
-                throw new NullReferenceException("MMissing Mesh");
+                throw new NullReferenceException("Missing Mesh");
             }
             if (rend is SkinnedMeshRenderer)
             {
@@ -169,10 +169,11 @@ namespace HhotateA.AvatarModifyTools.Core
                 var boneTable = AddBones(mc.bones.ToArray());
 
                 var us = mc.GetUVList();
+                var mat = rendBone.worldToLocalMatrix * mc.rendBone.localToWorldMatrix;
                 for (int i = 0; i < mc.vertexs.Count; i++)
                 {
-                    AddVertex(rendBone.InverseTransformPoint(mc.rendBone.TransformPoint(mc.vertexs[i])) ,
-                        rendBone.InverseTransformPoint(mc.rendBone.TransformPoint(mc.normals[i])),
+                    AddVertex(mat.MultiplyPoint(mc.vertexs[i]) ,
+                    mat.MultiplyPoint(mc.normals[i]) ,
                         mc.tangents[i],mc.colors[i],us[i],mc.boneWeights[i],boneTable.ToArray());
                 }
 
@@ -185,7 +186,8 @@ namespace HhotateA.AvatarModifyTools.Core
                 editVertexs.AddRange(mc.EditVertexs());
                 for (int i = 0; i < mc.blendShapes.Count; ++i)
                 {
-                    blendShapes.Add(mc.blendShapes[i].Clone().AddOffset(offset).TransformRoot(mc.RendBone,RendBone));
+                    //blendShapes.Add(mc.blendShapes[i].Clone().AddOffset(offset).TransformRoot(mc.RendBone,rendBone));
+                    blendShapes.Add(mc.blendShapes[i].Clone().AddOffset(offset).TransformRoot(mat));
                 }
             }
             AddCaches();
@@ -216,7 +218,6 @@ namespace HhotateA.AvatarModifyTools.Core
                             // bindposeのベースになっているオリジナルのtransformを特定
                             // blendShapeに対して逆変換するといい感じになる（った）
                             mat = rend.bones[i].worldToLocalMatrix.inverse * rend.sharedMesh.bindposes[i]; //transform.localToWorldMatrix
-                            mat = mat.inverse;
                             break;
                         }
                     }
@@ -224,15 +225,27 @@ namespace HhotateA.AvatarModifyTools.Core
                 // トランスフォームのリセット
                 var t = rend.transform;
                 t.localPosition = Vector3.zero;
-                t.localScale = new Vector3(1f/mat.lossyScale.x,1f/mat.lossyScale.y,1f/mat.lossyScale.z);
-                t.rotation = mat.rotation;
-                
-                AddMesh(rend.sharedMesh,rend.sharedMaterials,boneTable,null,blendWeights,mat.inverse*rend.localToWorldMatrix);
+                t.rotation = Quaternion.identity;
+                t.localScale = Vector3.one;
+                var s = new Vector3(t.localScale.x/t.lossyScale.x,t.localScale.y/t.lossyScale.y,t.localScale.z/t.lossyScale.z);
+                t.localScale = new Vector3(s.x/mat.inverse.lossyScale.x,s.y/mat.inverse.lossyScale.y,s.z/mat.inverse.lossyScale.z);
+                t.localRotation = mat.rotation;
+
+                int bcBefore = blendShapes.Count;
+                int vcBefore = vertexs.Count;
+                AddMesh(rend.sharedMesh,rend.sharedMaterials,boneTable,null,blendWeights);
+                int bcAfter = blendShapes.Count;
+                int vcAfter = vertexs.Count;
+                for (int i = bcBefore; i < bcAfter; i ++)
+                {
+                    blendShapes[i].TransformRoot(Matrix4x4.TRS(Vector3.zero, Quaternion.identity, Vector3.one));
+                }
                 
                 Mesh b = Mesh.Instantiate(rend.sharedMesh);
                 // rend.BakeMesh(b,true); //unity2020にしてほしい
                 rend.BakeMesh(b);
-                TransformMesh(b,0,rend.transform);
+                TransformMesh(b,vcBefore);
+                TransformMatrix(Matrix4x4.TRS(Vector3.zero, Quaternion.identity, mat.inverse.lossyScale), vcBefore,vcAfter-vcBefore);
             }
             else
             {
@@ -245,7 +258,7 @@ namespace HhotateA.AvatarModifyTools.Core
         /// </summary>
         /// <param name="origin"></param>
         /// <param name="bonetable">skinmeshの場合，</param>
-        public void AddMesh(Mesh origin, Material[] mats = null, int[] boneTable = null,Transform subMeshBone = null,float[] blendWeights = null,Matrix4x4? trans = null)
+        public void AddMesh(Mesh origin, Material[] mats = null, int[] boneTable = null,Transform subMeshBone = null,float[] blendWeights = null)
         {
             var offset = vertexs.Count;
             if (string.IsNullOrWhiteSpace(name)) name = origin.name;
@@ -288,7 +301,7 @@ namespace HhotateA.AvatarModifyTools.Core
             
             for (int i = 0; i < origin.blendShapeCount; ++i)
             {
-                blendShapes.Add(new BlendShapeData(origin,i,offset,blendWeights[i]).TransformRoot(trans??Matrix4x4.identity));
+                blendShapes.Add(new BlendShapeData(origin,i,offset,blendWeights[i]));
             }
         }
 
@@ -915,7 +928,16 @@ namespace HhotateA.AvatarModifyTools.Core
         {
             foreach (var v in verts)
             {
-                vertexs[v] = mat * new Vector4(vertexs[v].x,vertexs[v].y,vertexs[v].z,1f);
+                vertexs[v] = mat.MultiplyPoint(vertexs[v]);
+            }
+        }
+        
+        public void TransformMatrix(Matrix4x4 mat, int from = 0, int length = -1)
+        {
+            if (length < 0) length = vertexs.Count - from; 
+            for (int i = from; i < length + from; i ++)
+            {
+                vertexs[i] = mat.MultiplyPoint(vertexs[i]);
             }
         }
         
@@ -1244,7 +1266,7 @@ namespace HhotateA.AvatarModifyTools.Core
         /// メッシュの頂点に変形させる
         /// </summary>
         /// <param name="mesh"></param>
-        public void TransformMesh(Mesh mesh,int offset = 0,Transform root = null)
+        public void TransformMesh(Mesh mesh,int offset = 0)
         {
             // ここで取得しとく方が，いちいちmeshアクセスするより圧倒的に早い
             var vs = mesh.vertices;
@@ -1252,7 +1274,11 @@ namespace HhotateA.AvatarModifyTools.Core
             var ts = mesh.tangents;
             if (mesh.vertices.Length + offset <= vertexs.Count)
             {
-                if (root == null)
+                for (int i = 0; i < vs.Length; i++)
+                {
+                    vertexs[i + offset] = vs[i];
+                }
+                /*if (root == null)
                 {
                     for (int i = 0; i < vs.Length; i++)
                     {
@@ -1268,7 +1294,7 @@ namespace HhotateA.AvatarModifyTools.Core
                         // 方向を治してからscaleを補正している（たぶん）
                         vertexs[i + offset] = root.InverseTransformVector(root.TransformDirection(vs[i]));
                     }
-                }
+                }*/
             }
 
             if (ns.Length == mesh.vertexCount)
@@ -2963,24 +2989,32 @@ namespace HhotateA.AvatarModifyTools.Core
             return this;
         }
 
+        public BlendShapeData TransformRoot(Transform from)
+        {
+            var mat = from.worldToLocalMatrix;
+            TransformRoot(mat);
+            return this;
+        }
+
         public BlendShapeData TransformRoot(Transform from,Transform to)
         {
-            var mat = to.localToWorldMatrix * from.worldToLocalMatrix;
-            mat = Matrix4x4.TRS(Vector3.zero, 
-                new Quaternion(mat.rotation.x,mat.rotation.y,mat.rotation.z,mat.rotation.w), 
-                mat.lossyScale);
-            this.vertices = vertices.Select(v=> mat.MultiplyPoint(v)).ToList();
-            this.normals = normals.Select(n=> mat.MultiplyPoint(n)).ToList();
-            this.tangents = tangents.Select(t=> mat.MultiplyPoint(t)).ToList();
+            /*var mat = to.worldToLocalMatrix * from.localToWorldMatrix;
+            Debug.Log(mat.lossyScale);
+            mat = Matrix4x4.TRS(Vector3.zero, mat.inverse.rotation, new Vector3(
+                mat.lossyScale.x*mat.lossyScale.x*mat.lossyScale.x,
+                mat.lossyScale.y*mat.lossyScale.y*mat.lossyScale.y,
+                mat.lossyScale.z*mat.lossyScale.z*mat.lossyScale.z));*/
+            var mat = to.worldToLocalMatrix * from.localToWorldMatrix;
+            TransformRoot(mat); 
             return this;
         }
         
-        public BlendShapeData TransformRoot(Matrix4x4 trans)
+        public BlendShapeData TransformRoot(Matrix4x4 mat)
         {
-            var mat = Matrix4x4.TRS(Vector3.zero, trans.rotation, trans.lossyScale);
-            this.vertices = vertices.Select(v=>  mat.MultiplyPoint(v)).ToList();
-            this.normals = normals.Select(n=> mat.MultiplyPoint(n)).ToList();
-            this.tangents = tangents.Select(t=> mat.MultiplyPoint(t)).ToList();
+            //var mat = Matrix4x4.TRS(Vector3.zero, trans.rotation, trans.lossyScale);
+            this.vertices = vertices.Select(v=>  mat.MultiplyVector(v)).ToList();
+            this.normals = normals.Select(n=> mat.MultiplyVector(n)).ToList();
+            this.tangents = tangents.Select(t=> mat.MultiplyVector(t)).ToList();
             return this;
         }
 
