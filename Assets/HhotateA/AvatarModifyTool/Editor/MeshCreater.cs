@@ -238,14 +238,15 @@ namespace HhotateA.AvatarModifyTools.Core
                 int vcAfter = vertexs.Count;
                 for (int i = bcBefore; i < bcAfter; i ++)
                 {
-                    blendShapes[i].TransformRoot(Matrix4x4.TRS(Vector3.zero, Quaternion.identity, Vector3.one));
+                    blendShapes[i].TransformRoot(t.worldToLocalMatrix*mat);
                 }
                 
                 Mesh b = Mesh.Instantiate(rend.sharedMesh);
                 // rend.BakeMesh(b,true); //unity2020にしてほしい
                 rend.BakeMesh(b);
                 TransformMesh(b,vcBefore);
-                TransforTransform( t, vcBefore,vcAfter-vcBefore);
+                TransformMatrixVector( t.worldToLocalMatrix, vcBefore,vcAfter-vcBefore);
+                //TransforTransform( t, vcBefore,vcAfter-vcBefore);
             }
             else
             {
@@ -932,21 +933,12 @@ namespace HhotateA.AvatarModifyTools.Core
             }
         }
         
-        public void TransformMatrix(Matrix4x4 mat, int from = 0, int length = -1)
+        public void TransformMatrixVector(Matrix4x4 mat, int from = 0, int length = -1)
         {
             if (length < 0) length = vertexs.Count - from; 
             for (int i = from; i < length + from; i ++)
             {
-                vertexs[i] = mat.MultiplyPoint(vertexs[i]);
-            }
-        }
-        
-        public void TransforTransform(Transform root, int from = 0, int length = -1)
-        {
-            if (length < 0) length = vertexs.Count - from; 
-            for (int i = from; i < length + from; i ++)
-            {
-                vertexs[i] = root.InverseTransformVector(root.TransformDirection(vertexs[i]));
+                vertexs[i] = mat.MultiplyVector(vertexs[i]);
             }
         }
         
