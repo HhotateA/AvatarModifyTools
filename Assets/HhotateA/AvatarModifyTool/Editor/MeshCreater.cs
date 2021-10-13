@@ -227,9 +227,9 @@ namespace HhotateA.AvatarModifyTools.Core
                 t.localPosition = Vector3.zero;
                 t.rotation = Quaternion.identity;
                 t.localScale = Vector3.one;
-                var s = new Vector3(t.localScale.x/t.lossyScale.x,t.localScale.y/t.lossyScale.y,t.localScale.z/t.lossyScale.z);
+                /*var s = new Vector3(t.localScale.x/t.lossyScale.x,t.localScale.y/t.lossyScale.y,t.localScale.z/t.lossyScale.z);
                 t.localScale = new Vector3(s.x/mat.inverse.lossyScale.x,s.y/mat.inverse.lossyScale.y,s.z/mat.inverse.lossyScale.z);
-                t.localRotation = mat.rotation;
+                t.localRotation = mat.rotation;*/
 
                 int bcBefore = blendShapes.Count;
                 int vcBefore = vertexs.Count;
@@ -245,7 +245,7 @@ namespace HhotateA.AvatarModifyTools.Core
                 // rend.BakeMesh(b,true); //unity2020にしてほしい
                 rend.BakeMesh(b);
                 TransformMesh(b,vcBefore);
-                TransformMatrix(Matrix4x4.TRS(Vector3.zero, Quaternion.identity, mat.inverse.lossyScale), vcBefore,vcAfter-vcBefore);
+                TransforTransform( t, vcBefore,vcAfter-vcBefore);
             }
             else
             {
@@ -938,6 +938,15 @@ namespace HhotateA.AvatarModifyTools.Core
             for (int i = from; i < length + from; i ++)
             {
                 vertexs[i] = mat.MultiplyPoint(vertexs[i]);
+            }
+        }
+        
+        public void TransforTransform(Transform root, int from = 0, int length = -1)
+        {
+            if (length < 0) length = vertexs.Count - from; 
+            for (int i = from; i < length + from; i ++)
+            {
+                vertexs[i] = root.InverseTransformVector(root.TransformDirection(vertexs[i]));
             }
         }
         
