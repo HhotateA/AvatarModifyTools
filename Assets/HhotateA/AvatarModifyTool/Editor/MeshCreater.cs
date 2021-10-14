@@ -92,12 +92,25 @@ namespace HhotateA.AvatarModifyTools.Core
             if (rend is SkinnedMeshRenderer)
             {
                 // メッシュのセットアップ
-                var mesh = rend as SkinnedMeshRenderer;
-                var originMesh = mesh.sharedMesh;
-                name = mesh.name;
+                var skinmesh = rend as SkinnedMeshRenderer;
+                var originMesh = skinmesh.sharedMesh;
+                name = skinmesh.name;
                 rendBone = rend.transform;
-                rootBone = mesh.rootBone;
-                AddSkinnedMesh(mesh);
+                rootBone = skinmesh.rootBone;
+                if (skinmesh.bones.Length > 0)
+                {
+                    // トランスフォームのリセット
+                    rendBone.localPosition = Vector3.zero;
+                    rendBone.rotation = Quaternion.identity;
+                    rendBone.localScale = Vector3.one;
+                    // ボーンに紐づけられているならベイクする
+                    AddSkinnedMesh(skinmesh,true);
+                }
+                else
+                {
+                    // ボーンに紐づけられていないならベイクしない
+                    AddSkinnedMesh(skinmesh,false);
+                }
                 // skinmesh はbakeするので いらないかも？
                 Create(originMesh);
             }
@@ -227,9 +240,6 @@ namespace HhotateA.AvatarModifyTools.Core
                 t.localPosition = Vector3.zero;
                 t.rotation = Quaternion.identity;
                 t.localScale = Vector3.one;
-                /*var s = new Vector3(t.localScale.x/t.lossyScale.x,t.localScale.y/t.lossyScale.y,t.localScale.z/t.lossyScale.z);
-                t.localScale = new Vector3(s.x/mat.inverse.lossyScale.x,s.y/mat.inverse.lossyScale.y,s.z/mat.inverse.lossyScale.z);
-                t.localRotation = mat.rotation;*/
 
                 int bcBefore = blendShapes.Count;
                 int vcBefore = vertexs.Count;
