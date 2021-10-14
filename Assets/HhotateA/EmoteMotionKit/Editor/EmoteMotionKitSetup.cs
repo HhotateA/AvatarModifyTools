@@ -28,7 +28,7 @@ namespace HhotateA.AvatarModifyTools.EmoteMotionKit
 {
     public class EmoteMotionKitSetup : WindowBase
     {
-        [MenuItem("Window/HhotateA/エモートモーションキット(EmoteMotionKit)",false,8)]
+        [MenuItem("Window/HhotateA/エモートモーションキット(EmoteMotionKit)",false,108)]
 
         public static void ShowWindow()
         {
@@ -182,7 +182,7 @@ namespace HhotateA.AvatarModifyTools.EmoteMotionKit
 
             if (GUILayout.Button("Setup"))
             {
-                var path = EditorUtility.SaveFilePanel("Save", data.GetAssetDir(),String.IsNullOrWhiteSpace(data.saveName) ? "EmojiSetupData" : data.saveName , "asset");
+                var path = EditorUtility.SaveFilePanel("Save", data.GetAssetDir(), data.GetAssetName(), "asset");
                 if (string.IsNullOrEmpty(path))
                 {
                     OnCancel();
@@ -200,6 +200,7 @@ namespace HhotateA.AvatarModifyTools.EmoteMotionKit
                     AssetDatabase.CreateAsset(data, path);
                     Setup(path);
                     OnFinishSetup();
+                    DetectAnimatorError();
                 }
                 catch (Exception e)
                 {
@@ -213,7 +214,7 @@ namespace HhotateA.AvatarModifyTools.EmoteMotionKit
             {
                 if (GUILayout.Button("Save Settings"))
                 {
-                    var path = EditorUtility.SaveFilePanel("Save", data.GetAssetDir(), data.saveName,"emotemotion.asset");
+                    var path = EditorUtility.SaveFilePanel("Save", data.GetAssetDir(), data.GetAssetName(),"emotemotion.asset");
                     if (string.IsNullOrEmpty(path))
                     {
                         OnCancel();
@@ -222,7 +223,7 @@ namespace HhotateA.AvatarModifyTools.EmoteMotionKit
                     data = Instantiate(data);
                     LoadReorderableList();
                     AssetDatabase.CreateAsset(data, FileUtil.GetProjectRelativePath(path));
-                    status.Success("Saved");
+                    OnSave();
                 }
                 if (GUILayout.Button("Load Settings"))
                 {
@@ -243,7 +244,7 @@ namespace HhotateA.AvatarModifyTools.EmoteMotionKit
                         data = d;
                         LoadReorderableList();
                     }
-                    status.Success("Loaded");
+                    OnLoad();
                 }
             }
             status.Display();

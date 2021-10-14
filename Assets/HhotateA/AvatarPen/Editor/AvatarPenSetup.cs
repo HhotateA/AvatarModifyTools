@@ -19,8 +19,7 @@ namespace HhotateA.AvatarModifyTools.AvatarPen
 {
     public class AvatarPenSetup : WindowBase
     {
-        [MenuItem("Window/HhotateA/アバターペンセットアップ(AvatarPenSetup)",false,1)]
-
+        [MenuItem("Window/HhotateA/アバターペンセットアップ(AvatarPenSetup)",false,101)]
         public static void ShowWindow()
         {
             var wnd = GetWindow<AvatarPenSetup>();
@@ -63,6 +62,7 @@ namespace HhotateA.AvatarModifyTools.AvatarPen
                             var mod = new AvatarModifyTool(avatar);
                             ApplySettings(mod).ModifyAvatar(asset,EnvironmentGUIDs.prefix);
                             OnFinishSetup();
+                            DetectAnimatorError();
                         }
                         catch (Exception e)
                         {

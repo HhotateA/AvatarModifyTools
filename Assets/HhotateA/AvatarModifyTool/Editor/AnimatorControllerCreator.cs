@@ -589,6 +589,7 @@ namespace HhotateA.AvatarModifyTools.Core
             if (motion is BlendTree)
             {
                 BlendTree tree = (BlendTree) motion;
+                tree.hideFlags = HideFlags.HideInHierarchy;
                 AssetDatabase.AddObjectToAsset(tree,path);
                 foreach (var m in tree.children)
                 {

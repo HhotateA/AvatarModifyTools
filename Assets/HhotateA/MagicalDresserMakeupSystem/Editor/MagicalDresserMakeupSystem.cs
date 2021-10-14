@@ -24,7 +24,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserMakeupSystem
 {
     public class MagicalDresserSetup : WindowBase
     {
-        [MenuItem("Window/HhotateA/マジックドレッサーメイクアップ(MDMakeup)",false,7)]
+        [MenuItem("Window/HhotateA/マジックドレッサーメイクアップ(MDMakeup)",false,107)]
         public static void ShowWindow()
         {
             var wnd = GetWindow<MagicalDresserSetup>();
@@ -143,6 +143,8 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserMakeupSystem
                 try
                 {
                     Setup(path);
+                    OnFinishSetup();
+                    DetectAnimatorError();
                 }
                 catch (Exception e)
                 {
@@ -169,7 +171,6 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserMakeupSystem
             string fileName = System.IO.Path.GetFileNameWithoutExtension(path);
             saveName = fileName;
             path = FileUtil.GetProjectRelativePath(path);
-            OnFinishSetup();
             string fileDir = System.IO.Path.GetDirectoryName (path);
             
             AnimatorControllerCreator animAsset = new AnimatorControllerCreator(fileName,false);

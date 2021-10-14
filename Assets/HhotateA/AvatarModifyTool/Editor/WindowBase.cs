@@ -8,6 +8,7 @@ This software is released under the MIT License.
 http://opensource.org/licenses/mit-license.php
 */
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 using Object = UnityEngine.Object;
@@ -80,6 +81,15 @@ namespace HhotateA.AvatarModifyTools.Core
         public void OnError(Exception e)
         {
             status.Error(e.Message);
+        }
+        
+        public void OnSave()
+        {
+            status.Success("Saved");
+        }
+        public void OnLoad()
+        {
+            status.Success("Loaded");
         }
 
         public void AvatartField(string label = "",Action onReload = null)
@@ -249,6 +259,35 @@ namespace HhotateA.AvatarModifyTools.Core
             EditorGUILayout.LabelField( "Version " + EnvironmentVariable.version ,signature);
             EditorGUILayout.LabelField( EnvironmentVariable.githubLink ,signature);
             // EditorGUILayout.LabelField( EnvironmentVariable.githubLink ,signature);
+        }
+
+        public void DetectAnimatorError()
+        {
+            if (!writeDefault)
+            {
+                var writeDefaultLayers = FindWriteDefault();
+                if (writeDefaultLayers.Count > 0)
+                {
+                    status.Warning("Complete Setup (Detect WriteDefault Layers)");
+                    foreach (var c in writeDefaultLayers)
+                    {
+                        Debug.LogWarning("Detect WriteDefault Layer : " + c);
+                    }
+                }
+            }
+        }
+        
+        List<string> FindWriteDefault()
+        {
+#if VRC_SDK_VRCSDK3
+            AvatarModifyTool mod = new AvatarModifyTool(avatar);
+            ApplySettings(mod);
+
+            var writeDefaultLayers = mod.HasWriteDefaultLayers();
+            return writeDefaultLayers;
+#else
+            return new List<string>();
+#endif
         }
 
         public class StatusView

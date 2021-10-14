@@ -23,7 +23,7 @@ namespace HhotateA.AvatarModifyTools.TailMover
 {
     public class TailMoverSetup : WindowBase
     {
-        [MenuItem("Window/HhotateA/なでもふセットアップ(TailMoverSetup)",false,3)]
+        [MenuItem("Window/HhotateA/なでもふセットアップ(TailMoverSetup)",false,103)]
         public static void ShowWindow()
         {
             var wnd = GetWindow<TailMoverSetup>();
@@ -411,6 +411,7 @@ namespace HhotateA.AvatarModifyTools.TailMover
                     {
                         SaveTailAnim(path);
                         OnFinishSetup();
+                        DetectAnimatorError();
                     }
                     catch (Exception e)
                     {
@@ -441,6 +442,7 @@ namespace HhotateA.AvatarModifyTools.TailMover
                         {
                             SaveTailIdle(path);
                             OnFinishSetup();
+                            DetectAnimatorError();
                         }
                         catch (Exception e)
                         {

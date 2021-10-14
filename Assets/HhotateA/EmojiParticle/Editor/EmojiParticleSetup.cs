@@ -26,7 +26,7 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
 {
     public class EmojiParticleSetup : WindowBase
     {
-        [MenuItem("Window/HhotateA/絵文字パーティクルセットアップ(EmojiParticleSetup)",false,2)]
+        [MenuItem("Window/HhotateA/絵文字パーティクルセットアップ(EmojiParticleSetup)",false,102)]
 
         public static void ShowWindow()
         {
@@ -189,7 +189,7 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
                     var asset = AssetUtility.LoadAssetAtGuid<AvatarModifyData>(EnvironmentGUIDs.emojiModifyData);
                     asset = Instantiate(asset);
                     
-                    var path = EditorUtility.SaveFilePanel("Save", data.GetAssetDir(),String.IsNullOrWhiteSpace(data.saveName) ? "EmojiSetupData" : data.saveName , "emojiparticle.asset");
+                    var path = EditorUtility.SaveFilePanel("Save", data.GetAssetDir(), data.GetAssetName(), "emojiparticle.asset");
                     if (string.IsNullOrEmpty(path))
                     {
                         OnCancel();
@@ -214,6 +214,7 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
 
                         AssetDatabase.SaveAssets();
                         OnFinishSetup();
+                        DetectAnimatorError();
                     }
                     catch (Exception e)
                     {
@@ -228,7 +229,7 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
             {
                 if (GUILayout.Button("Save Settings"))
                 {
-                    var path = EditorUtility.SaveFilePanel("Save", data.GetAssetDir(), data.saveName,"emojiparticle.asset");
+                    var path = EditorUtility.SaveFilePanel("Save", data.GetAssetDir(), data.GetAssetName(),"emojiparticle.asset");
                     if (string.IsNullOrEmpty(path))
                     {
                         OnCancel();
@@ -237,7 +238,7 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
                     data = Instantiate(data);
                     LoadReorderableList();
                     AssetDatabase.CreateAsset(data, FileUtil.GetProjectRelativePath(path));
-                    status.Success("Saved");
+                    OnSave();
                 }
                 if (GUILayout.Button("Load Settings"))
                 {
@@ -258,7 +259,7 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
                         data = d;
                         LoadReorderableList();
                     }
-                    status.Success("Loaded");
+                    OnLoad();
                 }
             }
             status.Display();
@@ -288,7 +289,7 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
     
             // 結合テクスチャの作成
             var textures = data.emojis.Select(icon=>icon.ToTexture2D()).ToArray();
-            var combinatedTexture = TextureCombinater.CombinateSaveTexture(textures,Path.Combine(fileDir,data.saveName+"_tex"+".png"),tilling,1);
+            var combinatedTexture = TextureCombinater.CombinateSaveTexture(textures,Path.Combine(fileDir,data.saveName+"_tex"+".png"),tilling,4);
             combinatedTexture.name = data.saveName+"_tex";
             // マテリアルの作成
             var combinatedMaterial = SaveParticleMaterial(combinatedTexture);
