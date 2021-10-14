@@ -8,12 +8,14 @@ This software is released under the MIT License.
 http://opensource.org/licenses/mit-license.php
 */
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
 using Object = UnityEngine.Object;
 using System.Text;
+using System.Reflection;
 
 namespace HhotateA.AvatarModifyTools.Core
 {
@@ -204,6 +206,18 @@ namespace HhotateA.AvatarModifyTools.Core
             }
 
             return builder.ToString();
+        }
+        public static List<string> GetMembers(Type type)
+        {
+            MemberInfo[] members = type.GetMembers(BindingFlags.Public);
+            
+            List<string> l = new List<string>();
+            foreach (MemberInfo m in members)
+            {
+                l.Add(m.Name);
+            }
+
+            return l;
         }
     }
 }

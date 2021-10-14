@@ -11,7 +11,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using UnityEditor;
 using UnityEditor.Animations;
 using UnityEngine;
@@ -52,19 +51,6 @@ namespace HhotateA.AvatarModifyTools.Core
 
         private Dictionary<KeyFrameTarget, List<KeyframeValue>> keyframesList = new Dictionary<KeyFrameTarget, List<KeyframeValue>>();
         private Dictionary<KeyFrameTarget, List<ObjectReferenceKeyframe>> objectReferenceKeyframes = new Dictionary<KeyFrameTarget, List<ObjectReferenceKeyframe>>();
-
-        public List<string> GetMembers(Type type)
-        {
-            MemberInfo[] members = type.GetMembers(BindingFlags.Public);
-            
-            List<string> l = new List<string>();
-            foreach (MemberInfo m in members)
-            {
-                l.Add(m.Name);
-            }
-
-            return l;
-        }
 
         public void AddKeyframe_Gameobject(GameObject go, float time, bool active)
         {
