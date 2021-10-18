@@ -2337,8 +2337,17 @@ namespace HhotateA.AvatarModifyTools.Core
                         {
                             meshTransforms[i] = null;
                         }
-                        mats.Add(materials[i]);
-                        tris.Add(triangles[i]);
+
+                        int index = mats.FindIndex(m=>m==materials[i]);
+                        if (index==-1)
+                        {
+                            mats.Add(materials[i]);
+                            tris.Add(triangles[i]);
+                        }
+                        else
+                        {
+                            tris[index].AddRange(triangles[i]);
+                        }
                         newTrans.Add(null);
                     }
                 }
