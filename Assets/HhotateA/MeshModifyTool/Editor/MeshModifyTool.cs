@@ -1089,7 +1089,9 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
                 }
                 else if(combineMaterialMode == CombineMaterialMode.ByShader)
                 {
-                    mc.MaterialAtlas(Path.Combine(dir, file));
+                    var mat = mc.MaterialAtlas(Path.Combine(dir, file));
+                    rends[editIndex].sharedMaterials = mat.ToArray();
+                    defaultMaterials = mat.ToArray();
                 }
                 else if(combineMaterialMode == CombineMaterialMode.ForceCombine)
                 {
