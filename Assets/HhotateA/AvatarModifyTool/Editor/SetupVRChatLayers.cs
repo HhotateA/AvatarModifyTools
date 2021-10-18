@@ -9,7 +9,7 @@ http://opensource.org/licenses/mit-license.php
 */
 using UnityEditor;
 
-namespace HhotateA.AvatarModifyTools.TextureModifyTool
+namespace HhotateA.AvatarModifyTools.DebugTools
 {
     public class SetupVRChatLayers
     {

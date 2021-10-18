@@ -207,6 +207,7 @@ namespace HhotateA.AvatarModifyTools.Core
 
             return builder.ToString();
         }
+        
         public static List<string> GetMembers(Type type)
         {
             MemberInfo[] members = type.GetMembers(BindingFlags.Public);
