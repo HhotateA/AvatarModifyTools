@@ -28,8 +28,17 @@ namespace HhotateA.AvatarModifyTools.EmoteMotionKit
 {
     public class EmoteMotionKitSetup : WindowBase
     {
+        [OnOpenAssetAttribute]
+        public static bool OpenAsset(int instanceID, int line)
+        {
+            if (EditorUtility.InstanceIDToObject(instanceID).GetType() == typeof(EmoteMotionKitSaveData))
+            {
+                OpenSavedWindow(EditorUtility.InstanceIDToObject(instanceID) as EmoteMotionKitSaveData);
+            }
+            return false;
+        }
+        
         [MenuItem("Window/HhotateA/エモートモーションキット(EmoteMotionKit)",false,108)]
-
         public static void ShowWindow()
         {
             OpenSavedWindow();
@@ -416,16 +425,6 @@ namespace HhotateA.AvatarModifyTools.EmoteMotionKit
             var ac = AssetUtility.LoadAssetAtGuid<AnimatorController>(EnvironmentGUIDs.previewController);
             var state = ac.layers[0].stateMachine.states.FirstOrDefault(s => s.state.name == "Preview").state;
             state.motion = anim;
-        }
-        
-        [OnOpenAssetAttribute(3)]
-        public static bool step3(int instanceID, int line)
-        {
-            if (EditorUtility.InstanceIDToObject(instanceID).GetType() == typeof(EmoteMotionKitSaveData))
-            {
-                EmoteMotionKitSetup.OpenSavedWindow(EditorUtility.InstanceIDToObject(instanceID) as EmoteMotionKitSaveData);
-            }
-            return false;
         }
     }
 }

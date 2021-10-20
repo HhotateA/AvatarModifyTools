@@ -26,6 +26,16 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
 {
     public class MagicalDresserInventorySetup : WindowBase
     {
+        [OnOpenAssetAttribute]
+        public static bool OpenAsset(int instanceID, int line)
+        {
+            if (EditorUtility.InstanceIDToObject(instanceID).GetType() == typeof(MagicalDresserInventorySaveData))
+            {
+                OpenSavedWindow(EditorUtility.InstanceIDToObject(instanceID) as MagicalDresserInventorySaveData);
+            }
+            return false;
+        }
+        
         [MenuItem("Window/HhotateA/マジックドレッサーインベントリ(MDInventorySystem)",false,106)]
         public static void ShowWindow()
         {
@@ -2781,16 +2791,6 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         {
             RevertObjectActiveForScene();
             SaveMaterials("Assets/Export");
-        }
-        
-        [OnOpenAssetAttribute(2)]
-        public static bool step2(int instanceID, int line)
-        {
-            if (EditorUtility.InstanceIDToObject(instanceID).GetType() == typeof(MagicalDresserInventorySaveData))
-            {
-                MagicalDresserInventorySetup.OpenSavedWindow(EditorUtility.InstanceIDToObject(instanceID) as MagicalDresserInventorySaveData);
-            }
-            return false;
         }
     }
 }

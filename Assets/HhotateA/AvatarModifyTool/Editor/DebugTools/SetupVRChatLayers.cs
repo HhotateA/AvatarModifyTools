@@ -13,7 +13,7 @@ namespace HhotateA.AvatarModifyTools.DebugTools
 {
     public class SetupVRChatLayers
     {
-        [MenuItem("Window/HhotateA/Debug/SetupVRChatLayers",false,3)]
+        [MenuItem("Window/HhotateA/DebugTools/SetupVRChatLayers",false,3)]
         static void SetupLayers()
         {
             SetupLayer();

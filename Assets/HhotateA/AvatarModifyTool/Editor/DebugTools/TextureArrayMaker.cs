@@ -10,28 +10,49 @@ http://opensource.org/licenses/mit-license.php
 using HhotateA.AvatarModifyTools.Core;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
+using UnityEditor.Callbacks;
 
 namespace HhotateA.AvatarModifyTools.DebugTools
 {
     public class TextureArrayMaker : WindowBase
     {
-        public static void ShowWindow(AvatarModifyData data)
+        [OnOpenAssetAttribute(0)]
+        public static bool OpenAsset(int instanceID, int line)
         {
-            var wnd = GetWindow<TextureArrayMaker>();
-            wnd.titleContent = new GUIContent("TextureArrayMaker");
+            if (EditorUtility.InstanceIDToObject(instanceID).GetType() == typeof(TextureArrayData))
+            {
+                ShowWindow(EditorUtility.InstanceIDToObject(instanceID) as TextureArrayData);
+            }
+            return false;
         }
         
-        [MenuItem("Window/HhotateA/Debug/TextureArrayMaker",false,4)]
+        [MenuItem("Window/HhotateA/DebugTools/TextureArrayMaker",false,4)]
         public static void ShowWindow()
         {
             var wnd = GetWindow<TextureArrayMaker>();
-            wnd.titleContent = new GUIContent("AvatarModifyTool");
+            wnd.titleContent = new GUIContent("TextureArrayMaker");
+            wnd.data = CreateInstance<TextureArrayData>();
+        }
+        public static void ShowWindow(TextureArrayData d)
+        {
+            if (d == null) d = CreateInstance<TextureArrayData>();
+            var wnd = GetWindow<TextureArrayMaker>();
+            wnd.titleContent = new GUIContent("TextureArrayMaker");
+            wnd.data = d;
         }
 
-        private List<Texture> textures = new List<Texture>();
+        private bool withAsset = false;
+
+        private TextureArrayData data;
+        private List<Texture> textures 
+        { 
+            get => data.textures;
+            set => data.textures = value;
+        }
         
         private void OnGUI()
         {
@@ -40,7 +61,7 @@ namespace HhotateA.AvatarModifyTools.DebugTools
             var tc = EditorGUILayout.IntField("Texture Array Size",textures.Count);
             if (tc < textures.Count)
             {
-                textures = textures.GetRange(0, tc);
+                data.textures = textures.GetRange(0, tc);
             }
             else
             if(tc > textures.Count)
@@ -52,6 +73,8 @@ namespace HhotateA.AvatarModifyTools.DebugTools
             {
                 textures[i] = (Texture) EditorGUILayout.ObjectField(textures[i], typeof(Texture), true);
             }
+
+            withAsset = EditorGUILayout.Toggle("SaveWithAsset", withAsset);
 
             using (new EditorGUILayout.HorizontalScope())
             {
@@ -69,6 +92,14 @@ namespace HhotateA.AvatarModifyTools.DebugTools
                         TextureCombinater.CombinateSaveTexture(
                             textures.Select(t=>
                                 TextureCombinater.Texture2Texture2D(t)).ToArray(),path);
+                        if (withAsset)
+                        {
+                            data = Instantiate(data);
+                            AssetDatabase.CreateAsset(data, 
+                                Path.Combine(
+                                    Path.GetDirectoryName(FileUtil.GetProjectRelativePath(path)),
+                                Path.GetFileNameWithoutExtension(FileUtil.GetProjectRelativePath(path))+".asset"));
+                        }
                     }
                     catch (Exception e)
                     {
@@ -77,7 +108,7 @@ namespace HhotateA.AvatarModifyTools.DebugTools
                     }
                     OnSave();
                 }
-                if (GUILayout.Button("SaveeArray"))
+                if (GUILayout.Button("SaveArray"))
                 {
                     var path = EditorUtility.SaveFilePanel("Save", "Assets", "TextureArray", "asset");
                     if (string.IsNullOrEmpty(path))
@@ -92,6 +123,11 @@ namespace HhotateA.AvatarModifyTools.DebugTools
                             textures.Select(t=>
                                 TextureCombinater.Texture2Texture2D(t)).ToArray());
                         AssetDatabase.CreateAsset(asset, FileUtil.GetProjectRelativePath(path));
+                        if (withAsset)
+                        {
+                            data = Instantiate(data);
+                            AssetDatabase.AddObjectToAsset(data, FileUtil.GetProjectRelativePath(path));
+                        }
                     }
                     catch (Exception e)
                     {
@@ -99,7 +135,7 @@ namespace HhotateA.AvatarModifyTools.DebugTools
                         throw;
                     }
                     OnSave();
-                } 
+                }
             }
 
             status.Display();
