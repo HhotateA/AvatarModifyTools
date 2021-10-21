@@ -1894,6 +1894,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                 // option処理
                 foreach (var rendOption in element.rendOptions)
                 {
+                    if(rendOption.rend == null) continue;
                     setAnim.AddKeyframe(0f, rendOption.rend, "m_Enabled", rendOption.RendEnable ? 1 : 0);
                     setAnim.AddKeyframe(1f/60f, rendOption.rend, "m_Enabled", rendOption.RendEnable ? 1 : 0);
                     
@@ -2004,6 +2005,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                 // option処理
                 foreach (var rendOption in element.rendOptions)
                 {
+                    if(rendOption.rend == null) continue;
                     for (int i = 0; i < rendOption.changeMaterialsOptions.Count; i++)
                     {
                         if (rendOption.changeMaterialsOptions[i].change)
@@ -2495,6 +2497,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                         item.active = GetDefaultActive(item.obj);
                         foreach (var rendOption in item.rendOptions)
                         {
+                            if(rendOption.rend == null) continue;
                             rendOption.rend.enabled = GetDefaultRendEnable(rendOption.rend);
                             foreach (var another in items.SelectMany(e=>e.rendOptions))
                             {

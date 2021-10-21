@@ -35,18 +35,27 @@ namespace HhotateA.AvatarModifyTools.DebugTools
         {
             var wnd = GetWindow<TextureArrayMaker>();
             wnd.titleContent = new GUIContent("TextureArrayMaker");
+            
             wnd.data = CreateInstance<TextureArrayData>();
+            wnd.withAsset = false;
         }
         public static void ShowWindow(TextureArrayData d)
         {
-            if (d == null) d = CreateInstance<TextureArrayData>();
             var wnd = GetWindow<TextureArrayMaker>();
             wnd.titleContent = new GUIContent("TextureArrayMaker");
-            wnd.data = d;
+            if (d == null)
+            {
+                wnd.data = CreateInstance<TextureArrayData>();
+                wnd.withAsset = false;
+            }
+            else
+            {
+                wnd.data = d;
+                wnd.withAsset = true;
+            }
         }
 
-        private bool withAsset = false;
-
+        public bool withAsset = false;
         private TextureArrayData data;
         private List<Texture> textures 
         { 
