@@ -74,6 +74,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         
         Material GetAnimationMaterial(Material origin,Material animMat)
         {
+            if (origin == null) return null;
             if (!matlist.ContainsKey(animMat))
             {
                 matlist.Add(animMat,new Dictionary<Material,Material>());
@@ -1258,7 +1259,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                             }
                         }
                         
-                        EditorGUILayout.LabelField(rendOption.rend.sharedMaterials[i].name,  GUILayout.Width(95));
+                        EditorGUILayout.LabelField(rendOption.rend.sharedMaterials[i]?.name,  GUILayout.Width(95));
                         if (!rendOption.changeMaterialsOptions[i].change)
                         {
                             EditorGUILayout.LabelField("",  GUILayout.Width(75));
