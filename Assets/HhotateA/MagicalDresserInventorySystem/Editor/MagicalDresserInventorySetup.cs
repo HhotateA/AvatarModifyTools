@@ -2389,7 +2389,12 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                 defaultMaterials.Add(rend,rend.sharedMaterials.ToArray());
             }
 
-            return defaultMaterials[rend][index];
+            if ( 0 <= index && index < defaultMaterials[rend].Length)
+            {            
+                return defaultMaterials[rend][index];
+            }
+
+            return null;
         }
         
         // デフォルトのBlendShape状態(シーン)を記録&取得する
