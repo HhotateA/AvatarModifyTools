@@ -1,16 +1,26 @@
-﻿using System;
+﻿/*
+AvatarModifyTools
+https://github.com/HhotateA/AvatarModifyTools
+
+Copyright (c) 2021 @HhotateA_xR
+
+This software is released under the MIT License.
+http://opensource.org/licenses/mit-license.php
+*/
+using HhotateA.AvatarModifyTools.Core;
+using System;
 using System.IO;
-using UnityEngine;
 using UnityEditor;
+using UnityEngine;
 using Application = UnityEngine.Application;
 
-namespace HhotateA.AvatarModifyTools.Core
+namespace HhotateA.AvatarModifyTools.DebugTools
 {
     public class PackageExporter
     {
         const string toolsFolder = "Assets/HhotateA";
         const string coreToolFolder = "Assets/HhotateA/AvatarModifyTool";
-        [MenuItem("Window/HhotateA/Debug/PackageExporter",false,2)]
+        [MenuItem("Window/HhotateA/DebugTools/PackageExporter",false,2)]
         static void Export()
         {
             var path = EditorUtility.SaveFilePanel("Export", "Assets", "_v"+EnvironmentVariable.version,"unitypackage");

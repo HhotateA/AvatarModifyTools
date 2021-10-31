@@ -26,6 +26,16 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
 {
     public class MagicalDresserInventorySetup : WindowBase
     {
+        [OnOpenAssetAttribute]
+        public static bool OpenAsset(int instanceID, int line)
+        {
+            if (EditorUtility.InstanceIDToObject(instanceID).GetType() == typeof(MagicalDresserInventorySaveData))
+            {
+                OpenSavedWindow(EditorUtility.InstanceIDToObject(instanceID) as MagicalDresserInventorySaveData);
+            }
+            return false;
+        }
+        
         [MenuItem("Window/HhotateA/マジックドレッサーインベントリ(MDInventorySystem)",false,106)]
         public static void ShowWindow()
         {
@@ -64,6 +74,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         
         Material GetAnimationMaterial(Material origin,Material animMat)
         {
+            if (origin == null) return null;
             if (!matlist.ContainsKey(animMat))
             {
                 matlist.Add(animMat,new Dictionary<Material,Material>());
@@ -1248,7 +1259,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                             }
                         }
                         
-                        EditorGUILayout.LabelField(rendOption.rend.sharedMaterials[i].name,  GUILayout.Width(95));
+                        EditorGUILayout.LabelField(rendOption.rend.sharedMaterials[i]?.name,  GUILayout.Width(95));
                         if (!rendOption.changeMaterialsOptions[i].change)
                         {
                             EditorGUILayout.LabelField("",  GUILayout.Width(75));
@@ -1884,6 +1895,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                 // option処理
                 foreach (var rendOption in element.rendOptions)
                 {
+                    if(rendOption.rend == null) continue;
                     setAnim.AddKeyframe(0f, rendOption.rend, "m_Enabled", rendOption.RendEnable ? 1 : 0);
                     setAnim.AddKeyframe(1f/60f, rendOption.rend, "m_Enabled", rendOption.RendEnable ? 1 : 0);
                     
@@ -1994,6 +2006,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                 // option処理
                 foreach (var rendOption in element.rendOptions)
                 {
+                    if(rendOption.rend == null) continue;
                     for (int i = 0; i < rendOption.changeMaterialsOptions.Count; i++)
                     {
                         if (rendOption.changeMaterialsOptions[i].change)
@@ -2376,7 +2389,12 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                 defaultMaterials.Add(rend,rend.sharedMaterials.ToArray());
             }
 
-            return defaultMaterials[rend][index];
+            if ( 0 <= index && index < defaultMaterials[rend].Length)
+            {            
+                return defaultMaterials[rend][index];
+            }
+
+            return null;
         }
         
         // デフォルトのBlendShape状態(シーン)を記録&取得する
@@ -2485,6 +2503,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                         item.active = GetDefaultActive(item.obj);
                         foreach (var rendOption in item.rendOptions)
                         {
+                            if(rendOption.rend == null) continue;
                             rendOption.rend.enabled = GetDefaultRendEnable(rendOption.rend);
                             foreach (var another in items.SelectMany(e=>e.rendOptions))
                             {
@@ -2781,16 +2800,6 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         {
             RevertObjectActiveForScene();
             SaveMaterials("Assets/Export");
-        }
-        
-        [OnOpenAssetAttribute(2)]
-        public static bool step2(int instanceID, int line)
-        {
-            if (EditorUtility.InstanceIDToObject(instanceID).GetType() == typeof(MagicalDresserInventorySaveData))
-            {
-                MagicalDresserInventorySetup.OpenSavedWindow(EditorUtility.InstanceIDToObject(instanceID) as MagicalDresserInventorySaveData);
-            }
-            return false;
         }
     }
 }

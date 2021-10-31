@@ -449,6 +449,11 @@ namespace HhotateA.AvatarModifyTools.Core
             avatar.customizeAnimationLayers = true;
             var index = Array.FindIndex(avatar.baseAnimationLayers,
                 l => l.type == type.GetVRChatAnimatorLayerType());
+            if (index == -1)
+            {
+                Debug.LogError("Animation Layers" + type.GetVRChatAnimatorLayerType() + " Not Found");
+                return;
+            }
             avatar.baseAnimationLayers[index].isDefault = false;
             avatar.baseAnimationLayers[index].animatorController = controller;
 #else
@@ -461,6 +466,11 @@ namespace HhotateA.AvatarModifyTools.Core
 #if VRC_SDK_VRCSDK3
             var index = Array.FindIndex(avatar.baseAnimationLayers,
                 l => l.type == type.GetVRChatAnimatorLayerType());
+            if (index == -1)
+            {
+                Debug.LogError("Animation Layers" + type.GetVRChatAnimatorLayerType() + " Not Found");
+                return false;
+            }
             return avatar.baseAnimationLayers[index].animatorController != null;
 #else
             return avatar.runtimeAnimatorController != null;
@@ -540,6 +550,11 @@ namespace HhotateA.AvatarModifyTools.Core
         int GetLayerOffset(AvatarModifyData assets,AnimatorLayerType type)
         {
             var index = Array.FindIndex(avatar.baseAnimationLayers,l => l.type == type.GetVRChatAnimatorLayerType());
+            if (index == -1)
+            {
+                Debug.LogError("Animation Layers" + type.GetVRChatAnimatorLayerType() + " Not Found");
+                return 0;
+            }
             if (avatar.customizeAnimationLayers == false) return 0;
             if (avatar.baseAnimationLayers[index].isDefault == true) return 0;
             if (!avatar.baseAnimationLayers[index].animatorController) return 0;

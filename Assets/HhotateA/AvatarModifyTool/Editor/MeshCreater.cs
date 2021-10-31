@@ -2318,7 +2318,7 @@ namespace HhotateA.AvatarModifyTools.Core
         /// マテリアルを結合する
         /// </summary>
         /// <param name="path"></param>
-        public void MaterialAtlas(string path = null)
+        public List<Material> MaterialAtlas(string path = null)
         {
             var newTriangles = new List<List<int>>();
             var newMats = new List<Material>();
@@ -2327,7 +2327,6 @@ namespace HhotateA.AvatarModifyTools.Core
             var shaders = materials.Select(m => m.shader).Distinct().ToArray();
             foreach (var shader in shaders)
             {
-                Debug.Log(shader.name);
                 var mats = new List<Material>();
                 var tris = new List<List<int>>();
                 for (int i = 0; i < materials.Count; i++)
@@ -2338,8 +2337,17 @@ namespace HhotateA.AvatarModifyTools.Core
                         {
                             meshTransforms[i] = null;
                         }
-                        mats.Add(materials[i]);
-                        tris.Add(triangles[i]);
+
+                        int index = mats.FindIndex(m=>m==materials[i]);
+                        if (index==-1)
+                        {
+                            mats.Add(materials[i]);
+                            tris.Add(triangles[i]);
+                        }
+                        else
+                        {
+                            tris[index].AddRange(triangles[i]);
+                        }
                         newTrans.Add(null);
                     }
                 }
@@ -2386,17 +2394,18 @@ namespace HhotateA.AvatarModifyTools.Core
                 if (!string.IsNullOrWhiteSpace(path))
                 {
                     var tex = TextureCombinater.CombinateSaveTexture(texs.ToArray(),
-                        path + "_texAtlas" + ".png",
+                        AssetDatabase.GenerateUniqueAssetPath(path + "_texAtlas" + ".png"),
                         tilling);
-                    var mat = new Material(shader);
+                    var mat = new Material(mats[0]);
                     mat.SetTexture("_MainTex",tex);
-                    AssetDatabase.CreateAsset(mat,path + "_matAtlas.mat");
+                    AssetDatabase.CreateAsset(mat,
+                        AssetDatabase.GenerateUniqueAssetPath(path + "_matAtlas" + ".mat"));
                     newMats.Add(mat);
                 }
                 else
                 {
-                    var tex = TextureCombinater.CombinateSaveTexture(texs.ToArray(),path,tilling);
-                    var mat = new Material(shader);
+                    var tex = TextureCombinater.CombinateTextures(texs.ToArray(),tilling);
+                    var mat = new Material(mats[0]);
                     mat.SetTexture("_MainTex",tex);
                     newMats.Add(mat);
                 }
@@ -2404,6 +2413,7 @@ namespace HhotateA.AvatarModifyTools.Core
             triangles = newTriangles;
             materials = newMats;
             meshTransforms = newTrans;
+            return newMats.ToList();
         }
 
         /// <summary>

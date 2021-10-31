@@ -23,12 +23,12 @@ namespace HhotateA.AvatarModifyTools.Core
 {
     public class TestWindow : WindowBase
     {
-        [OnOpenAssetAttribute(0)]
-        public static bool step0(int instanceID, int line)
+        [OnOpenAssetAttribute]
+        public static bool OpenAsset(int instanceID, int line)
         {
             if (EditorUtility.InstanceIDToObject(instanceID).GetType() == typeof(AvatarModifyData))
             {
-                TestWindow.ShowWindow(EditorUtility.InstanceIDToObject(instanceID) as AvatarModifyData);
+                ShowWindow(EditorUtility.InstanceIDToObject(instanceID) as AvatarModifyData);
             }
             return false;
         }
@@ -40,7 +40,7 @@ namespace HhotateA.AvatarModifyTools.Core
             wnd.data = data;
         }
         
-        [MenuItem("Window/HhotateA/Debug/AvatarModifyTool",false,1)]
+        [MenuItem("Window/HhotateA/DebugTools/AvatarModifyTool",false,1)]
         public static void ShowWindow()
         {
             var wnd = GetWindow<TestWindow>();
