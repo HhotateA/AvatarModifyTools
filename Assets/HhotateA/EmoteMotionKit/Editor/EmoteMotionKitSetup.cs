@@ -82,7 +82,15 @@ namespace HhotateA.AvatarModifyTools.EmoteMotionKit
                     rh.height /= 3;
                     rh.x += rh.width + 5;
                     rh.width = r.width - rh.width - 10;
+                    rh.width = rh.width * 3 / 5;
                     d.name = EditorGUI.TextField(rh,"", d.name);
+                    rh.x += rh.width;
+                    rh.width = rh.width * 2 / 3;
+                    d.animationSettings = (AnimationSettings) EditorGUI.EnumPopup(rh,d.animationSettings);
+                    rh.x -= rh.width * 3 / 2;
+                    rh.width = rh.width * 5 / 2;
+                    
+                    // 2列目
                     rh.y += rh.height;
                     rh.width /= 3;
                     using (var check = new EditorGUI.ChangeCheckScope())
@@ -93,6 +101,8 @@ namespace HhotateA.AvatarModifyTools.EmoteMotionKit
                             SetPreviewAnimation(d.anim);
                         }
                     }
+                    //if (d.animationSettings != AnimationSettings.Custom) return;
+                    EditorGUI.BeginDisabledGroup(d.animationSettings != AnimationSettings.Custom);
                     rh.x += rh.width;
                     rh.x += rh.width * 1 / 5;
                     rh.width = rh.width * 4 / 5;
@@ -102,6 +112,8 @@ namespace HhotateA.AvatarModifyTools.EmoteMotionKit
                     d.tracking = (TrackingSpace) EditorGUI.EnumPopup(rh,"",d.tracking);
                     rh.x -= rh.width*2;
                     rh.width *= 3;
+                    
+                    // 3列目
                     rh.y += rh.height;
                     rh.width /= 9;
                     rh.width *= 2;
@@ -116,6 +128,7 @@ namespace HhotateA.AvatarModifyTools.EmoteMotionKit
                     rh.x += rh.width * 1 / 8;
                     d.poseControll = EditorGUI.Toggle(rh, d.poseControll);
                     EditorGUI.LabelField(rh,"     Enter Pose Space");
+                    EditorGUI.EndDisabledGroup();
                 },
                 onAddCallback = l =>
                 {
@@ -171,10 +184,50 @@ namespace HhotateA.AvatarModifyTools.EmoteMotionKit
             }
 
             EditorGUILayout.Space();
-            
-            scroll = EditorGUILayout.BeginScrollView(scroll, false, false, GUIStyle.none, GUI.skin.verticalScrollbar, GUI.skin.scrollView);
-            emoteReorderableList.DoLayoutList();
-            EditorGUILayout.EndScrollView();
+
+            using (var check = new EditorGUI.ChangeCheckScope())
+            {
+                scroll = EditorGUILayout.BeginScrollView(scroll, false, false, GUIStyle.none, GUI.skin.verticalScrollbar, GUI.skin.scrollView);
+                emoteReorderableList.DoLayoutList();
+                EditorGUILayout.EndScrollView();
+                if (check.changed)
+                {
+                    foreach (var emote in data.emotes)
+                    {
+                        if (emote.animationSettings == AnimationSettings.Emote)
+                        {
+                            emote.tracking = TrackingSpace.Emote;
+                            emote.isEmote = true;
+                            emote.locomotionStop = false;
+                            emote.poseControll = false;
+                        }
+                        else
+                        if (emote.animationSettings == AnimationSettings.Animation)
+                        {
+                            emote.tracking = TrackingSpace.Emote;
+                            emote.isEmote = false;
+                            emote.locomotionStop = false;
+                            emote.poseControll = false;
+                        }
+                        else
+                        if (emote.animationSettings == AnimationSettings.Pose)
+                        {
+                            emote.tracking = TrackingSpace.Emote;
+                            emote.isEmote = false;
+                            emote.locomotionStop = true;
+                            emote.poseControll = false;
+                        }
+                        else
+                        if (emote.animationSettings == AnimationSettings.Emote)
+                        {
+                            emote.tracking = TrackingSpace.FootAnimation;
+                            emote.isEmote = false;
+                            emote.locomotionStop = true;
+                            emote.poseControll = true;
+                        }
+                    }
+                }
+            }
 
             EditorGUILayout.Space();
             if (ShowOptions())

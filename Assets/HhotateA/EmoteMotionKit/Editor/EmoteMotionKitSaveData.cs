@@ -35,6 +35,7 @@ namespace HhotateA.AvatarModifyTools.EmoteMotionKit
         public bool locomotionStop = false;
         public bool poseControll = false;
         public TrackingSpace tracking = TrackingSpace.Emote;
+        public AnimationSettings animationSettings;
 
         public EmoteElement(Texture2D tex)
         {
@@ -56,5 +57,14 @@ namespace HhotateA.AvatarModifyTools.EmoteMotionKit
         Base,
         Action,
         Additive,
+    }
+
+    public enum AnimationSettings
+    {
+        Emote,
+        Animation,
+        Pose,
+        Locomotion,
+        Custom
     }
 }
