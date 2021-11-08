@@ -23,6 +23,8 @@ namespace HhotateA.AvatarModifyTools.EmoteMotionKit
         public bool isSaved = false;
         public EmoteLayer emoteLayer = EmoteLayer.Base;
         public bool copyToFXLayer = false;
+        public bool useMenuTemplate = false;
+        public bool createResetAnimation => useMenuTemplate;
     }
     
     [System.Serializable]

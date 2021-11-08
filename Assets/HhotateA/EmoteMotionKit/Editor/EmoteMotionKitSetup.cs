@@ -176,7 +176,10 @@ namespace HhotateA.AvatarModifyTools.EmoteMotionKit
                     
                     using (new EditorGUILayout.HorizontalScope())
                     {
-                        EditorGUILayout.LabelField(" ", GUILayout.Width(200),GUILayout.Height(20));
+                        data.useMenuTemplate = EditorGUILayout.Toggle(data.useMenuTemplate,GUILayout.Width(20),GUILayout.Height(20));
+                        EditorGUILayout.LabelField("Use Menu Template", GUILayout.Width(150),GUILayout.Height(20));
+                        EditorGUILayout.LabelField(" ", GUILayout.Width(25),GUILayout.Height(20));
+                        //EditorGUILayout.LabelField(" ", GUILayout.Width(200),GUILayout.Height(20));
                         data.isSaved = EditorGUILayout.Toggle(data.isSaved,GUILayout.Width(20),GUILayout.Height(20));
                         EditorGUILayout.LabelField("Is Saved", GUILayout.Width(50),GUILayout.Height(20));
                     }
@@ -218,7 +221,7 @@ namespace HhotateA.AvatarModifyTools.EmoteMotionKit
                             emote.poseControll = false;
                         }
                         else
-                        if (emote.animationSettings == AnimationSettings.Emote)
+                        if (emote.animationSettings == AnimationSettings.Locomotion)
                         {
                             emote.tracking = TrackingSpace.FootAnimation;
                             emote.isEmote = false;
@@ -324,7 +327,6 @@ namespace HhotateA.AvatarModifyTools.EmoteMotionKit
             var idleAnim = new AnimationClipCreator("Idle").CreateAsset(path,true);
             var p = new ParametersCreater(param);
             p.AddParam(param,0,data.isSaved);
-            var m = new MenuCreater(param);
             var ac = new AnimatorControllerCreator(param);
             ac.AddDefaultState("Default",idleAnim);
             for (int i = 0; i < data.emotes.Count; i++)
@@ -397,12 +399,48 @@ namespace HhotateA.AvatarModifyTools.EmoteMotionKit
                     ac.SetLayerControll("Emote" + index + "_" + d.name,AnimatorControllerCreator.VRCLayers.Action,1f,0f);
                     ac.SetLayerControll("Reset" + index,AnimatorControllerCreator.VRCLayers.Action,0f,0f);
                 }
-
-                m.AddToggle(d.name,d.icon,param,index);
             }
 
             var pm = new MenuCreater(param+"parent");
-            pm.AddSubMenu(m.CreateAsset(path,true),data.saveName,data.icon);
+            if (data.useMenuTemplate)
+            {
+                var m = new MenuCreater(param);
+                var ms = Enum.GetValues(typeof(AnimationSettings)).Cast<AnimationSettings>()
+                    .ToDictionary(_=>_, _=> new MenuCreater(param));
+                for (int i = 0; i < data.emotes.Count; i++)
+                {
+                    var d = data.emotes[i];
+                    int index = i + 1;
+                    ms[d.animationSettings].AddToggle(d.name,d.icon,param,index);
+                }
+
+                if (data.createResetAnimation)
+                {
+                    m.AddToggle("Reset",data.icon,param,2^8);
+                }
+
+                foreach (AnimationSettings item in Enum.GetValues(typeof(AnimationSettings)))
+                {
+                    var element = data.emotes.FirstOrDefault(e => e.animationSettings == item);
+                    if (element != null)
+                    {
+                        m.AddSubMenu( ms[item].CreateAsset(path,true), item.ToString(), element.icon);
+                    }
+                }
+                
+                pm.AddSubMenu(m.CreateAsset(path,true),data.saveName,data.icon);
+            }
+            else
+            {
+                var m = new MenuCreater(param);
+                for (int i = 0; i < data.emotes.Count; i++)
+                {
+                    var d = data.emotes[i];
+                    int index = i + 1;
+                    m.AddToggle(d.name,d.icon,param,index);
+                }
+                pm.AddSubMenu(m.CreateAsset(path,true),data.saveName,data.icon);
+            }
             var mod = new AvatarModifyTool(avatar,fileDir);
             var assets = CreateInstance<AvatarModifyData>();
             {
