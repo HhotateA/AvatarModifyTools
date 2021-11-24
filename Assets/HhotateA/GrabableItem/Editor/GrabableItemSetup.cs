@@ -78,6 +78,12 @@ namespace HhotateA.AvatarModifyTools.GrabableItem
                     {
                         target = newTarget;
                         saveName = target.name + "GrabControll";
+                        if (avatarAnim)
+                        {
+                            // アイテムが頭ボーン配下ならセーフモードに設定する．
+                            safeMode = HasRootParent(target.transform,
+                                avatarAnim.GetBoneTransform(HumanBodyBones.Head));
+                        }
                     }
                 }
                 
@@ -115,7 +121,7 @@ namespace HhotateA.AvatarModifyTools.GrabableItem
 
                 EditorGUILayout.Space();
                 
-                safeMode = EditorGUILayout.Toggle("Safe Original Item", safeMode);
+                safeMode = EditorGUILayout.Toggle(new GUIContent("Safe Original Item","Inside Head Bone"),safeMode);
 
                 EditorGUILayout.Space();
             }
