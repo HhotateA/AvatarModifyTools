@@ -24,6 +24,7 @@ namespace HhotateA.AvatarModifyTools.TextureModifyTool
         {
             TextureModifyTool wnd = (TextureModifyTool)EditorWindow.GetWindow(typeof(TextureModifyTool));
             wnd.titleContent = new GUIContent("にゃんにゃんアバターペインター");
+            wnd.minSize = new Vector2(700,700);
         }
         
         // ボタン設定
