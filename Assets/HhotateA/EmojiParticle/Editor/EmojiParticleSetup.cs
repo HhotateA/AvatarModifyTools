@@ -229,7 +229,7 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
             {
                 if (GUILayout.Button("Save Settings"))
                 {
-                    var path = EditorUtility.SaveFilePanel("Save", data.GetAssetDir(), data.GetAssetName(),"emojiparticle.asset");
+                    var path = EditorUtility.SaveFilePanel("Save", data.GetAssetDir(), data.GetAssetName(),EnvironmentGUIDs.suffix+".asset");
                     if (string.IsNullOrEmpty(path))
                     {
                         OnCancel();
@@ -242,7 +242,7 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
                 }
                 if (GUILayout.Button("Load Settings"))
                 {
-                    var path = EditorUtility.OpenFilePanel("Load", data.GetAssetDir(), "emojiparticle.asset");
+                    var path = EditorUtility.OpenFilePanel("Load", data.GetAssetDir(), EnvironmentGUIDs.suffix+".asset");
                     if (string.IsNullOrEmpty(path))
                     {
                         OnCancel();

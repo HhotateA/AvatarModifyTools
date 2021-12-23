@@ -494,21 +494,21 @@ namespace HhotateA.AvatarModifyTools.TextureModifyTool
                     {
                         if (GUILayout.Button("Save"))
                         {
-                            var path = EditorUtility.SaveFilePanel("Save", "Assets", meshCreater.GetMaterials()[editIndex].name+"_Layers", "layersavedata.asset");
+                            var path = EditorUtility.SaveFilePanel("Save", "Assets", meshCreater.GetMaterials()[editIndex].name+"_Layers", EnvironmentGUIDs.suffix+".asset");
                             if (string.IsNullOrWhiteSpace(path)) return;
                             SaveLayerData(path);
                         }
 
                         if (GUILayout.Button("Load"))
                         {
-                            var path = EditorUtility.OpenFilePanel("Load", "Assets",  "layersavedata.asset");
+                            var path = EditorUtility.OpenFilePanel("Load", "Assets",  EnvironmentGUIDs.suffix+".asset");
                             if (string.IsNullOrWhiteSpace(path)) return;
                             LoadLayerData(path);
                         }
                         
                         if (GUILayout.Button("Add"))
                         {
-                            var path = EditorUtility.OpenFilePanel("Load", "Assets",  "layersavedata.asset");
+                            var path = EditorUtility.OpenFilePanel("Load", "Assets",  EnvironmentGUIDs.suffix+".asset");
                             if (string.IsNullOrWhiteSpace(path)) return;
                             LoadAddLayerData(path);
                         }

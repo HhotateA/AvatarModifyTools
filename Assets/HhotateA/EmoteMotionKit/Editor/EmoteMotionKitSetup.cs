@@ -247,7 +247,7 @@ namespace HhotateA.AvatarModifyTools.EmoteMotionKit
 
             if (GUILayout.Button("Setup"))
             {
-                var path = EditorUtility.SaveFilePanel("Save", data.GetAssetDir(), data.GetAssetName(), "asset");
+                var path = EditorUtility.SaveFilePanel("Save", data.GetAssetDir(), data.GetAssetName(), EnvironmentGUIDs.suffix+".asset");
                 if (string.IsNullOrEmpty(path))
                 {
                     OnCancel();
@@ -279,7 +279,7 @@ namespace HhotateA.AvatarModifyTools.EmoteMotionKit
             {
                 if (GUILayout.Button("Save Settings"))
                 {
-                    var path = EditorUtility.SaveFilePanel("Save", data.GetAssetDir(), data.GetAssetName(),"emotemotion.asset");
+                    var path = EditorUtility.SaveFilePanel("Save", data.GetAssetDir(), data.GetAssetName(),EnvironmentGUIDs.suffix+".asset");
                     if (string.IsNullOrEmpty(path))
                     {
                         OnCancel();
@@ -292,7 +292,7 @@ namespace HhotateA.AvatarModifyTools.EmoteMotionKit
                 }
                 if (GUILayout.Button("Load Settings"))
                 {
-                    var path = EditorUtility.OpenFilePanel("Load", data.GetAssetDir(), "emotemotion.asset");
+                    var path = EditorUtility.OpenFilePanel("Load", data.GetAssetDir(), EnvironmentGUIDs.suffix+".asset");
                     if (string.IsNullOrEmpty(path))
                     {
                         OnCancel();

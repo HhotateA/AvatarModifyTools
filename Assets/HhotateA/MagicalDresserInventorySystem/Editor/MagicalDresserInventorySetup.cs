@@ -825,7 +825,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                             if (GUILayout.Button("Setup"))
                             {
                                 RevertObjectActiveForScene();
-                                var path = EditorUtility.SaveFilePanel("Save", data.GetAssetDir(), data.GetAssetName(), "mdinventry.asset");
+                                var path = EditorUtility.SaveFilePanel("Save", data.GetAssetDir(), data.GetAssetName(), EnvironmentGUIDs.suffix+".asset");
                                 if (string.IsNullOrEmpty(path))
                                 {
                                     OnCancel();
@@ -899,7 +899,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                         {
                             if (GUILayout.Button("Save Settings"))
                             {
-                                var path = EditorUtility.SaveFilePanel("Save", data.GetAssetDir(), data.GetAssetName(),"mdinventry.asset");
+                                var path = EditorUtility.SaveFilePanel("Save", data.GetAssetDir(), data.GetAssetName(),EnvironmentGUIDs.suffix+".asset");
                                 if (string.IsNullOrEmpty(path))
                                 {
                                     OnCancel();
@@ -912,7 +912,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                             }
                             if (GUILayout.Button("Load Settings"))
                             {
-                                var path = EditorUtility.OpenFilePanel("Load", data.GetAssetDir(), "mdinventry.asset");
+                                var path = EditorUtility.OpenFilePanel("Load", data.GetAssetDir(), EnvironmentGUIDs.suffix+".asset");
                                 if (string.IsNullOrEmpty(path))
                                 {
                                     OnCancel();
