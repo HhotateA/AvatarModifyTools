@@ -12,7 +12,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
     public class EnvironmentGUIDs
     {
         public static string prefix = "HhotateA_MDI_";
-        public static string suffix = "emojiparticle";
+        public static string suffix = "mdinventry";
         
         public static string readme = "61ffc04aa833dd44f8fcd51b5b514984";
         public static string clothAlpha = "5e773ce0707a33d499caf8b57a6e6bac";
