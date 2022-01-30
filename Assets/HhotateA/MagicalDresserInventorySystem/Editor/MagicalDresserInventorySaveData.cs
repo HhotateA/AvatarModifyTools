@@ -240,7 +240,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             }
         }
 
-        public void DeleateOverlapElement(MenuTemplate origin)
+        public void DeleteOverlapElement(MenuTemplate origin)
         {
             childs = childs.Distinct().ToList();
             for (int i = 0; i < childs.Count; i ++ )
@@ -254,19 +254,19 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                 }
                 else
                 {
-                    childs[i].DeleateOverlapElement(origin);
+                    childs[i].DeleteOverlapElement(origin);
                 }
             }
         }
 
-        public void DeleateNullMenuElement(List<MenuElement> datas)
+        public void DeleteNullMenuElement(List<MenuElement> datas)
         {
             childs = childs.Distinct().ToList();
             for (int i = 0; i < childs.Count; i ++ )
             {
                 if (String.IsNullOrWhiteSpace(childs[i].menuGUID))
                 {
-                    childs[i].DeleateNullMenuElement(datas);
+                    childs[i].DeleteNullMenuElement(datas);
                 }
                 else
                 {
@@ -281,7 +281,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                     {
                         childs[i].icon = menu.icon;
                         childs[i].name = menu.name;
-                        childs[i].DeleateNullMenuElement(datas);
+                        childs[i].DeleteNullMenuElement(datas);
                     }
                     // メニューは子を持たないので初期化
                     childs[i].childs = new List<MenuTemplate>();
@@ -289,7 +289,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             }
         }
         
-        public void DeleateAutoCreate()
+        public void DeleteAutoCreate()
         { 
             childs = childs.Distinct().ToList();
             for (int i = 0; i < childs.Count; i ++ )
@@ -309,7 +309,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                 }
                 else
                 {
-                    childs[i].DeleateAutoCreate();
+                    childs[i].DeleteAutoCreate();
                 }
             }
         }
@@ -328,7 +328,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             // メニュー参照切れ項目の削除
             foreach (var menu in menus)
             {
-                menu.DeleateNullMenuElement(datas);
+                menu.DeleteNullMenuElement(datas);
             }
             
             foreach (var data in datas)
@@ -647,7 +647,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             }
             else
             {
-            root = root.Find(path);
+                root = root.Find(path);
                 obj = root?.gameObject;
                 ReloadRendOption();
             }
@@ -732,21 +732,21 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             var clone = new RendererOption(rend, root);
             if (rend)
             {
-            clone.changeMaterialsOptions = changeMaterialsOptions.Select(e => e.Clone()).ToList();
-            clone.changeBlendShapeOptions = changeBlendShapeOptions.Select(e=> e.Clone()).ToList();
-            if (invert)
-            {
-                for (int i = 0; i < changeMaterialsOptions.Count; i++)
+                clone.changeMaterialsOptions = changeMaterialsOptions.Select(e => e.Clone()).ToList();
+                clone.changeBlendShapeOptions = changeBlendShapeOptions.Select(e=> e.Clone()).ToList();
+                if (invert)
                 {
-                    clone.changeMaterialsOptions[i].material = rend.sharedMaterials[i];
-                }
-
-                if (rend is SkinnedMeshRenderer)
-                {
-                    for (int i = 0; i < changeBlendShapeOptions.Count; i++)
+                    for (int i = 0; i < changeMaterialsOptions.Count; i++)
                     {
-                            clone.changeBlendShapeOptions[i].weight =
-                                (rend as SkinnedMeshRenderer).GetBlendShapeWeight(i);
+                        clone.changeMaterialsOptions[i].material = rend.sharedMaterials[i];
+                    }
+
+                    if (rend is SkinnedMeshRenderer)
+                    {
+                        for (int i = 0; i < changeBlendShapeOptions.Count; i++)
+                        {
+                                clone.changeBlendShapeOptions[i].weight =
+                                    (rend as SkinnedMeshRenderer).GetBlendShapeWeight(i);
                         }
                     }
                 }
@@ -995,8 +995,11 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         
         protected override void RowGUI (RowGUIArgs args)
         {
-            var isFolder = args.item == null ? true : args.item?.id == 0 ?
-                true : String.IsNullOrWhiteSpace(MenuTemplate.FIndTemplateElement(data.menuTemplate, args.item.id)?.menuGUID ?? "");
+            var isFolder = args.item == null ? 
+                true : 
+                args.item?.id == 0 ?
+                    true : 
+                    String.IsNullOrWhiteSpace(MenuTemplate.FIndTemplateElement(data.menuTemplate, args.item.id)?.menuGUID ?? "");
             
             Rect rect = args.rowRect;
             rect.x += GetContentIndent(args.item);
@@ -1203,8 +1206,8 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
 
         public void ReloadItemIcons(TreeViewItem parent)
         {
-            if(parent==null) return;
-            if(parent.children==null) return;
+            if(parent == null) return;
+            if(parent.children == null) return;
             foreach (var item in parent.children)
             {
                 if (item.id != 1)
