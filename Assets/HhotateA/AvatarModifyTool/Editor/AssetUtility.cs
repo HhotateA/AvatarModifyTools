@@ -72,6 +72,23 @@ namespace HhotateA.AvatarModifyTools.Core
             return path;
         }
 
+        /// <summary>
+        /// GUIDからオブジェクトを取得する
+        /// </summary>
+        /// <returns></returns>
+        public static GameObject GetObjectByGuid(int guid)
+        {
+            foreach (GameObject obj in UnityEngine.Object.FindObjectsOfType(typeof(GameObject)))
+            {
+                if (obj.GetInstanceID() == guid)
+                {
+                    return obj;
+                }
+            }
+
+            return null;
+        }
+
         public static Transform FindInChildren(this Transform parent, string childName)
         {
             foreach (Transform child in parent)

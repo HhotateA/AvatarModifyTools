@@ -52,26 +52,11 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         {
             avatarGUID = root.GetInstanceID();
             avatarName = root.name;
-            root = root.transform.parent?.gameObject;
-            while (root)
-            {
-                avatarName = root.name + "/" + avatarName;
-                root = root.transform.parent?.gameObject;
-            }
         }
 
         public GameObject GetRoot()
         {
-            return GameObject.Find(avatarName);
-            var root = GameObject.Find(avatarName);
-            if (root)
-            {
-                if (root.GetInstanceID() == avatarGUID)
-                {
-                    return root;
-                }
-            }
-            return null;
+            return AssetUtility.GetObjectByGuid(avatarGUID);
         }
 
         public void ApplyRoot(GameObject root)
@@ -82,13 +67,11 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                 {
                     item.GetRelativeGameobject(root.transform);
                 }
-                // menuElement.activeItems = menuElement.activeItems.Where(e => e.obj != null).ToList();
                 
                 foreach (var item in menuElement.inactiveItems)
                 {
                     item.GetRelativeGameobject(root.transform);
                 }
-                // menuElement.inactiveItems = menuElement.inactiveItems.Where(e => e.obj != null).ToList();
             }
         }
         public void ApplyPath(GameObject root)
