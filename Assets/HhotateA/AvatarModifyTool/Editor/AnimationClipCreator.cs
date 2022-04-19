@@ -146,7 +146,7 @@ namespace HhotateA.AvatarModifyTools.Core
             if (objectReferenceKeyframes.ContainsKey(target))
             {
                 // 時間重複したキーフレーム防止策
-                while (objectReferenceKeyframes[target].Any(f => Mathf.Abs(f.time - time)<1f/60f))
+                while (objectReferenceKeyframes[target].Any(f => Mathf.Abs(f.time - frame.time)<1f/60f))
                 {
                     frame.time += 1f / 60f;
                 }
