@@ -565,7 +565,6 @@ namespace HhotateA.AvatarModifyTools.Core
                         c.debugString = o.debugString;
                         c.hideFlags = o.hideFlags;
                         c.localOnly = o.localOnly;
-                        c.ApplySettings = o.ApplySettings;
                     }
                     behaviours.Add(c);
                 }
