@@ -25,6 +25,7 @@ namespace HhotateA.AvatarModifyTools.MeshModifyTool
         {
             var wnd = GetWindow<MeshModifyTool>();
             wnd.titleContent = new GUIContent("にゃんにゃんメッシュエディター");
+            wnd.minSize = new Vector2(800,400);
         }
 
         // ボタン設定

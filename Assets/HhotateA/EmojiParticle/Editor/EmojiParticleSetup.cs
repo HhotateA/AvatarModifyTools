@@ -229,7 +229,7 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
             {
                 if (GUILayout.Button("Save Settings"))
                 {
-                    var path = EditorUtility.SaveFilePanel("Save", data.GetAssetDir(), data.GetAssetName(),"emojiparticle.asset");
+                    var path = EditorUtility.SaveFilePanel("Save", data.GetAssetDir(), data.GetAssetName(),EnvironmentGUIDs.suffix+".asset");
                     if (string.IsNullOrEmpty(path))
                     {
                         OnCancel();
@@ -242,7 +242,7 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
                 }
                 if (GUILayout.Button("Load Settings"))
                 {
-                    var path = EditorUtility.OpenFilePanel("Load", data.GetAssetDir(), "emojiparticle.asset");
+                    var path = EditorUtility.OpenFilePanel("Load", data.GetAssetDir(), EnvironmentGUIDs.suffix+".asset");
                     if (string.IsNullOrEmpty(path))
                     {
                         OnCancel();
@@ -381,9 +381,9 @@ namespace HhotateA.AvatarModifyTools.EmojiParticle
             for (int i = 0; i < data.emojis.Count; i++)
             {
                 var anim = new AnimationClipCreator("Emoji_Anim"+i,avatar.gameObject);
-                var v = (float) i / (float) (tilling * tilling);
+                var frameValue = ((float) i + 0.1f) / ((float) (tilling * tilling));
                 anim.AddKeyframe_Gameobject(ps.gameObject, 0f, false);
-                anim.AddKeyframe(0f, ps,"UVModule.startFrame.scalar",v);
+                anim.AddKeyframe(0f, ps,"UVModule.startFrame.scalar",frameValue);
                 anim.AddKeyframe(0f, ps,"InitialModule.startLifetime.scalar",data.emojis[i].lifetime);
                 anim.AddKeyframe(0f, ps,"EmissionModule.m_Bursts.Array.data[0].countCurve.scalar",data.emojis[i].count);
                 anim.AddKeyframe(0f, ps,"InitialModule.startSize.scalar",data.emojis[i].scale);

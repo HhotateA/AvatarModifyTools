@@ -82,7 +82,15 @@ namespace HhotateA.AvatarModifyTools.EmoteMotionKit
                     rh.height /= 3;
                     rh.x += rh.width + 5;
                     rh.width = r.width - rh.width - 10;
+                    rh.width = rh.width * 3 / 5;
                     d.name = EditorGUI.TextField(rh,"", d.name);
+                    rh.x += rh.width;
+                    rh.width = rh.width * 2 / 3;
+                    d.animationSettings = (AnimationSettings) EditorGUI.EnumPopup(rh,d.animationSettings);
+                    rh.x -= rh.width * 3 / 2;
+                    rh.width = rh.width * 5 / 2;
+                    
+                    // 2列目
                     rh.y += rh.height;
                     rh.width /= 3;
                     using (var check = new EditorGUI.ChangeCheckScope())
@@ -93,6 +101,8 @@ namespace HhotateA.AvatarModifyTools.EmoteMotionKit
                             SetPreviewAnimation(d.anim);
                         }
                     }
+                    //if (d.animationSettings != AnimationSettings.Custom) return;
+                    EditorGUI.BeginDisabledGroup(d.animationSettings != AnimationSettings.Custom);
                     rh.x += rh.width;
                     rh.x += rh.width * 1 / 5;
                     rh.width = rh.width * 4 / 5;
@@ -102,6 +112,8 @@ namespace HhotateA.AvatarModifyTools.EmoteMotionKit
                     d.tracking = (TrackingSpace) EditorGUI.EnumPopup(rh,"",d.tracking);
                     rh.x -= rh.width*2;
                     rh.width *= 3;
+                    
+                    // 3列目
                     rh.y += rh.height;
                     rh.width /= 9;
                     rh.width *= 2;
@@ -116,6 +128,7 @@ namespace HhotateA.AvatarModifyTools.EmoteMotionKit
                     rh.x += rh.width * 1 / 8;
                     d.poseControll = EditorGUI.Toggle(rh, d.poseControll);
                     EditorGUI.LabelField(rh,"     Enter Pose Space");
+                    EditorGUI.EndDisabledGroup();
                 },
                 onAddCallback = l =>
                 {
@@ -163,7 +176,10 @@ namespace HhotateA.AvatarModifyTools.EmoteMotionKit
                     
                     using (new EditorGUILayout.HorizontalScope())
                     {
-                        EditorGUILayout.LabelField(" ", GUILayout.Width(200),GUILayout.Height(20));
+                        data.useMenuTemplate = EditorGUILayout.Toggle(data.useMenuTemplate,GUILayout.Width(20),GUILayout.Height(20));
+                        EditorGUILayout.LabelField("Use Menu Template", GUILayout.Width(150),GUILayout.Height(20));
+                        EditorGUILayout.LabelField(" ", GUILayout.Width(25),GUILayout.Height(20));
+                        //EditorGUILayout.LabelField(" ", GUILayout.Width(200),GUILayout.Height(20));
                         data.isSaved = EditorGUILayout.Toggle(data.isSaved,GUILayout.Width(20),GUILayout.Height(20));
                         EditorGUILayout.LabelField("Is Saved", GUILayout.Width(50),GUILayout.Height(20));
                     }
@@ -171,10 +187,50 @@ namespace HhotateA.AvatarModifyTools.EmoteMotionKit
             }
 
             EditorGUILayout.Space();
-            
-            scroll = EditorGUILayout.BeginScrollView(scroll, false, false, GUIStyle.none, GUI.skin.verticalScrollbar, GUI.skin.scrollView);
-            emoteReorderableList.DoLayoutList();
-            EditorGUILayout.EndScrollView();
+
+            using (var check = new EditorGUI.ChangeCheckScope())
+            {
+                scroll = EditorGUILayout.BeginScrollView(scroll, false, false, GUIStyle.none, GUI.skin.verticalScrollbar, GUI.skin.scrollView);
+                emoteReorderableList.DoLayoutList();
+                EditorGUILayout.EndScrollView();
+                if (check.changed)
+                {
+                    foreach (var emote in data.emotes)
+                    {
+                        if (emote.animationSettings == AnimationSettings.Emote)
+                        {
+                            emote.tracking = TrackingSpace.Emote;
+                            emote.isEmote = true;
+                            emote.locomotionStop = false;
+                            emote.poseControll = false;
+                        }
+                        else
+                        if (emote.animationSettings == AnimationSettings.Animation)
+                        {
+                            emote.tracking = TrackingSpace.Emote;
+                            emote.isEmote = false;
+                            emote.locomotionStop = false;
+                            emote.poseControll = false;
+                        }
+                        else
+                        if (emote.animationSettings == AnimationSettings.Pose)
+                        {
+                            emote.tracking = TrackingSpace.Emote;
+                            emote.isEmote = false;
+                            emote.locomotionStop = true;
+                            emote.poseControll = false;
+                        }
+                        else
+                        if (emote.animationSettings == AnimationSettings.Locomotion)
+                        {
+                            emote.tracking = TrackingSpace.FootAnimation;
+                            emote.isEmote = false;
+                            emote.locomotionStop = true;
+                            emote.poseControll = true;
+                        }
+                    }
+                }
+            }
 
             EditorGUILayout.Space();
             if (ShowOptions())
@@ -191,7 +247,7 @@ namespace HhotateA.AvatarModifyTools.EmoteMotionKit
 
             if (GUILayout.Button("Setup"))
             {
-                var path = EditorUtility.SaveFilePanel("Save", data.GetAssetDir(), data.GetAssetName(), "asset");
+                var path = EditorUtility.SaveFilePanel("Save", data.GetAssetDir(), data.GetAssetName(), EnvironmentGUIDs.suffix+".asset");
                 if (string.IsNullOrEmpty(path))
                 {
                     OnCancel();
@@ -223,7 +279,7 @@ namespace HhotateA.AvatarModifyTools.EmoteMotionKit
             {
                 if (GUILayout.Button("Save Settings"))
                 {
-                    var path = EditorUtility.SaveFilePanel("Save", data.GetAssetDir(), data.GetAssetName(),"emotemotion.asset");
+                    var path = EditorUtility.SaveFilePanel("Save", data.GetAssetDir(), data.GetAssetName(),EnvironmentGUIDs.suffix+".asset");
                     if (string.IsNullOrEmpty(path))
                     {
                         OnCancel();
@@ -236,7 +292,7 @@ namespace HhotateA.AvatarModifyTools.EmoteMotionKit
                 }
                 if (GUILayout.Button("Load Settings"))
                 {
-                    var path = EditorUtility.OpenFilePanel("Load", data.GetAssetDir(), "emotemotion.asset");
+                    var path = EditorUtility.OpenFilePanel("Load", data.GetAssetDir(), EnvironmentGUIDs.suffix+".asset");
                     if (string.IsNullOrEmpty(path))
                     {
                         OnCancel();
@@ -271,7 +327,6 @@ namespace HhotateA.AvatarModifyTools.EmoteMotionKit
             var idleAnim = new AnimationClipCreator("Idle").CreateAsset(path,true);
             var p = new ParametersCreater(param);
             p.AddParam(param,0,data.isSaved);
-            var m = new MenuCreater(param);
             var ac = new AnimatorControllerCreator(param);
             ac.AddDefaultState("Default",idleAnim);
             for (int i = 0; i < data.emotes.Count; i++)
@@ -344,12 +399,48 @@ namespace HhotateA.AvatarModifyTools.EmoteMotionKit
                     ac.SetLayerControll("Emote" + index + "_" + d.name,AnimatorControllerCreator.VRCLayers.Action,1f,0f);
                     ac.SetLayerControll("Reset" + index,AnimatorControllerCreator.VRCLayers.Action,0f,0f);
                 }
-
-                m.AddToggle(d.name,d.icon,param,index);
             }
 
             var pm = new MenuCreater(param+"parent");
-            pm.AddSubMenu(m.CreateAsset(path,true),data.saveName,data.icon);
+            if (data.useMenuTemplate)
+            {
+                var m = new MenuCreater(param);
+                var ms = Enum.GetValues(typeof(AnimationSettings)).Cast<AnimationSettings>()
+                    .ToDictionary(_=>_, _=> new MenuCreater(param));
+                for (int i = 0; i < data.emotes.Count; i++)
+                {
+                    var d = data.emotes[i];
+                    int index = i + 1;
+                    ms[d.animationSettings].AddToggle(d.name,d.icon,param,index);
+                }
+
+                if (data.createResetAnimation)
+                {
+                    m.AddToggle("Reset",data.icon,param,2^8);
+                }
+
+                foreach (AnimationSettings item in Enum.GetValues(typeof(AnimationSettings)))
+                {
+                    var element = data.emotes.FirstOrDefault(e => e.animationSettings == item);
+                    if (element != null)
+                    {
+                        m.AddSubMenu( ms[item].CreateAsset(path,true), item.ToString(), element.icon);
+                    }
+                }
+                
+                pm.AddSubMenu(m.CreateAsset(path,true),data.saveName,data.icon);
+            }
+            else
+            {
+                var m = new MenuCreater(param);
+                for (int i = 0; i < data.emotes.Count; i++)
+                {
+                    var d = data.emotes[i];
+                    int index = i + 1;
+                    m.AddToggle(d.name,d.icon,param,index);
+                }
+                pm.AddSubMenu(m.CreateAsset(path,true),data.saveName,data.icon);
+            }
             var mod = new AvatarModifyTool(avatar,fileDir);
             var assets = CreateInstance<AvatarModifyData>();
             {

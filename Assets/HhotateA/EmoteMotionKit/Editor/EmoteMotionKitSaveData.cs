@@ -23,6 +23,8 @@ namespace HhotateA.AvatarModifyTools.EmoteMotionKit
         public bool isSaved = false;
         public EmoteLayer emoteLayer = EmoteLayer.Base;
         public bool copyToFXLayer = false;
+        public bool useMenuTemplate = false;
+        public bool createResetAnimation => useMenuTemplate;
     }
     
     [System.Serializable]
@@ -35,6 +37,7 @@ namespace HhotateA.AvatarModifyTools.EmoteMotionKit
         public bool locomotionStop = false;
         public bool poseControll = false;
         public TrackingSpace tracking = TrackingSpace.Emote;
+        public AnimationSettings animationSettings = AnimationSettings.Custom;
 
         public EmoteElement(Texture2D tex)
         {
@@ -56,5 +59,14 @@ namespace HhotateA.AvatarModifyTools.EmoteMotionKit
         Base,
         Action,
         Additive,
+    }
+
+    public enum AnimationSettings
+    {
+        Emote,
+        Animation,
+        Pose,
+        Locomotion,
+        Custom
     }
 }

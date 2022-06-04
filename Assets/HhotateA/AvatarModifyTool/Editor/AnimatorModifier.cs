@@ -72,18 +72,19 @@ namespace HhotateA.AvatarModifyTools.Core
             if (currentController == null) return null;
             if (currentController == origin) return null;
             
-            var newLayers = new List<AnimatorControllerLayer>();
-            foreach (var layer in currentController.layers)
+            for (int i = 0; i < currentController.layers.Length;)
             {
-                if (origin.layers.Any(l => OnFindParam(l.name) == OnFindParam(layer.name)))
+                if (origin.layers.Any(l => OnFindParam(l.name) == OnFindParam(currentController.layers[i].name)))
                 {
+                    // マッチしたらレイヤー削除
+                    currentController.RemoveLayer(i);
                 }
                 else
                 {
-                    newLayers.Add(layer);
+                    // マッチしなかったら，次のレイヤーを見に行く
+                    i++;
                 }
             }
-            currentController.layers = newLayers.ToArray();
             EditorUtility.SetDirty(currentController);
             return currentController;
         }
@@ -92,7 +93,19 @@ namespace HhotateA.AvatarModifyTools.Core
         {
             if (currentController == null) return null;
             currentController.parameters = currentController.parameters.Where(p => !p.name.StartsWith(keyword)).ToArray();
-            currentController.layers = currentController.layers.Where(l => !l.name.StartsWith(keyword)).ToArray();
+            for (int i = 0; i < currentController.layers.Length;)
+            {
+                if (currentController.layers[i].name.StartsWith(keyword))
+                {
+                    // マッチしたらレイヤー削除
+                    currentController.RemoveLayer(i);
+                }
+                else
+                {
+                    // マッチしなかったら，次のレイヤーを見に行く
+                    i++;
+                }
+            }
             EditorUtility.SetDirty(currentController);
             return currentController;
         }

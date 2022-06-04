@@ -12,6 +12,7 @@ namespace HhotateA.AvatarModifyTools.EmoteMotionKit
     public static class EnvironmentGUIDs
     {
         public static string prefix = "HhotateA_EMK_";
+        public static string suffix = "emotemotion";
         public static string readme = "236320bf77be8d84f98bb12edbabfa2d";
 
         public static string emotesIcon = "7a4bf9ada56093e41b5e77a52f69c161";
