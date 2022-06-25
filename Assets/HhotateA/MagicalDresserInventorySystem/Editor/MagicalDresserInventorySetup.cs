@@ -71,6 +71,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         Vector2 scrollLeft = Vector2.zero;
         Vector2 scrollLeftTree = Vector2.zero;
         Vector2 scrollRight = Vector2.zero;
+        Vector2 scrollSubmenu = Vector2.zero;
         
         Material GetAnimationMaterial(Material origin,Material animMat)
         {
@@ -474,9 +475,6 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                             }
                             else
                             {
-                                scrollLeft = EditorGUILayout.BeginScrollView(scrollLeft, false, false, GUIStyle.none, GUI.skin.verticalScrollbar, GUI.skin.scrollView,GUILayout.Width(375),GUILayout.ExpandHeight(false));
-                                menuReorderableList.DoLayoutList();
-                                EditorGUILayout.EndScrollView();
                                 using (new EditorGUILayout.HorizontalScope())
                                 {
                                     EditorGUILayout.LabelField("  ",GUILayout.Width(275));
@@ -497,6 +495,9 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                                     }
                                 }
                                 EditorGUILayout.Space();
+                                scrollLeft = EditorGUILayout.BeginScrollView(scrollLeft, false, false, GUIStyle.none, GUI.skin.verticalScrollbar, GUI.skin.scrollView,GUILayout.Width(375),GUILayout.ExpandHeight(false));
+                                menuReorderableList.DoLayoutList();
+                                EditorGUILayout.EndScrollView();
                             }
                             if (check.changed)
                             {
@@ -700,25 +701,74 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                                     {
                                         if (displaySyncTransition)
                                         {
-                                            foreach (var menuElement in menuElements)
+                                            using (new EditorGUILayout.VerticalScope(GUILayout.Height(50)))
                                             {
-                                                if (menuElements[index] != menuElement)
+                                                scrollSubmenu = EditorGUILayout.BeginScrollView(scrollSubmenu, false,
+                                                    false, GUIStyle.none, GUI.skin.verticalScrollbar,
+                                                    GUI.skin.scrollView);
+                                                foreach (var menuElement in menuElements)
                                                 {
-                                                    using (new EditorGUILayout.HorizontalScope())
+                                                    if (menuElements[index] != menuElement)
                                                     {
-                                                        EditorGUILayout.LabelField(" ",GUILayout.Width(50),GUILayout.ExpandWidth(true));
-                                                        EditorGUILayout.LabelField(menuElement.name,GUILayout.Width(100));
-
-                                                        var syncElement = displayItemMode ? 
-                                                            menuElements[index].activeSyncElements.FirstOrDefault(e => e.guid == menuElement.guid):
-                                                            menuElements[index].inactiveSyncElements.FirstOrDefault(e => e.guid == menuElement.guid);
-                                                        //var syncOffElements = displayItemMode ? menuElements[index].activeSyncOffElements : menuElements[index].inactiveSyncOffElements;
-                                                        if (syncElement == null)
+                                                        using (new EditorGUILayout.HorizontalScope())
                                                         {
-                                                            using (var check = new EditorGUI.ChangeCheckScope())
+                                                            EditorGUILayout.LabelField(" ", GUILayout.Width(50),
+                                                                GUILayout.ExpandWidth(true));
+                                                            EditorGUILayout.LabelField(menuElement.name,
+                                                                GUILayout.Width(100));
+
+                                                            var syncElement = displayItemMode
+                                                                ? menuElements[index].activeSyncElements
+                                                                    .FirstOrDefault(e => e.guid == menuElement.guid)
+                                                                : menuElements[index].inactiveSyncElements
+                                                                    .FirstOrDefault(e => e.guid == menuElement.guid);
+                                                            //var syncOffElements = displayItemMode ? menuElements[index].activeSyncOffElements : menuElements[index].inactiveSyncOffElements;
+                                                            if (syncElement == null)
                                                             {
-                                                                syncElement = new SyncElement(menuElement.guid);
-                                                                if (EditorGUILayout.Toggle("", syncElement.delay>=0, GUILayout.Width(25)))
+                                                                using (var check = new EditorGUI.ChangeCheckScope())
+                                                                {
+                                                                    syncElement = new SyncElement(menuElement.guid);
+                                                                    if (EditorGUILayout.Toggle("",
+                                                                        syncElement.delay >= 0, GUILayout.Width(25)))
+                                                                    {
+                                                                        syncElement.delay = 0f;
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        syncElement.delay = -1f;
+                                                                    }
+
+                                                                    using (new EditorGUI.DisabledScope(true))
+                                                                    {
+                                                                        syncElement.delay =
+                                                                            EditorGUILayout.FloatField("",
+                                                                                syncElement.delay, GUILayout.Width(50));
+                                                                    }
+
+                                                                    EditorGUILayout.LabelField("", GUILayout.Width(15));
+                                                                    syncElement.syncOn = EditorGUILayout.Toggle("",
+                                                                        syncElement.syncOn, GUILayout.Width(25));
+                                                                    syncElement.syncOff = EditorGUILayout.Toggle("",
+                                                                        syncElement.syncOff, GUILayout.Width(25));
+                                                                    if (check.changed)
+                                                                    {
+                                                                        if (displayItemMode)
+                                                                        {
+                                                                            menuElements[index].activeSyncElements
+                                                                                .Add(syncElement);
+                                                                        }
+                                                                        else
+                                                                        {
+                                                                            menuElements[index].inactiveSyncElements
+                                                                                .Add(syncElement);
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                            else
+                                                            {
+                                                                if (EditorGUILayout.Toggle("", syncElement.delay >= 0,
+                                                                    GUILayout.Width(25)))
                                                                 {
                                                                     syncElement.delay = 0f;
                                                                 }
@@ -729,71 +779,45 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
 
                                                                 using (new EditorGUI.DisabledScope(true))
                                                                 {
-                                                                    syncElement.delay = EditorGUILayout.FloatField("", syncElement.delay, GUILayout.Width(50));
+                                                                    syncElement.delay = EditorGUILayout.FloatField("",
+                                                                        syncElement.delay, GUILayout.Width(50));
                                                                 }
 
-                                                                EditorGUILayout.LabelField("",GUILayout.Width(15));
-                                                                syncElement.syncOn = EditorGUILayout.Toggle("", syncElement.syncOn, GUILayout.Width(25));
-                                                                syncElement.syncOff = EditorGUILayout.Toggle("", syncElement.syncOff, GUILayout.Width(25));
-                                                                if (check.changed)
+                                                                EditorGUILayout.LabelField("", GUILayout.Width(15));
+                                                                if (EditorGUILayout.Toggle("", syncElement.syncOn,
+                                                                    GUILayout.Width(25)))
                                                                 {
-                                                                    if (displayItemMode)
+                                                                    if (!syncElement.syncOn)
                                                                     {
-                                                                        menuElements[index].activeSyncElements.Add(syncElement);
-                                                                    }
-                                                                    else
-                                                                    {
-                                                                        menuElements[index].inactiveSyncElements.Add(syncElement);
+                                                                        // 重複防止
+                                                                        syncElement.syncOn = true;
+                                                                        syncElement.syncOff = false;
                                                                     }
                                                                 }
-                                                            }
-                                                        }
-                                                        else
-                                                        {
-                                                            if (EditorGUILayout.Toggle("", syncElement.delay>=0, GUILayout.Width(25)))
-                                                            {
-                                                                syncElement.delay = 0f;
-                                                            }
-                                                            else
-                                                            {
-                                                                syncElement.delay = -1f;
-                                                            }
-
-                                                            using (new EditorGUI.DisabledScope(true))
-                                                            {
-                                                                syncElement.delay = EditorGUILayout.FloatField("", syncElement.delay, GUILayout.Width(50));
-                                                            }
-                                                            
-                                                            EditorGUILayout.LabelField("",GUILayout.Width(15));
-                                                            if (EditorGUILayout.Toggle("", syncElement.syncOn, GUILayout.Width(25)))
-                                                            {
-                                                                if (!syncElement.syncOn)
+                                                                else
                                                                 {
-                                                                    // 重複防止
-                                                                    syncElement.syncOn = true;
-                                                                    syncElement.syncOff = false;
-                                                                }
-                                                            }
-                                                            else
-                                                            {
-                                                                syncElement.syncOn = false;
-                                                            }
-                                                            if(EditorGUILayout.Toggle("", syncElement.syncOff, GUILayout.Width(25)))
-                                                            {
-                                                                if (!syncElement.syncOff)
-                                                                {
-                                                                    // 重複防止
-                                                                    syncElement.syncOff = true;
                                                                     syncElement.syncOn = false;
                                                                 }
-                                                            }
-                                                            else
-                                                            {
-                                                                syncElement.syncOff = false;
+
+                                                                if (EditorGUILayout.Toggle("", syncElement.syncOff,
+                                                                    GUILayout.Width(25)))
+                                                                {
+                                                                    if (!syncElement.syncOff)
+                                                                    {
+                                                                        // 重複防止
+                                                                        syncElement.syncOff = true;
+                                                                        syncElement.syncOn = false;
+                                                                    }
+                                                                }
+                                                                else
+                                                                {
+                                                                    syncElement.syncOff = false;
+                                                                }
                                                             }
                                                         }
                                                     }
                                                 }
+                                                EditorGUILayout.EndScrollView();
                                             }
                                         }
                                     }
