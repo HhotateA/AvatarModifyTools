@@ -675,7 +675,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                                         typeof(GameObject), true, GUILayout.Width(370));
                                     if (newItem)
                                     {
-                                        if (menuElements[index].activeItems.All(e => e.Obj != newItem))
+                                        if (menuElements[index].activeItems.All(e => e.obj != newItem))
                                         {
                                             menuElements[index].activeItems.Add(new ItemElement(newItem, avatar.gameObject,
                                                 IsMenuElementDefault(menuElements[index])
@@ -966,7 +966,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         bool GetLayerDefaultActive(LayerGroup layer,GameObject obj)
         {
             var item = data.layerSettingses[(int) layer].GetDefaultElement(menuElements).SafeActiveItems()
-                .FirstOrDefault(e => e.Obj == obj);
+                .FirstOrDefault(e => e.obj == obj);
             if (item != null)
             {
                 return item.active;
@@ -1075,9 +1075,9 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
 
                     using (new EditorGUI.DisabledScope(!objEdit))
                     {
-                        var o = (GameObject) EditorGUILayout.ObjectField("", item.Obj,
+                        var o = (GameObject) EditorGUILayout.ObjectField("", item.obj,
                             typeof(GameObject), true, GUILayout.Width(110));
-                        if (item.Obj == null)
+                        if (item.obj == null)
                         {
                             if (o != null)
                             {
@@ -1219,7 +1219,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         void RendererOptionDisplay(ItemElement item, RendererOption rendOption)
         {
             if(rendOption == null) return;
-            if(rendOption.Rend == null) return;
+            if(rendOption.rend == null) return;
             using (new EditorGUILayout.HorizontalScope())
             {
                 EditorGUILayout.LabelField("", GUILayout.Width(25));
@@ -1235,7 +1235,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                     }
                 }
 
-                rendOption.ExtendOption = EditorGUILayout.Foldout(rendOption.ExtendOption, rendOption.Rend.name);
+                rendOption.ExtendOption = EditorGUILayout.Foldout(rendOption.ExtendOption, rendOption.rend.name);
             }
 
             if (rendOption.ExtendOption)
@@ -1251,15 +1251,15 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                             // 変更があった場合レイヤー内に伝播
                             if (menuElements[menuReorderableList.index].isToggle)
                             {
-                                ToggleMaterialOption(menuElements[menuReorderableList.index], rendOption.Rend, i, toggle);
+                                ToggleMaterialOption(menuElements[menuReorderableList.index], rendOption.rend, i, toggle);
                             }
                             else
                             {
-                                ToggleMaterialOption(menuElements[menuReorderableList.index].layer, rendOption.Rend, i, toggle);
+                                ToggleMaterialOption(menuElements[menuReorderableList.index].layer, rendOption.rend, i, toggle);
                             }
                         }
                         
-                        EditorGUILayout.LabelField(rendOption.Rend.sharedMaterials[i]?.name,  GUILayout.Width(95));
+                        EditorGUILayout.LabelField(rendOption.rend.sharedMaterials[i]?.name,  GUILayout.Width(95));
                         if (!rendOption.changeMaterialsOptions[i].change)
                         {
                             EditorGUILayout.LabelField("",  GUILayout.Width(75));
@@ -1295,7 +1295,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                         }
                         else
                         {
-                            rendOption.changeMaterialsOptions[i].material = rendOption.Rend.sharedMaterials[i];
+                            rendOption.changeMaterialsOptions[i].material = rendOption.rend.sharedMaterials[i];
                             using (new EditorGUI.DisabledScope(true))
                             {
                                 /*EditorGUILayout.ObjectField("",
@@ -1316,16 +1316,16 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                             // 変更があった場合レイヤー内に伝播
                             if (menuElements[menuReorderableList.index].isToggle)
                             {
-                                ToggleBlendshapeOption(menuElements[menuReorderableList.index], rendOption.Rend as SkinnedMeshRenderer, i, toggle);
+                                ToggleBlendshapeOption(menuElements[menuReorderableList.index], rendOption.rend as SkinnedMeshRenderer, i, toggle);
                             }
                             else
                             {
-                                ToggleBlendshapeOption(menuElements[menuReorderableList.index].layer, rendOption.Rend as SkinnedMeshRenderer, i, toggle);
+                                ToggleBlendshapeOption(menuElements[menuReorderableList.index].layer, rendOption.rend as SkinnedMeshRenderer, i, toggle);
                             }
                         }
                         rendOption.changeBlendShapeOptions[i].change = toggle;
                         
-                        EditorGUILayout.LabelField(rendOption.Rend.GetMesh().GetBlendShapeName(i),  GUILayout.Width(125));
+                        EditorGUILayout.LabelField(rendOption.rend.GetMesh().GetBlendShapeName(i),  GUILayout.Width(125));
                         if (!rendOption.changeBlendShapeOptions[i].change)
                         {
                             EditorGUILayout.LabelField("",  GUILayout.Width(95));
@@ -1362,7 +1362,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                         }
                         else
                         {
-                            rendOption.changeBlendShapeOptions[i].weight = GetDefaultBlendshape(rendOption.Rend as SkinnedMeshRenderer, i);
+                            rendOption.changeBlendShapeOptions[i].weight = GetDefaultBlendshape(rendOption.rend as SkinnedMeshRenderer, i);
                             using (new EditorGUI.DisabledScope(true))
                             {
                                 var noChange =
@@ -1460,7 +1460,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                     // rend option (material,blend shapeの変更適応)
                     foreach (var activeItem in activeItems)
                     {
-                        var inactiveItem = inactiveItems.FirstOrDefault(e => activeItem.Obj == e.Obj);
+                        var inactiveItem = inactiveItems.FirstOrDefault(e => activeItem.obj == e.obj);
                         if (inactiveItem != null)
                         {
                             RendererOptionTransition(inactiveItem,activeItem,activateAnim);
@@ -1566,23 +1566,23 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                     var activeAnim = new AnimationClipCreator(layer.ToString() + i.ToString() + "_Active", avatar.gameObject);
                     foreach (var item in itemElements)
                     {
-                        activeAnim.AddKeyframe_Gameobject(item.Obj,0f,item.active);
-                        activeAnim.AddKeyframe_Gameobject(item.Obj,1f/60f,item.active);
+                        activeAnim.AddKeyframe_Gameobject(item.obj,0f,item.active);
+                        activeAnim.AddKeyframe_Gameobject(item.obj,1f/60f,item.active);
                 
                         // option処理
                         foreach (var rendOption in item.rendOptions)
                         {
-                            if (rendOption.Rend == null) continue;
-                            if (rendOption.Rend is SkinnedMeshRenderer)
+                            if (rendOption.rend == null) continue;
+                            if (rendOption.rend is SkinnedMeshRenderer)
                             {
-                                activeAnim.AddKeyframe(0f, rendOption.Rend as SkinnedMeshRenderer, "m_Enabled", rendOption.RendEnable ? 1 : 0);
-                                activeAnim.AddKeyframe(1f/60f, rendOption.Rend as SkinnedMeshRenderer, "m_Enabled", rendOption.RendEnable ? 1 : 0);
+                                activeAnim.AddKeyframe(0f, rendOption.rend as SkinnedMeshRenderer, "m_Enabled", rendOption.RendEnable ? 1 : 0);
+                                activeAnim.AddKeyframe(1f/60f, rendOption.rend as SkinnedMeshRenderer, "m_Enabled", rendOption.RendEnable ? 1 : 0);
                             }
                             else
-                            if(rendOption.Rend is MeshRenderer)
+                            if(rendOption.rend is MeshRenderer)
                             {
-                                activeAnim.AddKeyframe(0f, rendOption.Rend as MeshRenderer, "m_Enabled", rendOption.RendEnable ? 1 : 0);
-                                activeAnim.AddKeyframe(1f/60f, rendOption.Rend as MeshRenderer, "m_Enabled", rendOption.RendEnable ? 1 : 0);
+                                activeAnim.AddKeyframe(0f, rendOption.rend as MeshRenderer, "m_Enabled", rendOption.RendEnable ? 1 : 0);
+                                activeAnim.AddKeyframe(1f/60f, rendOption.rend as MeshRenderer, "m_Enabled", rendOption.RendEnable ? 1 : 0);
                             }
                             
                             
@@ -1590,15 +1590,15 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                             {
                                 if (rendOption.changeMaterialsOptions[j].change)
                                 {
-                                    activeAnim.AddKeyframe_Material(rendOption.Rend,rendOption.changeMaterialsOptions[j].material,0f,j);
-                                    activeAnim.AddKeyframe_Material(rendOption.Rend,rendOption.changeMaterialsOptions[j].material,1f/60f,j);
+                                    activeAnim.AddKeyframe_Material(rendOption.rend,rendOption.changeMaterialsOptions[j].material,0f,j);
+                                    activeAnim.AddKeyframe_Material(rendOption.rend,rendOption.changeMaterialsOptions[j].material,1f/60f,j);
                                 }
                                 else
                                 if(data.materialOverride)
                                 {
                                     // デフォルトのマテリアルで上書き（同期エラー対策）
-                                    activeAnim.AddKeyframe_Material(rendOption.Rend,rendOption.Rend.sharedMaterials[j],0f,j);
-                                    activeAnim.AddKeyframe_Material(rendOption.Rend,rendOption.Rend.sharedMaterials[j],1f/60f,j);
+                                    activeAnim.AddKeyframe_Material(rendOption.rend,rendOption.rend.sharedMaterials[j],0f,j);
+                                    activeAnim.AddKeyframe_Material(rendOption.rend,rendOption.rend.sharedMaterials[j],1f/60f,j);
                                 }
                                 /*activeAnim.AddKeyframe_MaterialParam(0f, rendOption.rend, "_AnimationTime", 1f);
                                 activeAnim.AddKeyframe_MaterialParam(1f/60f, rendOption.rend, "_AnimationTime", 1f);*/
@@ -1607,7 +1607,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                             {
                                 if (rendOption.changeBlendShapeOptions[j].change)
                                 {
-                                    var rs = rendOption.Rend as SkinnedMeshRenderer;
+                                    var rs = rendOption.rend as SkinnedMeshRenderer;
                                     activeAnim.AddKeyframe(0f, rs, "blendShape."+rs.GetMesh().GetBlendShapeName(j) , rendOption.changeBlendShapeOptions[j].weight);
                                     activeAnim.AddKeyframe(1f/60f, rs, "blendShape."+rs.GetMesh().GetBlendShapeName(j) , rendOption.changeBlendShapeOptions[j].weight);
                                 }
@@ -1656,8 +1656,8 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                         toItems.AddRange(ComputeLayerAnotherItems(layerMenuElements[i]));
                         foreach (var item in ComputeDefaultItems(layer))
                         { 
-                            var fromItem = fromItems.FirstOrDefault(e => e.Obj == item.Obj);
-                            var toItem = toItems.FirstOrDefault(e => e.Obj == item.Obj);
+                            var fromItem = fromItems.FirstOrDefault(e => e.obj == item.obj);
+                            var toItem = toItems.FirstOrDefault(e => e.obj == item.obj);
                             // レイヤー内で参照されているアイテムすべてについてとらんじちよん
                             if (fromItem == null && toItem == null)
                             {
@@ -1890,28 +1890,28 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         {
             if (setAnim != null)
             {
-                ActiveAnimation(setAnim,element.Obj,true);
+                ActiveAnimation(setAnim,element.obj,true);
                 
                 // option処理
                 foreach (var rendOption in element.rendOptions)
                 {
-                    if(rendOption.Rend == null) continue;
-                    setAnim.AddKeyframe(0f, rendOption.Rend, "m_Enabled", rendOption.RendEnable ? 1 : 0);
-                    setAnim.AddKeyframe(1f/60f, rendOption.Rend, "m_Enabled", rendOption.RendEnable ? 1 : 0);
+                    if(rendOption.rend == null) continue;
+                    setAnim.AddKeyframe(0f, rendOption.rend, "m_Enabled", rendOption.RendEnable ? 1 : 0);
+                    setAnim.AddKeyframe(1f/60f, rendOption.rend, "m_Enabled", rendOption.RendEnable ? 1 : 0);
                     
                     for (int i = 0; i < rendOption.changeMaterialsOptions.Count; i++)
                     {
                         if (rendOption.changeMaterialsOptions[i].change)
                         {
-                            setAnim.AddKeyframe_Material(rendOption.Rend,rendOption.changeMaterialsOptions[i].material,0f,i);
-                            setAnim.AddKeyframe_Material(rendOption.Rend,rendOption.changeMaterialsOptions[i].material,1f/60f,i);
+                            setAnim.AddKeyframe_Material(rendOption.rend,rendOption.changeMaterialsOptions[i].material,0f,i);
+                            setAnim.AddKeyframe_Material(rendOption.rend,rendOption.changeMaterialsOptions[i].material,1f/60f,i);
                         }
                         else
                         if(data.materialOverride)
                         {
                             // デフォルトのマテリアルで上書き（同期エラー対策）
-                            setAnim.AddKeyframe_Material(rendOption.Rend,rendOption.Rend.sharedMaterials[i],0f,i);
-                            setAnim.AddKeyframe_Material(rendOption.Rend,rendOption.Rend.sharedMaterials[i],1f/60f,i);
+                            setAnim.AddKeyframe_Material(rendOption.rend,rendOption.rend.sharedMaterials[i],0f,i);
+                            setAnim.AddKeyframe_Material(rendOption.rend,rendOption.rend.sharedMaterials[i],1f/60f,i);
                         }
                         /*setAnim.AddKeyframe_MaterialParam(0f, rendOption.rend, "_AnimationTime", 1f);
                         setAnim.AddKeyframe_MaterialParam(1f/60f, rendOption.rend, "_AnimationTime", 1f);*/
@@ -1920,7 +1920,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                     {
                         if (rendOption.changeBlendShapeOptions[i].change)
                         {
-                            var rs = rendOption.Rend as SkinnedMeshRenderer;
+                            var rs = rendOption.rend as SkinnedMeshRenderer;
                             setAnim.AddKeyframe(0f, rs, "blendShape."+rs.GetMesh().GetBlendShapeName(i) , rendOption.changeBlendShapeOptions[i].weight);
                             setAnim.AddKeyframe(1f/60f, rs, "blendShape."+rs.GetMesh().GetBlendShapeName(i) , rendOption.changeBlendShapeOptions[i].weight);
                         }
@@ -1929,8 +1929,8 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
 
                 if (data.materialOverride)
                 {
-                    setAnim.AddKeyframe_Scale(0f,element.Obj.transform,element.Obj.transform.localScale);
-                    setAnim.AddKeyframe_Scale(1f/60f,element.Obj.transform,element.Obj.transform.localScale);
+                    setAnim.AddKeyframe_Scale(0f,element.obj.transform,element.obj.transform.localScale);
+                    setAnim.AddKeyframe_Scale(1f/60f,element.obj.transform,element.obj.transform.localScale);
                 }
             }
 
@@ -1943,17 +1943,17 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                     {
                         if (parentmenu.overrideActivateTransition.type == FeedType.None)
                         {
-                            ActiveAnimation(transitionAnim,element.Obj,true,parentmenu.overrideActivateTransition.delay);
+                            ActiveAnimation(transitionAnim,element.obj,true,parentmenu.overrideActivateTransition.delay);
                         }
                         else
                         if(parentmenu.overrideActivateTransition.type == FeedType.Scale)
                         {
-                            ScaleAnimation(transitionAnim, element.Obj, parentmenu.overrideActivateTransition.delay, parentmenu.overrideActivateTransition.duration, true);
+                            ScaleAnimation(transitionAnim, element.obj, parentmenu.overrideActivateTransition.delay, parentmenu.overrideActivateTransition.duration, true);
                         }
                         else
                         if(parentmenu.overrideActivateTransition.type == FeedType.Shader)
                         {
-                            ShaderAnimation(transitionAnim, element.Obj, parentmenu.overrideActivateTransition.delay, 
+                            ShaderAnimation(transitionAnim, element.obj, parentmenu.overrideActivateTransition.delay, 
                                 parentmenu.overrideActivateTransition.duration, 
                                 parentmenu.overrideActivateTransition.animationMaterial, 
                                 parentmenu.overrideActivateTransition.animationParam,
@@ -1962,10 +1962,10 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                         }
                         else
                         {
-                            ShaderAnimation(transitionAnim, element.Obj, parentmenu.overrideActivateTransition.delay, parentmenu.overrideActivateTransition.duration,
+                            ShaderAnimation(transitionAnim, element.obj, parentmenu.overrideActivateTransition.delay, parentmenu.overrideActivateTransition.duration,
                                 parentmenu.overrideActivateTransition.type.GetMaterialByType(), "_AnimationTime",
                                 0f,1f);
-                            ChangeMaterialDefault(transitionAnim,element.Obj,parentmenu.overrideActivateTransition.delay+parentmenu.overrideActivateTransition.duration+1f/60f);
+                            ChangeMaterialDefault(transitionAnim,element.obj,parentmenu.overrideActivateTransition.delay+parentmenu.overrideActivateTransition.duration+1f/60f);
                         }
 
                         return;
@@ -1974,24 +1974,24 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                 
                 if (element.type == FeedType.None)
                 {
-                    ActiveAnimation(transitionAnim,element.Obj,true,element.delay);
+                    ActiveAnimation(transitionAnim,element.obj,true,element.delay);
                 }
                 else
                 if(element.type == FeedType.Scale)
                 {
-                    ScaleAnimation(transitionAnim, element.Obj, element.delay, element.duration, true);
+                    ScaleAnimation(transitionAnim, element.obj, element.delay, element.duration, true);
                 }
                 else
                 if(element.type == FeedType.Shader)
                 {
-                    ShaderAnimation(transitionAnim, element.Obj, element.delay, element.duration, element.animationMaterial, element.animationParam,element.animationParamOff,element.animationParamOn);
+                    ShaderAnimation(transitionAnim, element.obj, element.delay, element.duration, element.animationMaterial, element.animationParam,element.animationParamOff,element.animationParamOn);
                 }
                 else
                 {
-                    ShaderAnimation(transitionAnim, element.Obj, element.delay, element.duration,
+                    ShaderAnimation(transitionAnim, element.obj, element.delay, element.duration,
                         element.type.GetMaterialByType(), "_AnimationTime",
                         0f,1f);
-                    ChangeMaterialDefault(transitionAnim,element.Obj,element.delay+element.duration+1f/60f);
+                    ChangeMaterialDefault(transitionAnim,element.obj,element.delay+element.duration+1f/60f);
                 }
             }
         }
@@ -2001,18 +2001,18 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         {
             if (setAnim != null)
             {
-                ActiveAnimation(setAnim,element.Obj,false);
+                ActiveAnimation(setAnim,element.obj,false);
                 
                 // option処理
                 foreach (var rendOption in element.rendOptions)
                 {
-                    if(rendOption.Rend == null) continue;
+                    if(rendOption.rend == null) continue;
                     for (int i = 0; i < rendOption.changeMaterialsOptions.Count; i++)
                     {
                         if (rendOption.changeMaterialsOptions[i].change)
                         {
-                            setAnim.AddKeyframe_Material(rendOption.Rend,rendOption.Rend.sharedMaterials[i],0f,i);
-                            setAnim.AddKeyframe_Material(rendOption.Rend,rendOption.Rend.sharedMaterials[i],1f/60f,i);
+                            setAnim.AddKeyframe_Material(rendOption.rend,rendOption.rend.sharedMaterials[i],0f,i);
+                            setAnim.AddKeyframe_Material(rendOption.rend,rendOption.rend.sharedMaterials[i],1f/60f,i);
                         }
                         if(data.materialOverride)
                         {
@@ -2027,9 +2027,9 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                     {
                         if (rendOption.changeBlendShapeOptions[i].change)
                         {
-                            var rs = rendOption.Rend as SkinnedMeshRenderer;
-                            setAnim.AddKeyframe(0f, rs, "blendShape."+rendOption.Rend.GetMesh().GetBlendShapeName(i) , rs.GetBlendShapeWeight(i));
-                            setAnim.AddKeyframe(1f/60f, rs, "blendShape."+rendOption.Rend.GetMesh().GetBlendShapeName(i) , rs.GetBlendShapeWeight(i));
+                            var rs = rendOption.rend as SkinnedMeshRenderer;
+                            setAnim.AddKeyframe(0f, rs, "blendShape."+rendOption.rend.GetMesh().GetBlendShapeName(i) , rs.GetBlendShapeWeight(i));
+                            setAnim.AddKeyframe(1f/60f, rs, "blendShape."+rendOption.rend.GetMesh().GetBlendShapeName(i) , rs.GetBlendShapeWeight(i));
                         }
                     }
                 }
@@ -2043,17 +2043,17 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                     {
                         if (parentmenu.overrideInactivateTransition.type == FeedType.None)
                         {
-                            ActiveAnimation(transitionAnim, element.Obj,false, parentmenu.overrideInactivateTransition.delay);
+                            ActiveAnimation(transitionAnim, element.obj,false, parentmenu.overrideInactivateTransition.delay);
                         }
                         else
                         if(parentmenu.overrideInactivateTransition.type == FeedType.Scale)
                         {
-                            ScaleAnimation(transitionAnim, element.Obj, parentmenu.overrideInactivateTransition.delay, parentmenu.overrideInactivateTransition.duration, false);
+                            ScaleAnimation(transitionAnim, element.obj, parentmenu.overrideInactivateTransition.delay, parentmenu.overrideInactivateTransition.duration, false);
                         }
                         else
                         if(parentmenu.overrideInactivateTransition.type == FeedType.Shader)
                         {
-                            ShaderAnimation(transitionAnim, element.Obj, parentmenu.overrideInactivateTransition.delay,
+                            ShaderAnimation(transitionAnim, element.obj, parentmenu.overrideInactivateTransition.delay,
                                 parentmenu.overrideInactivateTransition.duration,
                                 parentmenu.overrideInactivateTransition.animationMaterial,
                                 parentmenu.overrideInactivateTransition.animationParam,
@@ -2062,10 +2062,10 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                         }
                         else
                         {
-                            ShaderAnimation(transitionAnim, element.Obj, parentmenu.overrideInactivateTransition.delay, parentmenu.overrideInactivateTransition.duration,
+                            ShaderAnimation(transitionAnim, element.obj, parentmenu.overrideInactivateTransition.delay, parentmenu.overrideInactivateTransition.duration,
                                 parentmenu.overrideInactivateTransition.type.GetMaterialByType(), "_AnimationTime",
                                 1f,0f);
-                            ChangeMaterialDefault(transitionAnim,element.Obj,parentmenu.overrideInactivateTransition.delay+parentmenu.overrideInactivateTransition.duration+1f/60f);
+                            ChangeMaterialDefault(transitionAnim,element.obj,parentmenu.overrideInactivateTransition.delay+parentmenu.overrideInactivateTransition.duration+1f/60f);
                         }
 
                         return;
@@ -2074,25 +2074,25 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                 
                 if (element.type == FeedType.None)
                 {
-                    ActiveAnimation(transitionAnim, element.Obj,false, element.delay);
+                    ActiveAnimation(transitionAnim, element.obj,false, element.delay);
                 }
                 else
                 if(element.type == FeedType.Scale)
                 {
-                    ScaleAnimation(transitionAnim, element.Obj, element.delay, element.duration, false);
+                    ScaleAnimation(transitionAnim, element.obj, element.delay, element.duration, false);
                 }
                 else
                 if(element.type == FeedType.Shader)
                 {
-                    ShaderAnimation(transitionAnim, element.Obj,element.delay,element.duration, element.animationMaterial, element.animationParam,element.animationParamOn, element.animationParamOff);
+                    ShaderAnimation(transitionAnim, element.obj,element.delay,element.duration, element.animationMaterial, element.animationParam,element.animationParamOn, element.animationParamOff);
                 }
                 else
                 {
-                    ShaderAnimation(transitionAnim, element.Obj, element.delay, element.duration,
+                    ShaderAnimation(transitionAnim, element.obj, element.delay, element.duration,
                         element.type.GetMaterialByType(), "_AnimationTime",
                         1f,0f);
-                    ActiveAnimation(transitionAnim,element.Obj,false,element.delay+element.duration+1f/60f);
-                    ChangeMaterialDefault(transitionAnim,element.Obj,element.delay+element.duration+2f/60f);
+                    ActiveAnimation(transitionAnim,element.obj,false,element.delay+element.duration+1f/60f);
+                    ChangeMaterialDefault(transitionAnim,element.obj,element.delay+element.duration+2f/60f);
                 }
             }
         }
@@ -2101,11 +2101,11 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         {
             foreach (var rendOpt in toElement.rendOptions)
             {
-                if(rendOpt.Rend == null) continue;
-                var rend = rendOpt.Rend;
-                var to = toElement.rendOptions.FirstOrDefault(r => r.Rend == rend);
+                if(rendOpt.rend == null) continue;
+                var rend = rendOpt.rend;
+                var to = toElement.rendOptions.FirstOrDefault(r => r.rend == rend);
                 if(to==null) continue;
-                var from = fromElement.rendOptions.FirstOrDefault(r => r.Rend == rend);
+                var from = fromElement.rendOptions.FirstOrDefault(r => r.rend == rend);
                 if(from==null) continue;
                 if (from.changeMaterialsOptions.Count == to.changeMaterialsOptions.Count)
                 {
@@ -2285,26 +2285,26 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             {
                 if (active)
                 {
-                    GetDefaultActive(item.Obj);
-                    item.Obj.SetActive(item.active);
+                    GetDefaultActive(item.obj);
+                    item.obj.SetActive(item.active);
                 }
                 foreach (var option in item.rendOptions)
                 {
-                    if (option.Rend)
+                    if (option.rend)
                     {
-                        GetDefaultRendEnable(option.Rend);
-                        option.Rend.enabled = option.RendEnable;
+                        GetDefaultRendEnable(option.rend);
+                        option.rend.enabled = option.RendEnable;
                         
                         if (material)
                         {
                             for (int i = 0; i < option.changeMaterialsOptions.Count; i++)
                             {
-                                GetDefaultMaterial(option.Rend, i);
+                                GetDefaultMaterial(option.rend, i);
                                 if (option.changeMaterialsOptions[i].change)
                                 {
-                                    var mats = option.Rend.sharedMaterials.ToArray();
+                                    var mats = option.rend.sharedMaterials.ToArray();
                                     mats[i] = option.changeMaterialsOptions[i].material;
-                                    option.Rend.sharedMaterials = mats.ToArray();
+                                    option.rend.sharedMaterials = mats.ToArray();
                                 }
                             }
                         }
@@ -2313,10 +2313,10 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                         {
                             for (int i = 0; i < option.changeBlendShapeOptions.Count; i++)
                             {
-                                GetDefaultBlendshape(option.Rend as SkinnedMeshRenderer, i);
+                                GetDefaultBlendshape(option.rend as SkinnedMeshRenderer, i);
                                 if (option.changeBlendShapeOptions[i].change)
                                 {
-                                    (option.Rend as SkinnedMeshRenderer)?.SetBlendShapeWeight(i,option.changeBlendShapeOptions[i].weight);
+                                    (option.rend as SkinnedMeshRenderer)?.SetBlendShapeWeight(i,option.changeBlendShapeOptions[i].weight);
                                 }
                             }
                         }
@@ -2430,7 +2430,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         {
             foreach (var dst in dsts)
             {
-                var src = srcs.FirstOrDefault(e => e.Obj == dst.Obj);
+                var src = srcs.FirstOrDefault(e => e.obj == dst.obj);
                 if (src != null)
                 {
                     if (checkOptions)
@@ -2447,7 +2447,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
         {
             foreach (var src in srcs.rendOptions)
             {
-                var dst = dsts.rendOptions.FirstOrDefault(d => d.Rend == src.Rend);
+                var dst = dsts.rendOptions.FirstOrDefault(d => d.rend == src.rend);
                 if (src != null && dst != null)
                 {
                     for (int i = 0; i < src.changeMaterialsOptions.Count &&  i < dst.changeMaterialsOptions.Count; i++)
@@ -2484,7 +2484,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                 activeItems.AddRange(ComputeLayerAnotherItems(menu));
             }
             
-            return activeItems.Where(e=>menu.SafeInactiveItems().All(f=>f.Obj!=e.Obj)).Select(e=>e.Clone(true)).ToList();
+            return activeItems.Where(e=>menu.SafeInactiveItems().All(f=>f.obj!=e.obj)).Select(e=>e.Clone(true)).ToList();
         }
         
         // レイヤー内の未設定アイテムを走査し返す
@@ -2493,21 +2493,21 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             if (!menu.isToggle)
             {
                 var items = GetActiveItems(menu.layer).
-                    Where(e => menu.SafeActiveItems().All(f => f.Obj != e.Obj)).
+                    Where(e => menu.SafeActiveItems().All(f => f.obj != e.obj)).
                     Select(e => e.Clone(true)).ToList();
                 if (IsMenuElementDefault(menu))
                 {
                     // デフォルトエレメントならアクティブをシーンの状態に合わせる
                     foreach (var item in items)
                     {
-                        item.active = GetDefaultActive(item.Obj);
+                        item.active = GetDefaultActive(item.obj);
                         foreach (var rendOption in item.rendOptions)
                         {
-                            if(rendOption.Rend == null) continue;
-                            rendOption.Rend.enabled = GetDefaultRendEnable(rendOption.Rend);
+                            if(rendOption.rend == null) continue;
+                            rendOption.rend.enabled = GetDefaultRendEnable(rendOption.rend);
                             foreach (var another in items.SelectMany(e=>e.rendOptions))
                             {
-                                if (rendOption.Rend == another.Rend)
+                                if (rendOption.rend == another.rend)
                                 {
                                     // Material設定の上書き
                                     for (int i = 0; i < rendOption.changeMaterialsOptions.Count; i++)
@@ -2516,7 +2516,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                                         if (another.changeMaterialsOptions[i] != null)
                                         {
                                             rendOption.changeMaterialsOptions[i] =
-                                                new MaterialOption(rendOption.Rend.sharedMaterials[i])
+                                                new MaterialOption(rendOption.rend.sharedMaterials[i])
                                                 {
                                                     change = true
                                                 };
@@ -2529,7 +2529,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                                         if (another.changeBlendShapeOptions[i].change)
                                         {
                                             rendOption.changeBlendShapeOptions[i] =
-                                                new BlendShapeOption((rendOption.Rend as SkinnedMeshRenderer)?.GetBlendShapeWeight(i) ?? 0f)
+                                                new BlendShapeOption((rendOption.rend as SkinnedMeshRenderer)?.GetBlendShapeWeight(i) ?? 0f)
                                                 {
                                                     change = true
                                                 };
@@ -2545,7 +2545,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                 var inactiveItems = GetInactiveItems(menu.layer);
                 foreach (var item in items)
                 {
-                    var inactiveItem = inactiveItems.FirstOrDefault(e => e.Obj == item.Obj && e.active == item.active);
+                    var inactiveItem = inactiveItems.FirstOrDefault(e => e.obj == item.obj && e.active == item.active);
                     if (inactiveItem != null)
                     {
                         item.delay = inactiveItem.delay;
@@ -2581,7 +2581,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             var items = GetActiveItems(layer);
             foreach (var item in items)
             {
-                item.active = item.Obj.gameObject.activeSelf;
+                item.active = item.obj.gameObject.activeSelf;
             }
             return items;
         }
@@ -2628,7 +2628,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             var items = new List<ItemElement>();
             foreach (var item in origin)
             {
-                if (items.All(e => e.Obj != item.Obj))
+                if (items.All(e => e.obj != item.obj))
                 {
                     items.Add(item);
                 }
@@ -2645,7 +2645,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                 SelectMany(m=>m.SafeActiveItems()).
                 SelectMany(i=>i.rendOptions))
             {
-                if (r.Rend == rend)
+                if (r.rend == rend)
                 {
                     if (!r.changeMaterialsOptions[index].change)
                     {
@@ -2663,8 +2663,8 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             {
                 foreach (var ro in ie.rendOptions)
                 {
-                    if (ro.Rend == null) continue;
-                    if (ro.Rend == rend)
+                    if (ro.rend == null) continue;
+                    if (ro.rend == rend)
                     {
                         if (!ro.changeMaterialsOptions[index].change)
                         {
@@ -2678,9 +2678,9 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             {
                 foreach (var ro in ie.rendOptions)
                 {
-                    if (ro.Rend == rend)
+                    if (ro.rend == rend)
                     {
-                        if (ro.Rend == null) continue;
+                        if (ro.rend == null) continue;
                         if (!ro.changeMaterialsOptions[index].change)
                         {
                             ro.changeMaterialsOptions[index].material = rend.sharedMaterials[index];
@@ -2699,8 +2699,8 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                 SelectMany(m=>m.SafeActiveItems()).
                 SelectMany(i=>i.rendOptions))
             {
-                if (r.Rend == null) continue;
-                if (r.Rend == rend)
+                if (r.rend == null) continue;
+                if (r.rend == rend)
                 {
                     if (!r.changeBlendShapeOptions[index].change)
                     {
@@ -2718,8 +2718,8 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             {
                 foreach (var ro in ie.rendOptions)
                 {
-                    if (ro.Rend == null) continue;
-                    if (ro.Rend == rend)
+                    if (ro.rend == null) continue;
+                    if (ro.rend == rend)
                     {
                         if (!ro.changeBlendShapeOptions[index].change)
                         {
@@ -2733,8 +2733,8 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             {
                 foreach (var ro in ie.rendOptions)
                 {
-                    if (ro.Rend == null) continue;
-                    if (ro.Rend == rend)
+                    if (ro.rend == null) continue;
+                    if (ro.rend == rend)
                     {
                         if (!ro.changeBlendShapeOptions[index].change)
                         {
@@ -2780,7 +2780,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             {
                 foreach (var item in menu.activeItems)
                 {
-                    items.Add(item.Obj);
+                    items.Add(item.obj);
                 }
             }
 
