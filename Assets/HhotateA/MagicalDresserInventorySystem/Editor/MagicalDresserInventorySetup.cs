@@ -557,48 +557,50 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
 
                                 using (new EditorGUILayout.VerticalScope(GUI.skin.box))
                                 {
-                                    ItemLabelDisplay();
-                                    
-                                    GUILayout.Box("", GUILayout.ExpandWidth(true), GUILayout.Height(1));
-                                
-                                    ItemElementDisplay(menuElements[index]);
-                                    
-                                    scrollRight = EditorGUILayout.BeginScrollView(scrollRight, false, false, GUIStyle.none, GUI.skin.verticalScrollbar, GUI.skin.scrollView);
-                                    if (displayItemMode)
+                                    if (!displaySyncTransition)
                                     {
-                                        using (var check = new EditorGUI.ChangeCheckScope())
+                                        ItemLabelDisplay();
+
+                                        GUILayout.Box("", GUILayout.ExpandWidth(true), GUILayout.Height(1));
+
+                                        ItemElementDisplay(menuElements[index]);
+
+                                        scrollRight = EditorGUILayout.BeginScrollView(scrollRight, false, false, GUIStyle.none, GUI.skin.verticalScrollbar, GUI.skin.scrollView);
+                                        if (displayItemMode)
                                         {
-                                            foreach (var item in menuElements[index].UnSafeActiveItems())
+                                            using (var check = new EditorGUI.ChangeCheckScope())
                                             {
-                                                ItemElementDisplay(item, false, true, false, false, false, menuElements[index],
-                                                    (o) =>
-                                                    {
-                                                        data.RepairReference(item.path, o, avatar.gameObject);
-                                                    }, () =>
-                                                    {
-                                                        menuElements[index].activeItems.Remove(item);
-                                                    });
-                                            }
-                                            
-                                            foreach (var item in menuElements[index].SafeActiveItems())
-                                            {
-                                                ItemElementDisplay(item, true, true, true, true, true, menuElements[index],
-                                                    (o) =>
-                                                    {
+                                                foreach (var item in menuElements[index].UnSafeActiveItems())
+                                                {
+                                                    ItemElementDisplay(item, false, true, false, false, false, menuElements[index],
+                                                        (o) =>
+                                                        {
+                                                            data.RepairReference(item.path, o, avatar.gameObject);
+                                                        }, () =>
+                                                        {
+                                                            menuElements[index].activeItems.Remove(item);
+                                                        });
+                                                }
+
+                                                foreach (var item in menuElements[index].SafeActiveItems())
+                                                {
+                                                    ItemElementDisplay(item, true, true, true, true, true, menuElements[index],
+                                                        (o) =>
+                                                        {
                                                         // item.obj = o;
                                                     }, () =>
                                                     {
                                                         menuElements[index].activeItems.Remove(item);
                                                     });
-                                            }
+                                                }
 
-                                            if (!menuElements[index].isToggle)
-                                            {
-                                                foreach (var item in ComputeLayerAnotherItems(menuElements[index]))
+                                                if (!menuElements[index].isToggle)
                                                 {
-                                                    ItemElementDisplay(item, true, false, true, true, true, menuElements[index],
-                                                        (o) =>
-                                                        {
+                                                    foreach (var item in ComputeLayerAnotherItems(menuElements[index]))
+                                                    {
+                                                        ItemElementDisplay(item, true, false, true, true, true, menuElements[index],
+                                                            (o) =>
+                                                            {
                                                             // item.obj = o;
                                                         }, () =>
                                                         {
@@ -607,51 +609,51 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                                                         {
                                                             menuElements[index].activeItems.Add(item);
                                                         });
+                                                    }
+                                                }
+
+                                                if (check.changed)
+                                                {
+                                                    SetObjectActiveForScene(menuElements[index]);
+                                                    // SyncItemActive(menuElements[index].activeItems, menuElements[index].inactiveItems, true);
                                                 }
                                             }
-
-                                            if (check.changed)
-                                            {
-                                                SetObjectActiveForScene(menuElements[index]);
-                                                // SyncItemActive(menuElements[index].activeItems, menuElements[index].inactiveItems, true);
-                                            }
                                         }
-                                    }
-                                    else
-                                    {
-                                        using (var check = new EditorGUI.ChangeCheckScope())
+                                        else
                                         {
-                                            foreach (var item in menuElements[index].UnSafeInactiveItems())
+                                            using (var check = new EditorGUI.ChangeCheckScope())
                                             {
-                                                ItemElementDisplay(item, false, true, false, false, false, menuElements[index],
-                                                    (o) =>
-                                                    {
-                                                        data.RepairReference(item.path, o, avatar.gameObject);
-                                                    }, () =>
-                                                    {
-                                                        menuElements[index].inactiveItems.Remove(item);
-                                                    });
-                                            }
-                                            
-                                            foreach (var item in menuElements[index].SafeInactiveItems())
-                                            {
-                                                ItemElementDisplay(item, true, true, true, true, true, menuElements[index],
-                                                    (o) =>
-                                                    {
+                                                foreach (var item in menuElements[index].UnSafeInactiveItems())
+                                                {
+                                                    ItemElementDisplay(item, false, true, false, false, false, menuElements[index],
+                                                        (o) =>
+                                                        {
+                                                            data.RepairReference(item.path, o, avatar.gameObject);
+                                                        }, () =>
+                                                        {
+                                                            menuElements[index].inactiveItems.Remove(item);
+                                                        });
+                                                }
+
+                                                foreach (var item in menuElements[index].SafeInactiveItems())
+                                                {
+                                                    ItemElementDisplay(item, true, true, true, true, true, menuElements[index],
+                                                        (o) =>
+                                                        {
                                                         // item.obj = o;
                                                     }, () =>
                                                     {
                                                         menuElements[index].inactiveItems.Remove(item);
                                                     });
-                                            }
+                                                }
 
-                                            foreach (var item in ComputeLayerInactiveItems(menuElements[index]))
-                                            {
-                                                using (var add = new EditorGUI.ChangeCheckScope())
+                                                foreach (var item in ComputeLayerInactiveItems(menuElements[index]))
                                                 {
-                                                    ItemElementDisplay(item, false, false, true, true, false, menuElements[index],
-                                                        (o) =>
-                                                        {
+                                                    using (var add = new EditorGUI.ChangeCheckScope())
+                                                    {
+                                                        ItemElementDisplay(item, false, false, true, true, false, menuElements[index],
+                                                            (o) =>
+                                                            {
                                                             // item.obj = o;
                                                         }, () =>
                                                         {
@@ -660,31 +662,32 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                                                         {
                                                             menuElements[index].inactiveItems.Add(item);
                                                         });
+                                                    }
+                                                }
+
+                                                if (check.changed)
+                                                {
+                                                    SetObjectActiveForScene(menuElements[index]);
+                                                    // SyncItemActive(menuElements[index].inactiveItems, menuElements[index].activeItems, true);
                                                 }
                                             }
-                                            
-                                            if (check.changed)
-                                            {
-                                                SetObjectActiveForScene(menuElements[index]);
-                                                // SyncItemActive(menuElements[index].inactiveItems, menuElements[index].activeItems, true);
-                                            }
                                         }
-                                    }
-                                    EditorGUILayout.EndScrollView();
+                                        EditorGUILayout.EndScrollView();
 
-                                    var newItem = (GameObject) EditorGUILayout.ObjectField("", null,
-                                        typeof(GameObject), true, GUILayout.Width(370));
-                                    if (newItem)
-                                    {
-                                        if (menuElements[index].activeItems.All(e => e.obj != newItem))
+                                        var newItem = (GameObject)EditorGUILayout.ObjectField("", null,
+                                            typeof(GameObject), true, GUILayout.Width(370));
+                                        if (newItem)
                                         {
-                                            menuElements[index].activeItems.Add(new ItemElement(newItem, avatar.gameObject,
-                                                IsMenuElementDefault(menuElements[index])
-                                                    ? newItem.gameObject.activeSelf
-                                                    : !newItem.gameObject.activeSelf));
-                                        }
+                                            if (menuElements[index].activeItems.All(e => e.obj != newItem))
+                                            {
+                                                menuElements[index].activeItems.Add(new ItemElement(newItem, avatar.gameObject,
+                                                    IsMenuElementDefault(menuElements[index])
+                                                        ? newItem.gameObject.activeSelf
+                                                        : !newItem.gameObject.activeSelf));
+                                            }
 
-                                        SetObjectActiveForScene(menuElements[index]);
+                                            SetObjectActiveForScene(menuElements[index]);
+                                        }
                                     }
                                     
                                     //sync element
@@ -701,7 +704,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                                     {
                                         if (displaySyncTransition)
                                         {
-                                            using (new EditorGUILayout.VerticalScope(GUILayout.Height(50)))
+                                            using (new EditorGUILayout.VerticalScope())
                                             {
                                                 scrollSubmenu = EditorGUILayout.BeginScrollView(scrollSubmenu, false,
                                                     false, GUIStyle.none, GUI.skin.verticalScrollbar,
