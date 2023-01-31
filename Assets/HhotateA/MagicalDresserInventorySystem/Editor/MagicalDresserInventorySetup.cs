@@ -66,13 +66,22 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             public int index;
         }
 
-        private bool openMenuList = true;
+        enum OpenMenuMode
+        {
+            Both,
+            MenuTemplate,
+            BaseMenu,
+        }
+
+        private OpenMenuMode openMenuMode = OpenMenuMode.Both;
+        private bool compactMenu = false;
         
         Vector2 scrollLeft = Vector2.zero;
         Vector2 scrollLeftTree = Vector2.zero;
         Vector2 scrollRight = Vector2.zero;
         Vector2 scrollSubmenu = Vector2.zero;
-        
+
+
         Material GetAnimationMaterial(Material origin,Material animMat)
         {
             if (origin == null) return null;
@@ -139,7 +148,7 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                 {
                     EditorGUI.LabelField(r,"Menu Elements");
                 },
-                elementHeight = 60+6,
+                elementHeightCallback = (i) => compactMenu ? 20 : 60 + 6,
                 drawElementCallback = (r, i, a, f) => DrawMenuElement(r,i),
                 onAddCallback = l => AddMenu(),
                 onSelectCallback = l =>
@@ -167,19 +176,23 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
             }
             var d = menuElements[i];
             if(d == null) return;
-            {
+            if (!compactMenu) {
                 var rh = r;
                 rh.width = rh.height;
                 d.icon = (Texture2D) EditorGUI.ObjectField (rh,d.icon, typeof(Texture2D), false);
                 r.width -= rh.width;
                 r.x += rh.width+10;
             }
-            r.height -= 6;
-            r.height /= 3;
-            r.width *= 0.95f;
+            if (!compactMenu)
+            {
+                r.height -= 6;
+                r.height /= 3;
+                r.width *= 0.95f;
+            }
             
             d.name = EditorGUI.TextField(r,"", d.name);
 
+            if (compactMenu) return;
             r.y += 2;
             r.y += r.height;
             
@@ -367,6 +380,16 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                         {
                             if (data.useMenuTemplate)
                             {
+
+                                using (new EditorGUILayout.HorizontalScope())
+                                {
+                                    EditorGUIUtility.labelWidth = 100;
+                                    compactMenu = EditorGUILayout.Toggle("Compact Menu", compactMenu, GUILayout.Width(130));
+                                    EditorGUIUtility.labelWidth = 50;
+                                    openMenuMode = (OpenMenuMode)EditorGUILayout.EnumPopup("Display", openMenuMode, GUILayout.Width(150));
+                                    EditorGUIUtility.labelWidth = 0;
+                                }
+
                                 using (new EditorGUILayout.VerticalScope(GUI.skin.box,GUILayout.Width(330)))
                                 {
                                     var menuelementRect = EditorGUILayout.GetControlRect(false, 60);
@@ -384,18 +407,24 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                                         }
                                     }
                                 }
-                                
-                                scrollLeftTree = EditorGUILayout.BeginScrollView(scrollLeftTree, false, false, GUIStyle.none, GUI.skin.verticalScrollbar, GUI.skin.scrollView);
-                                var treeRect = EditorGUILayout.GetControlRect(false, openMenuList ? (position.height-300)/2 : position.height-300);
-                                treeRect.width = 375;
-                                menuTreeView.OnGUI(treeRect);
-                                EditorGUILayout.EndScrollView();
-                                
+
+                                if (openMenuMode != OpenMenuMode.BaseMenu)
+                                {
+                                    scrollLeftTree = EditorGUILayout.BeginScrollView(scrollLeftTree, false, false, GUIStyle.none, GUI.skin.verticalScrollbar, GUI.skin.scrollView);
+                                    var treeRect = EditorGUILayout.GetControlRect(false, openMenuMode == OpenMenuMode.Both ? (position.height - 200) / 2 : position.height - 300);
+                                    treeRect.width = 375;
+                                    menuTreeView.OnGUI(treeRect);
+                                    EditorGUILayout.EndScrollView();
+                                }
+
                                 using (new EditorGUILayout.HorizontalScope())
                                 {
                                     if(GUILayout.Button("Reset",GUILayout.Width(75)))
                                     {
-                                        ResetTemplate();
+                                        if (EditorUtility.DisplayDialog("Reset", "メニューテンプレートをリセットして良いですか？", "実行", "中止"))
+                                        {
+                                            ResetTemplate();
+                                        }
                                     }
                                     EditorGUILayout.LabelField("",GUILayout.Width(100));
                                     if(GUILayout.Button("New Folder",GUILayout.Width(75)))
@@ -459,16 +488,11 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                                     }
                                 }
                                 
-                                openMenuList = EditorGUILayout.ToggleLeft("Extend Menu List",openMenuList);
-                                
-                                if (openMenuList)
+                                if (openMenuMode != OpenMenuMode.MenuTemplate)
                                 {
                                     scrollLeft = EditorGUILayout.BeginScrollView(scrollLeft, false, false, GUIStyle.none, GUI.skin.verticalScrollbar, GUI.skin.scrollView,GUILayout.Width(375),GUILayout.ExpandHeight(false));
                                     menuReorderableList.DoLayoutList();
                                     EditorGUILayout.EndScrollView();
-                                }
-                                else
-                                {
                                 }
                                 EditorGUILayout.Space();
                                 EditorGUILayout.LabelField(" ",GUILayout.ExpandHeight(true));
@@ -477,7 +501,10 @@ namespace HhotateA.AvatarModifyTools.MagicalDresserInventorySystem
                             {
                                 using (new EditorGUILayout.HorizontalScope())
                                 {
-                                    EditorGUILayout.LabelField("  ",GUILayout.Width(275));
+                                    EditorGUIUtility.labelWidth = 100;
+                                    compactMenu = EditorGUILayout.Toggle("Compact Menu", compactMenu, GUILayout.Width(130));
+                                    EditorGUIUtility.labelWidth = 0;
+                                    EditorGUILayout.LabelField("  ",GUILayout.Width(145));
                                     using (new EditorGUI.DisabledScope(!(0 <= menuReorderableList.index && menuReorderableList.index < menuElements.Count)))
                                     {
                                         if(GUILayout.Button("-",GUILayout.Width(30)))
