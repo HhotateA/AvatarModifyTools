@@ -104,6 +104,65 @@ namespace HhotateA.AvatarModifyTools.Core
             animMod.onFindAvatarMask += CloneAvatarMask;
         }
 
+        public void ModifyAvatarByMA(AvatarModifyData assets, string keyword = "")
+        {
+#if VRC_SDK_VRCSDK3
+            if (!ModularAvatarUtil.MAEnabled)
+            {
+                return;
+            }
+            prefix = keyword;
+            if (ModifyOriginalAsset) assets = RenameAssetsParameters(assets);
+
+            animMod.animRepathList = new Dictionary<string, string>();
+            // オフセットの記録
+            animMod.layerOffset = ComputeLayersOffset(assets);
+
+            var path = AssetDatabase.GetAssetPath(assets);
+            if (string.IsNullOrEmpty(path))
+            {
+                throw new InvalidOperationException("AvatarModifyData : assets not found");
+            }
+            path = Path.ChangeExtension(path, ".prefab");
+            if (!File.Exists(path))
+            {
+                var go = new GameObject();
+                PrefabUtility.SaveAsPrefabAsset(go, path);
+                Object.DestroyImmediate(go);
+            }
+            var prefab = PrefabUtility.LoadPrefabContents(path);
+            ModularAvatarUtil.MergeAnimatorController(prefab, VRCAvatarDescriptor.AnimLayerType.Base, assets.locomotion_controller);
+            ModularAvatarUtil.MergeAnimatorController(prefab, VRCAvatarDescriptor.AnimLayerType.Additive, assets.idle_controller);
+            ModularAvatarUtil.MergeAnimatorController(prefab, VRCAvatarDescriptor.AnimLayerType.Gesture, assets.gesture_controller);
+            ModularAvatarUtil.MergeAnimatorController(prefab, VRCAvatarDescriptor.AnimLayerType.Action, assets.action_controller);
+            ModularAvatarUtil.MergeAnimatorController(prefab, VRCAvatarDescriptor.AnimLayerType.FX, assets.fx_controller);
+            ModularAvatarUtil.Parameter(prefab, assets.parameter);
+            ModularAvatarUtil.MenuInstaller(prefab, assets.menu);
+
+            PrefabUtility.SaveAsPrefabAsset(prefab, path);
+            PrefabUtility.UnloadPrefabContents(prefab);
+
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+
+            prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+            var hasPrefabInstance = false;
+            foreach (Transform t in avatar.transform)
+            {
+                var p = PrefabUtility.GetCorrespondingObjectFromSource(t.gameObject);
+                if (p == prefab)
+                {
+                    hasPrefabInstance = true;
+                    break;
+                }
+            }
+            if (!hasPrefabInstance)
+            {
+                PrefabUtility.InstantiatePrefab(prefab, avatar.transform);
+            }
+#endif
+        }
+
         /// <summary>
         /// アバターにmodを適応する
         /// </summary>

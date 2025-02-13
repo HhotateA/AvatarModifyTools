@@ -61,6 +61,8 @@ namespace HhotateA.AvatarModifyTools.EmoteMotionKit
         ReorderableList emoteReorderableList;
         
         private EmoteMotionKitSaveData data;
+
+        private bool useMA = true;
         
         Vector2 scroll = Vector2.zero;
 
@@ -244,6 +246,12 @@ namespace HhotateA.AvatarModifyTools.EmoteMotionKit
             }
             EditorGUILayout.Space();
             EditorGUILayout.Space();
+
+            if (ModularAvatarUtil.MAEnabled)
+            {
+                useMA = EditorGUILayout.Toggle("Use Modular Avatar", useMA);
+                EditorGUILayout.Space();
+            }
 
             if (GUILayout.Button("Setup"))
             {
@@ -465,7 +473,15 @@ namespace HhotateA.AvatarModifyTools.EmoteMotionKit
                 }
             }
             AssetDatabase.AddObjectToAsset(assets,path);
-            ApplySettings(mod).ModifyAvatar(assets,EnvironmentGUIDs.prefix);
+            mod = ApplySettings(mod);
+            if (useMA && ModularAvatarUtil.MAEnabled)
+            {
+                mod.ModifyAvatarByMA(assets, EnvironmentGUIDs.prefix);
+            }
+            else
+            {
+                mod.ModifyAvatar(assets, EnvironmentGUIDs.prefix);
+            }
 #endif
         }
 
